@@ -48,5 +48,9 @@ app.use('/api/resume', resumeRoutes);
 const templateRoutes = require('./routes/templates');
 app.use('/api/templates', templateRoutes);
 
+const evaluationRoutes = require('./routes/evaluation');
+app.use('/api/evaluation', evaluationRoutes);
+
+
 
 });

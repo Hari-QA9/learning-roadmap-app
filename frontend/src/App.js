@@ -17,6 +17,10 @@ import ResumeBuilder from './pages/ResumeBuilder';
 import Templates from './pages/Templates';
 import CareerAdvisor from './pages/CareerAdvisor';
 import StudyPlanner from './pages/StudyPlanner';
+import ModuleEvaluation from './pages/ModuleEvaluation';
+import RoadmapEvaluation from './pages/RoadmapEvaluation';
+import Certificate from './pages/Certificate';
+
 
 // ── THEME CONTEXT ──────────────────────────────
 export const ThemeContext = createContext();
@@ -61,6 +65,11 @@ function App() {
             <Route path="/career-advisor" element={<PrivateRoute><CareerAdvisor /></PrivateRoute>} />
             <Route path="/study-planner" element={<PrivateRoute><StudyPlanner /></PrivateRoute>} />
             <Route path="*" element={<Navigate to="/" />} />
+            <Route path="/module-evaluation" element={<PrivateRoute><ModuleEvaluation /></PrivateRoute>} />
+<Route path="/roadmap-evaluation" element={<PrivateRoute><RoadmapEvaluation /></PrivateRoute>} />
+<Route path="/certificates" element={<PrivateRoute><Certificate /></PrivateRoute>} />
+<Route path="*" element={<Navigate to="/" />} />   {/* must be LAST */}
+
           </Routes>
         </Router>
       </div>

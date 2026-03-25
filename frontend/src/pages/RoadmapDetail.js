@@ -13,11 +13,16 @@ function RoadmapDetail() {
   const [newTaskPriority, setNewTaskPriority] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('modules');
+  const [evalStatus, setEvalStatus] = useState({});
   const { id } = useParams();
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
 
-  useEffect(function () { fetchRoadmap(); fetchModules(); fetchResources(); }, []);
+  useEffect(function () {
+    fetchRoadmap();
+    fetchModules();
+    fetchResources();
+  }, []);
 
   function fetchRoadmap() {
     axios.get('http://localhost:5000/api/roadmaps/' + id, { headers: { Authorization: 'Bearer ' + token } })
@@ -27,8 +32,28 @@ function RoadmapDetail() {
 
   function fetchModules() {
     axios.get('http://localhost:5000/api/modules/' + id, { headers: { Authorization: 'Bearer ' + token } })
-      .then(function (res) { setModules(res.data); res.data.forEach(function (m) { fetchTasks(m.id); }); })
+      .then(function (res) {
+        setModules(res.data);
+        res.data.forEach(function (m) {
+          fetchTasks(m.id);
+          fetchEvalStatus(m.id);
+        });
+      })
       .catch(function (err) { console.log(err); });
+  }
+
+  function fetchEvalStatus(moduleId) {
+    axios.get('http://localhost:5000/api/evaluation/module-status/' + moduleId, {
+      headers: { Authorization: 'Bearer ' + token }
+    })
+      .then(function (res) {
+        setEvalStatus(function (prev) {
+          var u = Object.assign({}, prev);
+          u[moduleId] = res.data.passed;
+          return u;
+        });
+      })
+      .catch(function () {});
   }
 
   function fetchResources() {
@@ -68,13 +93,9 @@ function RoadmapDetail() {
     if (!t || !t.trim()) return;
     var dueDate = newTaskDueDate[moduleId] || null;
     var priority = newTaskPriority[moduleId] || 'medium';
-
     axios.post('http://localhost:5000/api/tasks', {
-      module_id: moduleId,
-      title: t,
-      description: '',
-      due_date: dueDate,
-      priority: priority,
+      module_id: moduleId, title: t, description: '',
+      due_date: dueDate, priority: priority,
     }, { headers: { Authorization: 'Bearer ' + token } })
       .then(function () {
         setNewTask(function (prev) { var u = Object.assign({}, prev); u[moduleId] = ''; return u; });
@@ -88,11 +109,8 @@ function RoadmapDetail() {
   function updateTaskStatus(task, moduleId) {
     var next = task.status === 'pending' ? 'in_progress' : task.status === 'in_progress' ? 'done' : 'pending';
     axios.put('http://localhost:5000/api/tasks/' + task.id, {
-      title: task.title,
-      description: task.description || '',
-      status: next,
-      due_date: task.due_date || null,
-      priority: task.priority || 'medium',
+      title: task.title, description: task.description || '',
+      status: next, due_date: task.due_date || null, priority: task.priority || 'medium',
     }, { headers: { Authorization: 'Bearer ' + token } })
       .then(function () { fetchTasks(moduleId); })
       .catch(function (err) { console.log(err); });
@@ -105,23 +123,27 @@ function RoadmapDetail() {
       .catch(function (err) { console.log(err); });
   }
 
+  function isModuleUnlocked(modIndex) {
+    if (modIndex === 0) return true;
+    var prevModule = modules[modIndex - 1];
+    return evalStatus[prevModule.id] === true;
+  }
+
+  function allModulesComplete() {
+    return modules.every(function (mod) {
+      var mt = tasks[mod.id] || [];
+      var allDone = mt.length > 0 && mt.every(function (t) { return t.status === 'done'; });
+      return allDone && evalStatus[mod.id] === true;
+    });
+  }
+
   function getStatusColor(s) { return s === 'done' ? '#22c55e' : s === 'in_progress' ? '#f59e0b' : '#94a3b8'; }
   function getStatusLabel(s) { return s === 'done' ? 'Done' : s === 'in_progress' ? 'In Progress' : 'Pending'; }
   function getTypeColor(t) { return t === 'video' ? '#ef4444' : t === 'course' ? '#8b5cf6' : t === 'documentation' ? '#3b82f6' : '#22c55e'; }
-
-  function getPriorityColor(p) {
-    return p === 'high' ? '#ef4444' : p === 'medium' ? '#f59e0b' : '#64748b';
-  }
-  function getPriorityBg(p) {
-    return p === 'high' ? 'rgba(239,68,68,0.1)' : p === 'medium' ? 'rgba(245,158,11,0.1)' : 'rgba(100,116,139,0.1)';
-  }
-  function getPriorityIcon(p) {
-    return p === 'high' ? '🔴' : p === 'medium' ? '🟡' : '🟢';
-  }
-  function isDueOverdue(due_date) {
-    if (!due_date) return false;
-    return new Date(due_date) < new Date();
-  }
+  function getPriorityColor(p) { return p === 'high' ? '#ef4444' : p === 'medium' ? '#f59e0b' : '#64748b'; }
+  function getPriorityBg(p) { return p === 'high' ? 'rgba(239,68,68,0.1)' : p === 'medium' ? 'rgba(245,158,11,0.1)' : 'rgba(100,116,139,0.1)'; }
+  function getPriorityIcon(p) { return p === 'high' ? '🔴' : p === 'medium' ? '🟡' : '🟢'; }
+  function isDueOverdue(due_date) { if (!due_date) return false; return new Date(due_date) < new Date(); }
 
   if (loading) {
     return (
@@ -147,7 +169,45 @@ function RoadmapDetail() {
         <button onClick={function () { navigate('/quiz?roadmap=' + id); }} style={{ padding: '8px 16px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
           Take Quiz
         </button>
+
+        {allModulesComplete() && (
+          <button
+            onClick={function () {
+              var moduleTitles = modules.map(function (m) { return m.title; }).join('|');
+              navigate('/roadmap-evaluation?roadmapId=' + id + '&title=' + encodeURIComponent(roadmap?.title || '') + '&modules=' + encodeURIComponent(moduleTitles));
+            }}
+            style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #b8860b, #d4a017)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
+          >
+            🎓 Final Evaluation
+          </button>
+        )}
       </div>
+
+      {/* PROGRESS OVERVIEW */}
+      {modules.length > 0 && (
+        <div style={{ background: 'white', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <p style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: '600', color: '#64748b' }}>COURSE PROGRESS</p>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {modules.map(function (mod, i) {
+              var mt = tasks[mod.id] || [];
+              var allTasksDone = mt.length > 0 && mt.every(function (t) { return t.status === 'done'; });
+              var evalPassed = evalStatus[mod.id] === true;
+              return (
+                <div key={mod.id} style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600',
+                  background: evalPassed ? 'rgba(34,197,94,0.1)' : allTasksDone ? 'rgba(245,158,11,0.1)' : 'rgba(100,116,139,0.1)',
+                  color: evalPassed ? '#22c55e' : allTasksDone ? '#f59e0b' : '#94a3b8',
+                  border: '1px solid ' + (evalPassed ? 'rgba(34,197,94,0.3)' : allTasksDone ? 'rgba(245,158,11,0.3)' : 'rgba(100,116,139,0.3)'),
+                }}>
+                  {evalPassed ? '✅' : allTasksDone ? '⏳' : isModuleUnlocked(i) ? '🔓' : '🔒'}
+                  {' Module ' + (i + 1)}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* TABS */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'white', padding: '6px', borderRadius: '10px', width: 'fit-content' }}>
@@ -164,9 +224,7 @@ function RoadmapDetail() {
         <div>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
             <input
-              type="text"
-              placeholder="Add new module..."
-              value={newModule}
+              type="text" placeholder="Add new module..." value={newModule}
               onChange={function (e) { setNewModule(e.target.value); }}
               onKeyPress={function (e) { if (e.key === 'Enter') { addModule(); } }}
               style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '2px solid #e2e8f0', fontSize: '14px', outline: 'none' }}
@@ -182,33 +240,73 @@ function RoadmapDetail() {
             </div>
           )}
 
-          {modules.map(function (mod) {
+          {modules.map(function (mod, modIndex) {
             var mt = tasks[mod.id] || [];
             var done = mt.filter(function (t) { return t.status === 'done'; }).length;
             var prog = mt.length > 0 ? Math.round((done / mt.length) * 100) : 0;
+            var unlocked = isModuleUnlocked(modIndex);
+            var allTasksDone = mt.length > 0 && mt.every(function (t) { return t.status === 'done'; });
+            var evalPassed = evalStatus[mod.id] === true;
 
             return (
-              <div key={mod.id} style={{ background: 'white', borderRadius: '12px', padding: '20px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+              <div key={mod.id} style={{
+                background: 'white',
+                borderRadius: '12px',
+                padding: '20px',
+                marginBottom: '20px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                opacity: unlocked ? 1 : 0.6,
+                position: 'relative',
+                border: evalPassed ? '2px solid #22c55e' : allTasksDone ? '2px solid #f59e0b' : '1px solid #e2e8f0',
+              }}>
 
-                {/* MODULE HEADER */}
+                {!unlocked && (
+                  <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(241,245,249,0.85)',
+                    borderRadius: '12px',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center',
+                    zIndex: 10,
+                  }}>
+                    <div style={{ fontSize: '36px', marginBottom: '8px' }}>🔒</div>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: '#64748b' }}>
+                      Module Locked
+                    </p>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+                      Pass Module {modIndex} evaluation to unlock
+                    </p>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <h3 style={{ margin: 0, fontSize: '16px', color: '#1e293b' }}>{mod.title}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>
+                      {evalPassed ? '✅' : allTasksDone ? '⏳' : unlocked ? '🔓' : '🔒'}
+                    </span>
+                    <h3 style={{ margin: 0, fontSize: '16px', color: '#1e293b' }}>
+                      Module {modIndex + 1}: {mod.title}
+                    </h3>
+                  </div>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <span style={{ fontSize: '12px', color: '#64748b' }}>{done}/{mt.length} done</span>
+                    {evalPassed && (
+                      <span style={{ fontSize: '11px', background: 'rgba(34,197,94,0.1)', color: '#22c55e', padding: '2px 8px', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.3)', fontWeight: '600' }}>
+                        Evaluation Passed ✓
+                      </span>
+                    )}
                     <button onClick={function () { deleteModule(mod.id); }} style={{ padding: '4px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
                       Delete
                     </button>
                   </div>
                 </div>
 
-                {/* PROGRESS BAR */}
                 <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: prog + '%', background: prog === 100 ? '#22c55e' : '#3b82f6', borderRadius: '3px' }} />
                 </div>
 
                 {mt.length === 0 && <p style={{ color: '#94a3b8', fontSize: '13px', margin: '0 0 12px' }}>No tasks yet.</p>}
 
-                {/* TASKS */}
                 {mt.map(function (task) {
                   return (
                     <div key={task.id} style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '8px', marginBottom: '8px', border: '1px solid #e2e8f0' }}>
@@ -225,13 +323,10 @@ function RoadmapDetail() {
                           </button>
                         </div>
                       </div>
-
                       <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
                         {task.due_date && (
                           <span style={{
-                            fontSize: '11px',
-                            padding: '2px 8px',
-                            borderRadius: '8px',
+                            fontSize: '11px', padding: '2px 8px', borderRadius: '8px',
                             background: isDueOverdue(task.due_date) ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
                             color: isDueOverdue(task.due_date) ? '#ef4444' : '#10b981',
                             border: isDueOverdue(task.due_date) ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(16,185,129,0.3)',
@@ -242,9 +337,7 @@ function RoadmapDetail() {
                         )}
                         {task.priority && (
                           <span style={{
-                            fontSize: '11px',
-                            padding: '2px 8px',
-                            borderRadius: '8px',
+                            fontSize: '11px', padding: '2px 8px', borderRadius: '8px',
                             background: getPriorityBg(task.priority),
                             color: getPriorityColor(task.priority),
                             border: '1px solid ' + getPriorityColor(task.priority) + '44',
@@ -257,62 +350,101 @@ function RoadmapDetail() {
                   );
                 })}
 
-                {/* ADD TASK FORM */}
-                <div style={{ marginTop: '14px', background: '#f1f5f9', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <input
-                      type="text"
-                      placeholder="Add new task..."
-                      value={newTask[mod.id] || ''}
-                      onChange={function (e) {
-                        var val = e.target.value;
-                        setNewTask(function (prev) { var u = Object.assign({}, prev); u[mod.id] = val; return u; });
-                      }}
-                      onKeyPress={function (e) { if (e.key === 'Enter') { addTask(mod.id); } }}
-                      style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none' }}
-                    />
-                    <button onClick={function () { addTask(mod.id); }} style={{ padding: '8px 16px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-                      Add
-                    </button>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                      <label style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>Due Date</label>
+                {unlocked && (
+                  <div style={{ marginTop: '14px', background: '#f1f5f9', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                       <input
-                        type="date"
-                        value={newTaskDueDate[mod.id] || ''}
-                        onChange={function (e) {
-                          var val = e.target.value;
-                          setNewTaskDueDate(function (prev) { var u = Object.assign({}, prev); u[mod.id] = val; return u; });
-                        }}
-                        style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none', background: 'white' }}
+                        type="text" placeholder="Add new task..."
+                        value={newTask[mod.id] || ''}
+                        onChange={function (e) { var val = e.target.value; setNewTask(function (prev) { var u = Object.assign({}, prev); u[mod.id] = val; return u; }); }}
+                        onKeyPress={function (e) { if (e.key === 'Enter') { addTask(mod.id); } }}
+                        style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none' }}
                       />
+                      <button onClick={function () { addTask(mod.id); }} style={{ padding: '8px 16px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                        Add
+                      </button>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                      <label style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>Priority</label>
-                      <select
-                        value={newTaskPriority[mod.id] || 'medium'}
-                        onChange={function (e) {
-                          var val = e.target.value;
-                          setNewTaskPriority(function (prev) { var u = Object.assign({}, prev); u[mod.id] = val; return u; });
-                        }}
-                        style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none', background: 'white' }}
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                        <label style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>Due Date</label>
+                        <input type="date" value={newTaskDueDate[mod.id] || ''}
+                          onChange={function (e) { var val = e.target.value; setNewTaskDueDate(function (prev) { var u = Object.assign({}, prev); u[mod.id] = val; return u; }); }}
+                          style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none', background: 'white' }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                        <label style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>Priority</label>
+                        <select value={newTaskPriority[mod.id] || 'medium'}
+                          onChange={function (e) { var val = e.target.value; setNewTaskPriority(function (prev) { var u = Object.assign({}, prev); u[mod.id] = val; return u; }); }}
+                          style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none', background: 'white' }}
+                        >
+                          <option value="low">🟢 Low</option>
+                          <option value="medium">🟡 Medium</option>
+                          <option value="high">🔴 High</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {unlocked && allTasksDone && !evalPassed && (
+                  <button
+                    onClick={function () {
+                      var taskTitles = mt.map(function (t) { return t.title; }).join('|');
+                      navigate('/module-evaluation?moduleId=' + mod.id + '&roadmapId=' + id + '&title=' + encodeURIComponent(mod.title) + '&tasks=' + encodeURIComponent(taskTitles));
+                    }}
+                    style={{
+                      marginTop: '14px', width: '100%', padding: '12px',
+                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      border: 'none', color: '#fff', borderRadius: '8px',
+                      cursor: 'pointer', fontSize: '14px', fontWeight: '700',
+                    }}
+                  >
+                    📝 Take Module Evaluation to Unlock Next Module
+                  </button>
+                )}
+
+                {evalPassed && (
+                  <div style={{ marginTop: '14px', padding: '10px 14px', background: 'rgba(34,197,94,0.1)', borderRadius: '8px', border: '1px solid rgba(34,197,94,0.3)', textAlign: 'center' }}>
+                    <span style={{ fontSize: '13px', color: '#22c55e', fontWeight: '600' }}>
+                      ✅ Module evaluation passed! Next module is unlocked.
+                    </span>
+                  </div>
+                )}
 
               </div>
             );
           })}
+
+          {allModulesComplete() && (
+            <div style={{ background: 'linear-gradient(135deg, #1e293b, #334155)', borderRadius: '12px', padding: '28px', textAlign: 'center', border: '2px solid #b8860b', marginTop: '8px' }}>
+              <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎓</div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: '800', color: '#f1f5f9' }}>
+                All Modules Complete!
+              </h3>
+              <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: '#94a3b8' }}>
+                You have completed all modules and passed all evaluations. Take the final evaluation to earn your certificate!
+              </p>
+              <button
+                onClick={function () {
+                  var moduleTitles = modules.map(function (m) { return m.title; }).join('|');
+                  navigate('/roadmap-evaluation?roadmapId=' + id + '&title=' + encodeURIComponent(roadmap?.title || '') + '&modules=' + encodeURIComponent(moduleTitles));
+                }}
+                style={{
+                  padding: '14px 32px',
+                  background: 'linear-gradient(135deg, #b8860b, #d4a017)',
+                  border: 'none', color: '#fff', borderRadius: '10px',
+                  cursor: 'pointer', fontSize: '16px', fontWeight: '700',
+                  boxShadow: '0 4px 20px rgba(184,134,11,0.4)',
+                }}
+              >
+                🏆 Take Final Evaluation & Earn Certificate
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* RESOURCES TAB */}
       {activeTab === 'resources' && (
         <div>
           <h3 style={{ margin: '0 0 16px', color: '#1e293b', fontSize: '18px' }}>
