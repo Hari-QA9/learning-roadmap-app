@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../App';
+
 
 function Dashboard() {
   const [roadmaps, setRoadmaps] = useState([]);
   const [stats, setStats] = useState(null);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const [progress, setProgress] = useState([]);
+  const { darkMode, setDarkMode } = useTheme();
 
+  const token = localStorage.getItem('token');
 
   let user = {};
   try {
@@ -25,21 +27,6 @@ function Dashboard() {
     if (!token) { navigate('/login'); return; }
     fetchRoadmaps();
     fetchStats();
-    axios.get('http://localhost:5000/api/stats/progress', {
-  headers: { Authorization: 'Bearer ' + token }
-})
-  .then((res) => setProgress(res.data.progress))
-  .catch((err) => console.log(err));
-
-    // Update streak when user visits dashboard
-axios.post('http://localhost:5000/api/stats/update-streak', {}, {
-  headers: { Authorization: 'Bearer ' + token }
-})
-  .then((res) => {
-    setStats((prev) => ({ ...prev, streak: res.data.streak }));
-  })
-  .catch((err) => console.log(err));
-
   }, []);
 
   function fetchRoadmaps() {
@@ -107,9 +94,27 @@ axios.post('http://localhost:5000/api/stats/update-streak', {}, {
           <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>Track your learning journey</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+  onClick={() => setDarkMode(!darkMode)}
+  style={{
+    background: darkMode ? '#334155' : '#e2e8f0',
+    border: 'none',
+    color: darkMode ? '#f1f5f9' : '#1e293b',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+    transition: 'all 0.3s ease',
+  }}
+>
+  {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+</button>
+
           <button onClick={function() { navigate('/profile'); }} style={{ padding: '8px 16px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Profile</button>
           <button onClick={function() { navigate('/notifications'); }} style={{ padding: '8px 16px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Alerts</button>
           <button onClick={function() { navigate('/feedback'); }} style={{ padding: '8px 16px', background: '#06b6d4', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Feedback</button>
+          
           <button onClick={handleLogout} style={{ padding: '8px 16px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Logout</button>
         </div>
       </div>
@@ -150,6 +155,54 @@ axios.post('http://localhost:5000/api/stats/update-streak', {}, {
         <button onClick={function() { navigate('/ai-generator'); }} style={{ padding: '10px 20px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>AI Generate</button>
         <button onClick={function() { navigate('/chat'); }} style={{ padding: '10px 20px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>AI Chat</button>
         <button onClick={function() { navigate('/quiz'); }} style={{ padding: '10px 20px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Take Quiz</button>
+        <button
+  onClick={() => navigate('/study-planner')}
+  style={{
+    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+    border: 'none',
+    color: '#fff',
+    padding: '12px 24px',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '15px',
+    fontWeight: '600',
+  }}
+>
+  📅 AI Study Planner
+</button>
+
+        <button
+  onClick={() => navigate('/career-advisor')}
+  style={{
+    background: 'linear-gradient(135deg, #10b981, #059669)',
+    border: 'none',
+    color: '#fff',
+    padding: '12px 24px',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '15px',
+    fontWeight: '600',
+  }}
+>
+  🎯 AI Career Advisor
+</button>
+
+        <button
+  onClick={() => navigate('/templates')}
+  style={{
+    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+    border: 'none',
+    color: '#fff',
+    padding: '12px 24px',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '15px',
+    fontWeight: '600',
+  }}
+>
+  📋 Browse Templates
+</button>
+
         <button
   onClick={function() { navigate('/resume'); }}
   style={{ padding: '10px 20px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>

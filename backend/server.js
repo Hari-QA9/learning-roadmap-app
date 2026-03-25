@@ -45,4 +45,8 @@ app.listen(PORT, () => {
   const resumeRoutes = require('./routes/resume');
 app.use('/api/resume', resumeRoutes);
 
+const templateRoutes = require('./routes/templates');
+app.use('/api/templates', templateRoutes);
+
+
 });

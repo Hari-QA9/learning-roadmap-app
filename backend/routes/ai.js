@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
+const verifyToken = require('../middleware/auth');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 
 // Helper function to clean AI response
 function cleanJSON(text) {
@@ -254,5 +256,105 @@ router.post('/chat', auth, async (req, res) => {
     });
   }
 });
+
+router.post('/career-advice', verifyToken, async (req, res) => {
+  const { skills, experience, interests, education } = req.body;
+
+  if (!skills || !skills.trim()) {
+    return res.status(400).json({ error: 'Skills are required' });
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+    const prompt = `
+You are an expert career advisor.
+Based on this person's profile, give career advice.
+
+Profile:
+Skills: ${skills}
+Experience: ${experience || 'Not provided'}
+Interests: ${interests || 'Not provided'}
+Education: ${education || 'Not provided'}
+
+Respond ONLY in this exact JSON format, no extra text, no markdown:
+{
+  "roles": [
+    {"title": "Full Stack Developer", "salary": "$90k-$130k/yr", "match": 92},
+    {"title": "Backend Engineer", "salary": "$85k-$120k/yr", "match": 85},
+    {"title": "Software Engineer", "salary": "$80k-$115k/yr", "match": 78}
+  ],
+  "skillGaps": ["Docker", "AWS", "TypeScript", "System Design"],
+  "companies": ["Google", "Amazon", "Meta", "Netflix", "Startups"],
+  "advice": "Based on your profile, you should focus on building projects and contributing to open source."
+}`;
+
+    const result = await model.generateContent(prompt);
+    let text = result.response.text();
+
+    // Clean markdown code blocks if present
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    // Find JSON object in response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return res.status(500).json({ error: 'AI returned invalid response' });
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    res.json(parsed);
+
+  } catch (err) {
+    console.error('Career advice error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+router.post('/study-plan', verifyToken, async (req, res) => {
+  const { goal, hoursPerDay, daysPerWeek, currentLevel, skills } = req.body;
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const prompt = `
+You are an expert study planner.
+Create a personalized weekly study schedule.
+
+Details:
+Goal: ${goal}
+Current Skills: ${skills || 'None'}
+Level: ${currentLevel}
+Hours per day: ${hoursPerDay}
+Days per week: ${daysPerWeek}
+
+Respond ONLY in this exact JSON format:
+{
+  "title": "Your Personalized Study Plan",
+  "totalDuration": "3 months",
+  "overview": "Brief overview of the plan in 2 sentences.",
+  "weeklySchedule": [
+    {
+      "day": "Monday",
+      "topic": "Topic name",
+      "duration": "${hoursPerDay} hours",
+      "tasks": ["Task 1", "Task 2", "Task 3"]
+    }
+  ],
+  "tips": "3 specific study tips for this goal."
+}
+Include exactly ${daysPerWeek} days in weeklySchedule.
+Only respond with valid JSON, nothing else.
+    `;
+    const result = await model.generateContent(prompt);
+    let text = result.response.text();
+    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const parsed = JSON.parse(text);
+    res.json(parsed);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 module.exports = router;
