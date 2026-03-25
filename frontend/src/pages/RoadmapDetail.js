@@ -1,537 +1,188 @@
-import ResourceSection from '../components/ResourceSection';
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import Navbar from '../components/Navbar';
+import { useNavigate, useParams } from 'react-router-dom';
 
 function RoadmapDetail() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-
   const [roadmap, setRoadmap] = useState(null);
   const [modules, setModules] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showModuleForm, setShowModuleForm] = useState(false);
-  const [moduleTitle, setModuleTitle] = useState('');
-  const [expandedModule, setExpandedModule] = useState(null);
   const [tasks, setTasks] = useState({});
-  const [showTaskForm, setShowTaskForm] = useState(null);
-  const [taskTitle, setTaskTitle] = useState('');
-  const [taskDueDate, setTaskDueDate] = useState('');
-
+  const [resources, setResources] = useState([]);
+  const [newModule, setNewModule] = useState('');
+  const [newTask, setNewTask] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('modules');
+  const { id } = useParams();
+  const navigate = useNavigate();
   const token = localStorage.getItem('token');
-  const headers = { Authorization: 'Bearer ' + token };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    fetchRoadmap();
-    fetchModules();
-  }, [id]);
+  useEffect(function() { fetchRoadmap(); fetchModules(); fetchResources(); }, []);
 
-  const fetchRoadmap = async () => {
-    try {
-      const res = await axios.get('http://localhost:5000/api/roadmaps/' + id, { headers });
-      setRoadmap(res.data);
-    } catch (err) {
-      console.error('Error:', err);
-    }
-  };
-
-  const fetchModules = async () => {
-    try {
-      const res = await axios.get('http://localhost:5000/api/modules/' + id, { headers });
-      setModules(res.data);
-    } catch (err) {
-      console.error('Error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchTasks = async (moduleId) => {
-    try {
-      const res = await axios.get('http://localhost:5000/api/tasks/' + moduleId, { headers });
-      setTasks(function(prev) {
-        var next = Object.assign({}, prev);
-        next[moduleId] = res.data;
-        return next;
-      });
-    } catch (err) {
-      console.error('Error:', err);
-    }
-  };
-
-  const handleAddModule = async (e) => {
-    e.preventDefault();
-    if (!moduleTitle.trim()) return;
-    try {
-      await axios.post('http://localhost:5000/api/modules', { roadmap_id: id, title: moduleTitle }, { headers });
-      setModuleTitle('');
-      setShowModuleForm(false);
-      fetchModules();
-    } catch (err) {
-      alert('Failed to add module');
-    }
-  };
-
-  const handleDeleteModule = async (moduleId) => {
-    if (!window.confirm('Delete this module?')) return;
-    try {
-      await axios.delete('http://localhost:5000/api/modules/' + moduleId, { headers });
-      fetchModules();
-    } catch (err) {
-      alert('Failed to delete module');
-    }
-  };
-
-  const handleToggleModule = function(moduleId) {
-    if (expandedModule === moduleId) {
-      setExpandedModule(null);
-    } else {
-      setExpandedModule(moduleId);
-      fetchTasks(moduleId);
-    }
-  };
-
-  const handleAddTask = async (e, moduleId) => {
-    e.preventDefault();
-    if (!taskTitle.trim()) return;
-    try {
-      await axios.post(
-        'http://localhost:5000/api/tasks',
-        { module_id: moduleId, title: taskTitle, due_date: taskDueDate || null },
-        { headers }
-      );
-      setTaskTitle('');
-      setTaskDueDate('');
-      setShowTaskForm(null);
-      fetchTasks(moduleId);
-    } catch (err) {
-      alert('Failed to add task');
-    }
-  };
-
-  const handleToggleStatus = async (task, moduleId) => {
-    var newStatus = 'not_started';
-    if (task.status === 'not_started') { newStatus = 'in_progress'; }
-    else if (task.status === 'in_progress') { newStatus = 'completed'; }
-    try {
-      await axios.put(
-        'http://localhost:5000/api/tasks/' + task.id,
-        { title: task.title, status: newStatus, due_date: task.due_date },
-        { headers }
-      );
-      fetchTasks(moduleId);
-    } catch (err) {
-      console.error('Error:', err);
-    }
-  };
-
-  const handleDeleteTask = async (taskId, moduleId) => {
-    if (!window.confirm('Delete this task?')) return;
-    try {
-      await axios.delete('http://localhost:5000/api/tasks/' + taskId, { headers });
-      fetchTasks(moduleId);
-    } catch (err) {
-      alert('Failed to delete task');
-    }
-  };
-
-  const getStatusIcon = function(status) {
-    if (status === 'completed') return '✅';
-    if (status === 'in_progress') return '⏳';
-    return '⚪';
-  };
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
-        <Navbar />
-        <div style={{ textAlign: 'center', padding: '100px', fontSize: '18px', color: '#6b7280' }}>
-          Loading...
-        </div>
-      </div>
-    );
+  function fetchRoadmap() {
+    axios.get('http://localhost:5000/api/roadmaps/' + id, { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(res) { setRoadmap(res.data); setLoading(false); })
+    .catch(function(err) { console.log(err); setLoading(false); });
   }
 
+  function fetchModules() {
+    axios.get('http://localhost:5000/api/modules/' + id, { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(res) { setModules(res.data); res.data.forEach(function(m) { fetchTasks(m.id); }); })
+    .catch(function(err) { console.log(err); });
+  }
+
+  function fetchResources() {
+    axios.get('http://localhost:5000/api/resources/' + id, { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(res) { setResources(res.data); })
+    .catch(function(err) { console.log(err); });
+  }
+
+  function fetchTasks(moduleId) {
+    axios.get('http://localhost:5000/api/tasks/' + moduleId, { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(res) { setTasks(function(prev) { var u = Object.assign({}, prev); u[moduleId] = res.data; return u; }); })
+    .catch(function(err) { console.log(err); });
+  }
+
+  function addModule() {
+    if (!newModule.trim()) return;
+    axios.post('http://localhost:5000/api/modules', { roadmap_id: id, title: newModule, description: '' }, { headers: { Authorization: 'Bearer ' + token } })
+    .then(function() { setNewModule(''); fetchModules(); })
+    .catch(function(err) { console.log(err); });
+  }
+
+  function deleteModule(moduleId) {
+    if (!window.confirm('Delete this module?')) return;
+    axios.delete('http://localhost:5000/api/modules/' + moduleId, { headers: { Authorization: 'Bearer ' + token } })
+    .then(function() { fetchModules(); }).catch(function(err) { console.log(err); });
+  }
+
+  function addTask(moduleId) {
+    var t = newTask[moduleId];
+    if (!t || !t.trim()) return;
+    axios.post('http://localhost:5000/api/tasks', { module_id: moduleId, title: t, description: '' }, { headers: { Authorization: 'Bearer ' + token } })
+    .then(function() { setNewTask(function(prev) { var u = Object.assign({}, prev); u[moduleId] = ''; return u; }); fetchTasks(moduleId); })
+    .catch(function(err) { console.log(err); });
+  }
+
+  function updateTaskStatus(task, moduleId) {
+    var next = task.status === 'pending' ? 'in_progress' : task.status === 'in_progress' ? 'done' : 'pending';
+    axios.put('http://localhost:5000/api/tasks/' + task.id, { title: task.title, description: task.description || '', status: next, due_date: task.due_date }, { headers: { Authorization: 'Bearer ' + token } })
+    .then(function() { fetchTasks(moduleId); }).catch(function(err) { console.log(err); });
+  }
+
+  function deleteTask(taskId, moduleId) {
+    if (!window.confirm('Delete this task?')) return;
+    axios.delete('http://localhost:5000/api/tasks/' + taskId, { headers: { Authorization: 'Bearer ' + token } })
+    .then(function() { fetchTasks(moduleId); }).catch(function(err) { console.log(err); });
+  }
+
+  function getStatusColor(s) { return s === 'done' ? '#22c55e' : s === 'in_progress' ? '#f59e0b' : '#94a3b8'; }
+  function getStatusLabel(s) { return s === 'done' ? 'Done' : s === 'in_progress' ? 'In Progress' : 'Pending'; }
+  function getTypeColor(t) { return t === 'video' ? '#ef4444' : t === 'course' ? '#8b5cf6' : t === 'documentation' ? '#3b82f6' : '#22c55e'; }
+
+  if (loading) { return <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontFamily: 'Segoe UI, sans-serif' }}>Loading roadmap...</div>; }
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f9fafb' }}>
-      <Navbar />
-      <div style={{ padding: '40px', maxWidth: '900px', margin: '0 auto' }}>
-
-        <div style={{
-          background: 'white',
-          padding: '24px 32px',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          marginBottom: '24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div>
-            <button
-              onClick={function() { navigate('/roadmaps'); }}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#667eea',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '14px',
-                padding: 0,
-                marginBottom: '8px',
-                display: 'block'
-              }}
-            >
-              Back to Roadmaps
-            </button>
-            <h1 style={{ margin: 0, color: '#1f2937', fontSize: '28px' }}>
-              {roadmap ? roadmap.title : 'Loading...'}
-            </h1>
-            {roadmap && roadmap.description && (
-              <p style={{ margin: '8px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
-                {roadmap.description}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={function() { setShowModuleForm(!showModuleForm); }}
-            style={{
-              padding: '10px 20px',
-              background: '#667eea',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              whiteSpace: 'nowrap',
-              marginLeft: '16px'
-            }}
-          >
-            + Add Module
-          </button>
+    <div style={{ minHeight: '100vh', background: '#f1f5f9', padding: '24px', fontFamily: 'Segoe UI, sans-serif' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', flexWrap: 'wrap' }}>
+        <button onClick={function() { navigate('/dashboard'); }} style={{ padding: '8px 16px', background: '#64748b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Back</button>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ margin: 0, fontSize: '22px', color: '#1e293b' }}>{roadmap ? roadmap.title : 'Roadmap'}</h1>
+          {roadmap && roadmap.goal && <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>Goal: {roadmap.goal}</p>}
+          {roadmap && roadmap.duration && <p style={{ margin: '2px 0 0', color: '#06b6d4', fontSize: '13px' }}>Duration: {roadmap.duration}</p>}
         </div>
+        <button onClick={function() { navigate('/quiz?roadmap=' + id); }} style={{ padding: '8px 16px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Take Quiz</button>
+      </div>
 
-        {showModuleForm && (
-          <div style={{
-            background: 'white',
-            padding: '24px',
-            borderRadius: '12px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            marginBottom: '24px'
-          }}>
-            <h3 style={{ margin: '0 0 16px 0', color: '#1f2937' }}>Add New Module</h3>
-            <form onSubmit={handleAddModule}>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <input
-                  type="text"
-                  placeholder="e.g. HTML and CSS Basics"
-                  value={moduleTitle}
-                  onChange={function(e) { setModuleTitle(e.target.value); }}
-                  required
-                  autoFocus
-                  style={{ flex: 1, padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
-                />
-                <button type="submit" style={{ padding: '10px 20px', background: '#667eea', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
-                  Add
-                </button>
-                <button type="button" onClick={function() { setShowModuleForm(false); setModuleTitle(''); }} style={{ padding: '10px 20px', background: '#e5e7eb', color: '#374151', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
-                  Cancel
-                </button>
-              </div>
-            </form>
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'white', padding: '6px', borderRadius: '10px', width: 'fit-content' }}>
+        <button onClick={function() { setActiveTab('modules'); }} style={{ padding: '10px 24px', background: activeTab === 'modules' ? '#3b82f6' : 'transparent', color: activeTab === 'modules' ? 'white' : '#64748b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Modules and Tasks</button>
+        <button onClick={function() { setActiveTab('resources'); }} style={{ padding: '10px 24px', background: activeTab === 'resources' ? '#3b82f6' : 'transparent', color: activeTab === 'resources' ? 'white' : '#64748b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Free Resources ({resources.length})</button>
+      </div>
+
+      {activeTab === 'modules' && (
+        <div>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
+            <input type="text" placeholder="Add new module..." value={newModule} onChange={function(e) { setNewModule(e.target.value); }} onKeyPress={function(e) { if (e.key === 'Enter') { addModule(); } }} style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '2px solid #e2e8f0', fontSize: '14px', outline: 'none' }} />
+            <button onClick={addModule} style={{ padding: '10px 20px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Add Module</button>
           </div>
-        )}
-        {modules.length === 0 ? (
-          <div style={{
-            background: 'white',
-            padding: '60px',
-            borderRadius: '12px',
-            textAlign: 'center',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-          }}>
-            <p style={{ fontSize: '48px', margin: '0 0 16px 0' }}>📝</p>
-            <h2 style={{ color: '#1f2937', margin: '0 0 8px 0' }}>No modules yet</h2>
-            <p style={{ color: '#6b7280', margin: '0 0 24px 0' }}>
-              Add your first module to organize your learning!
-            </p>
-            <button
-              onClick={function() { setShowModuleForm(true); }}
-              style={{
-                padding: '12px 24px',
-                background: '#667eea',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: '600'
-              }}
-            >
-              + Add First Module
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {modules.map(function(module, index) {
-              return (
-                <div
-                  key={module.id}
-                  style={{
-                    background: 'white',
-                    borderRadius: '12px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: '20px 24px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      cursor: 'pointer',
-                      background: expandedModule === module.id ? '#f9fafb' : 'white'
-                    }}
-                    onClick={function() { handleToggleModule(module.id); }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <span style={{
-                        fontSize: '12px',
-                        color: '#9ca3af',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        display: 'block',
-                        marginBottom: '4px'
-                      }}>
-                        Module {index + 1}
-                      </span>
-                      <h3 style={{ margin: 0, color: '#1f2937', fontSize: '18px' }}>
-                        {module.title}
-                      </h3>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <span style={{ fontSize: '13px', color: '#6b7280' }}>
-                        {module.completed_tasks || 0}/{module.total_tasks || 0} tasks
-                      </span>
-                      <button
-                        onClick={function(e) {
-                          e.stopPropagation();
-                          handleDeleteModule(module.id);
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '16px',
-                          opacity: 0.6
-                        }}
-                      >
-                        🗑️
-                      </button>
-                      <span style={{ color: '#9ca3af', fontSize: '12px' }}>
-                        {expandedModule === module.id ? '▼' : '▶'}
-                      </span>
-                    </div>
+          {modules.length === 0 && <div style={{ background: 'white', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#64748b' }}>No modules yet. Add your first module above!</div>}
+          {modules.map(function(mod) {
+            var mt = tasks[mod.id] || [];
+            var done = mt.filter(function(t) { return t.status === 'done'; }).length;
+            var prog = mt.length > 0 ? Math.round((done / mt.length) * 100) : 0;
+            return (
+              <div key={mod.id} style={{ background: 'white', borderRadius: '12px', padding: '20px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#1e293b' }}>{mod.title}</h3>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>{done}/{mt.length} done</span>
+                    <button onClick={function() { deleteModule(mod.id); }} style={{ padding: '4px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Delete</button>
                   </div>
-
-                  {expandedModule === module.id && (
-                    <div style={{
-                      padding: '20px 24px',
-                      borderTop: '1px solid #e5e7eb',
-                      background: '#fafafa'
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '16px'
-                      }}>
-                        <h4 style={{ margin: 0, color: '#374151' }}>Tasks</h4>
-                        <button
-                          onClick={function() {
-                            if (showTaskForm === module.id) {
-                              setShowTaskForm(null);
-                            } else {
-                              setShowTaskForm(module.id);
-                            }
-                          }}
-                          style={{
-                            padding: '6px 14px',
-                            background: '#667eea',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: '13px'
-                          }}
-                        >
-                          + Add Task
-                        </button>
+                </div>
+                <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: prog + '%', background: prog === 100 ? '#22c55e' : '#3b82f6', borderRadius: '3px' }} />
+                </div>
+                {mt.length === 0 && <p style={{ color: '#94a3b8', fontSize: '13px', margin: '0 0 12px' }}>No tasks yet.</p>}
+                {mt.map(function(task) {
+                  return (
+                    <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', marginBottom: '8px', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: '14px', color: task.status === 'done' ? '#94a3b8' : '#1e293b', textDecoration: task.status === 'done' ? 'line-through' : 'none', flex: 1 }}>{task.title}</span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={function() { updateTaskStatus(task, mod.id); }} style={{ padding: '4px 10px', background: getStatusColor(task.status), color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>{getStatusLabel(task.status)}</button>
+                        <button onClick={function() { deleteTask(task.id, mod.id); }} style={{ padding: '4px 8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>X</button>
                       </div>
-
-                      {showTaskForm === module.id && (
-                        <form
-                          onSubmit={function(e) { handleAddTask(e, module.id); }}
-                          style={{
-                            background: 'white',
-                            padding: '16px',
-                            borderRadius: '8px',
-                            marginBottom: '16px',
-                            border: '1px solid #e5e7eb'
-                          }}
-                        >
-                          <input
-                            type="text"
-                            placeholder="Task title..."
-                            value={taskTitle}
-                            onChange={function(e) { setTaskTitle(e.target.value); }}
-                            required
-                            autoFocus
-                            style={{
-                              width: '100%',
-                              padding: '10px',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '6px',
-                              fontSize: '14px',
-                              boxSizing: 'border-box',
-                              marginBottom: '10px'
-                            }}
-                          />
-                          <input
-                            type="date"
-                            value={taskDueDate}
-                            onChange={function(e) { setTaskDueDate(e.target.value); }}
-                            style={{
-                              width: '100%',
-                              padding: '10px',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '6px',
-                              fontSize: '14px',
-                              boxSizing: 'border-box',
-                              marginBottom: '10px'
-                            }}
-                          />
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                              type="submit"
-                              style={{
-                                padding: '8px 16px',
-                                background: '#667eea',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontWeight: '600'
-                              }}
-                            >
-                              Add Task
-                            </button>
-                            <button
-                              type="button"
-                              onClick={function() {
-                                setShowTaskForm(null);
-                                setTaskTitle('');
-                                setTaskDueDate('');
-                              }}
-                              style={{
-                                padding: '8px 16px',
-                                background: '#e5e7eb',
-                                color: '#374151',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontWeight: '600'
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </form>
-                      )}
-
-                      {tasks[module.id] && tasks[module.id].length === 0 && (
-                        <p style={{ color: '#9ca3af', fontSize: '14px', textAlign: 'center', padding: '20px' }}>
-                          No tasks yet. Add your first task!
-                        </p>
-                      )}
-
-                      {tasks[module.id] && tasks[module.id].map(function(task) {
-                        return (
-                          <div
-                            key={task.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '12px',
-                              padding: '12px',
-                              background: 'white',
-                              borderRadius: '8px',
-                              marginBottom: '8px',
-                              border: '1px solid #e5e7eb'
-                            }}
-                          >
-                            <span
-                              onClick={function() { handleToggleStatus(task, module.id); }}
-                              style={{ fontSize: '20px', cursor: 'pointer' }}
-                              title="Click to change status"
-                            >
-                              {getStatusIcon(task.status)}
-                            </span>
-                            <div style={{ flex: 1 }}>
-                              <p style={{
-                                margin: 0,
-                                color: '#1f2937',
-                                fontWeight: '500',
-                                fontSize: '14px',
-                                textDecoration: task.status === 'completed' ? 'line-through' : 'none'
-                              }}>
-                                {task.title}
-                              </p>
-                              {task.due_date && (
-                                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#9ca3af' }}>
-                                  Due: {new Date(task.due_date).toLocaleDateString()}
-                                </p>
-                              )}
-                            </div>
-                            <span style={{
-                              padding: '4px 8px',
-                              borderRadius: '12px',
-                              fontSize: '11px',
-                              fontWeight: '600',
-                              background: task.status === 'completed' ? '#d1fae5' : task.status === 'in_progress' ? '#fef3c7' : '#f3f4f6',
-                              color: task.status === 'completed' ? '#065f46' : task.status === 'in_progress' ? '#92400e' : '#6b7280'
-                            }}>
-                              {task.status === 'completed' ? 'Done' : task.status === 'in_progress' ? 'In Progress' : 'Not Started'}
-                            </span>
-                            <button
-                              onClick={function() { handleDeleteTask(task.id, module.id); }}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                opacity: 0.6
-                              }}
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                          
-                        );
-                        <ResourceSection taskId={task.id} headers={headers} />
-                      })}
                     </div>
+                  );
+                })}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                  <input type="text" placeholder="Add new task..." value={newTask[mod.id] || ''} onChange={function(e) { var val = e.target.value; setNewTask(function(prev) { var u = Object.assign({}, prev); u[mod.id] = val; return u; }); }} onKeyPress={function(e) { if (e.key === 'Enter') { addTask(mod.id); } }} style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none' }} />
+                  <button onClick={function() { addTask(mod.id); }} style={{ padding: '8px 16px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>Add Task</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {activeTab === 'resources' && (
+        <div>
+          <h3 style={{ margin: '0 0 16px', color: '#1e293b', fontSize: '18px' }}>
+            Free Learning Resources ({resources.length})
+          </h3>
+          {resources.length === 0 && (
+            <div style={{ background: 'white', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#64748b' }}>
+              No resources yet. Generate a roadmap with AI to get free resources!
+            </div>
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+            {resources.map(function(resource, i) {
+              return (
+                   <div key={i} style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                    <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b', flex: 1, lineHeight: '1.4' }}>
+                      {resource.title}
+                    </h4>
+                    <span style={{ background: getTypeColor(resource.type), color: 'white', padding: '3px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', marginLeft: '8px', whiteSpace: 'nowrap' }}>
+                      {resource.type || 'article'}
+                    </span>
+                  </div>
+                  <span style={{ display: 'inline-block', background: '#f0fdf4', color: '#22c55e', padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', marginBottom: '12px', border: '1px solid #86efac' }}>
+                    FREE
+                  </span>
+                  {resource.url && (
+                    <a
+                      href={resource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: 'block', padding: '8px 16px', background: '#3b82f6', color: 'white', borderRadius: '8px', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold', textAlign: 'center' }}>
+                      Open Resource
+                    </a>
                   )}
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
     </div>
   );
 }
-
 export default RoadmapDetail;
