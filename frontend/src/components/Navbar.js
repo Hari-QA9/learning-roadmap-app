@@ -1,149 +1,159 @@
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTheme } from '../App';
 
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { darkMode, setDarkMode } = useTheme();
+  const token = localStorage.getItem('token');
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  if (!token) return null;
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
     navigate('/login');
   };
 
-  const isActive = function(path) {
-    return location.pathname === path;
-  };
+  const isActive = (path) => location.pathname === path;
+
+  const links = [
+    { path: '/dashboard',      label: 'Dashboard',      icon: '⚡' },
+    { path: '/roadmaps',       label: 'Roadmaps',        icon: '🗺️' },
+    { path: '/templates',      label: 'Templates',       icon: '📋' },
+    { path: '/study-planner',  label: 'Study Planner',   icon: '📅' },
+    { path: '/career-advisor', label: 'Career',          icon: '🎯' },
+    { path: '/ai-generator',   label: 'AI Generator',    icon: '🤖' },
+    { path: '/quiz',           label: 'Quiz',            icon: '🧠' },
+    { path: '/resume',         label: 'Resume',          icon: '📄' },
+    { path: '/chat',           label: 'Chat',            icon: '💬' },
+    { path: '/feedback',       label: 'Feedback',        icon: '⭐' },
+  ];
 
   return (
-    <div style={{
-      background: 'white',
-      padding: '0 40px',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 100
-    }}>
+    <>
+      <nav style={{
+        background: 'rgba(2, 8, 23, 0.95)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
+        padding: '0 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: '64px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        boxShadow: '0 4px 30px rgba(0,0,0,0.5)',
+      }}>
 
-      {/* Logo */}
-      <div
-        onClick={function() { navigate('/dashboard'); }}
-        style={{
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '16px 0'
-        }}
-      >
-        <span style={{ fontSize: '24px' }}>📚</span>
-        <span style={{
-          fontWeight: '700',
-          fontSize: '18px',
-          color: '#1f2937'
-        }}>
-          Learning Roadmap
-        </span>
-      </div>
-
-      {/* Navigation Links */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <button
-          onClick={function() { navigate('/dashboard'); }}
-          style={{
-            padding: '8px 16px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '14px',
-            color: isActive('/dashboard') ? '#667eea' : '#6b7280',
-            borderBottom: isActive('/dashboard') ? '2px solid #667eea' : '2px solid transparent'
-          }}
-        >
-          Dashboard
-        </button>
-
-        <button
-          onClick={function() { navigate('/roadmaps'); }}
-          style={{
-            padding: '8px 16px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '14px',
-            color: isActive('/roadmaps') ? '#667eea' : '#6b7280',
-            borderBottom: isActive('/roadmaps') ? '2px solid #667eea' : '2px solid transparent'
-          }}
-        >
-          My Roadmaps
-        </button>
-
-        <button
-          onClick={function() { navigate('/ai-generator'); }}
-          style={{
-            padding: '8px 16px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '14px',
-            color: isActive('/ai-generator') ? '#667eea' : '#6b7280',
-            borderBottom: isActive('/ai-generator') ? '2px solid #667eea' : '2px solid transparent'
-          }}
-        >
-          🤖 AI Generator
-        </button>
-      </div>
-
-      {/* User Info and Logout */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
+        {/* LOGO */}
+        <Link to="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #667eea, #764ba2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
+            width: '34px', height: '34px',
+            background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+            borderRadius: '8px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '18px',
+            boxShadow: '0 0 15px rgba(139,92,246,0.5)',
+          }}>📚</div>
+          <span style={{
+            fontFamily: 'Orbitron, sans-serif',
+            fontSize: '16px',
             fontWeight: '700',
-            fontSize: '14px'
-          }}>
-            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-          </div>
-          <span style={{ color: '#374151', fontSize: '14px', fontWeight: '500' }}>
-            {user.name || 'User'}
-          </span>
+            background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            letterSpacing: '0.05em',
+          }}>LEARNMAP</span>
+        </Link>
+
+        {/* NAV LINKS */}
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          {links.map(link => (
+            <Link key={link.path} to={link.path} style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontFamily: 'Rajdhani, sans-serif',
+              fontWeight: '600',
+              letterSpacing: '0.03em',
+              textDecoration: 'none',
+              transition: 'all 0.2s ease',
+              color: isActive(link.path) ? '#fff' : 'rgba(148,163,184,0.8)',
+              background: isActive(link.path)
+                ? 'linear-gradient(135deg, rgba(139,92,246,0.3), rgba(6,182,212,0.3))'
+                : 'transparent',
+              border: isActive(link.path)
+                ? '1px solid rgba(139,92,246,0.4)'
+                : '1px solid transparent',
+              boxShadow: isActive(link.path)
+                ? '0 0 12px rgba(139,92,246,0.2)'
+                : 'none',
+            }}>
+              <span style={{ fontSize: '14px' }}>{link.icon}</span>
+              {link.label}
+            </Link>
+          ))}
         </div>
 
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: '8px 16px',
-            background: '#ef4444',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
+        {/* RIGHT SIDE */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+
+          {/* Dark Mode Toggle */}
+          <button onClick={() => setDarkMode(!darkMode)} style={{
+            background: 'rgba(139,92,246,0.1)',
+            border: '1px solid rgba(139,92,246,0.3)',
+            borderRadius: '8px',
+            padding: '7px 12px',
             cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '14px'
+            fontSize: '16px',
+            transition: 'all 0.2s ease',
+            color: '#fff',
           }}
-        >
-          Logout
-        </button>
-      </div>
-    </div>
+            title="Toggle Theme"
+          >{darkMode ? '☀️' : '🌙'}</button>
+
+          {/* Notifications */}
+          <Link to="/notifications" style={{
+            background: 'rgba(6,182,212,0.1)',
+            border: '1px solid rgba(6,182,212,0.3)',
+            borderRadius: '8px',
+            padding: '7px 12px',
+            fontSize: '16px',
+            textDecoration: 'none',
+            transition: 'all 0.2s ease',
+          }}>🔔</Link>
+
+          {/* Profile */}
+          <Link to="/profile" style={{
+            background: 'rgba(139,92,246,0.1)',
+            border: '1px solid rgba(139,92,246,0.3)',
+            borderRadius: '8px',
+            padding: '7px 12px',
+            fontSize: '16px',
+            textDecoration: 'none',
+          }}>👤</Link>
+
+          {/* Logout */}
+          <button onClick={handleLogout} style={{
+            background: 'rgba(239,68,68,0.1)',
+            border: '1px solid rgba(239,68,68,0.3)',
+            borderRadius: '8px',
+            padding: '7px 14px',
+            cursor: 'pointer',
+            color: '#f87171',
+            fontFamily: 'Rajdhani, sans-serif',
+            fontWeight: '700',
+            fontSize: '13px',
+            letterSpacing: '0.05em',
+            transition: 'all 0.2s ease',
+          }}>LOGOUT</button>
+        </div>
+      </nav>
+    </>
   );
 }
 

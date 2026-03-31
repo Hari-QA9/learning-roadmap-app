@@ -5,220 +5,362 @@ function Landing() {
   const navigate = useNavigate();
 
   const features = [
-    { icon: '🤖', title: 'AI Roadmap Generator', desc: 'Type any topic and AI instantly creates a complete personalized learning roadmap for you.' },
-    { icon: '📋', title: 'Track Your Progress', desc: 'Break learning into modules and tasks. Mark progress from Pending to In Progress to Done.' },
-    { icon: '🔗', title: 'Free Resources', desc: 'AI recommends free YouTube videos, documentation and courses for every topic.' },
-    { icon: '💬', title: 'AI Chat Assistant', desc: 'Ask any learning question and get instant personalized guidance from AI.' },
-    { icon: '📝', title: 'Quiz Yourself', desc: 'AI generates quizzes to test your knowledge and track your performance.' },
-    { icon: '🏆', title: 'Earn Badges and XP', desc: 'Stay motivated with badges, XP points, levels and daily streaks.' },
-    { icon: '📄', title: 'Resume Builder', desc: 'Build a professional resume from your learning journey and completed roadmaps.' },
-    { icon: '💼', title: 'Job Board', desc: 'Find jobs that match your skills and apply directly from the app.' }
+    { icon: '🤖', title: 'AI Roadmap Generator', desc: 'Type any topic and AI instantly builds a complete personalized learning roadmap for you.', color: '#8b5cf6' },
+    { icon: '🎯', title: 'Career Advisor', desc: 'Get AI-powered career guidance, job role suggestions and salary insights based on your skills.', color: '#06b6d4' },
+    { icon: '📅', title: 'Study Planner', desc: 'AI generates a personalized weekly study schedule based on your goals and availability.', color: '#10b981' },
+    { icon: '📄', title: 'Resume Builder', desc: 'Build a professional resume with AI scoring, ATS checker and multiple design templates.', color: '#f59e0b' },
+    { icon: '🧠', title: 'Smart Quizzes', desc: 'AI-generated quizzes test your knowledge and track performance after every module.', color: '#ec4899' },
+    { icon: '🏆', title: 'Badges & Streaks', desc: 'Stay motivated with achievement badges, daily streaks and progress tracking.', color: '#a78bfa' },
   ];
 
-  const steps = [
-    { step: '01', title: 'Sign Up Free', desc: 'Create your account in seconds with just your name and email.' },
-    { step: '02', title: 'Enter a Topic', desc: 'Type what you want to learn — Python, Web Dev, Data Science, anything!' },
-    { step: '03', title: 'AI Builds Your Roadmap', desc: 'AI creates a complete step by step learning plan with resources.' },
-    { step: '04', title: 'Track and Grow', desc: 'Complete tasks, earn badges, take quizzes and build your resume.' }
-  ];
-
-  const testimonials = [
-    { name: 'Sarah M.', role: 'Software Engineer', text: 'This app helped me go from zero to landing my first dev job in 6 months!', avatar: 'S' },
-    { name: 'James K.', role: 'Data Scientist', text: 'The AI roadmap feature is incredible. It saved me weeks of research.', avatar: 'J' },
-    { name: 'Priya L.', role: 'Student', text: 'I love the quiz feature. It really helps me retain what I learn.', avatar: 'P' }
+  const stats = [
+    { value: '16+', label: 'Database Tables' },
+    { value: '17+', label: 'API Endpoints' },
+    { value: '15+', label: 'App Pages' },
+    { value: '100%', label: 'AI Powered' },
   ];
 
   return (
-    <div style={{ fontFamily: 'Segoe UI, sans-serif', background: 'white' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--bg-primary)',
+      overflow: 'hidden',
+    }}>
 
-      {/* NAVBAR */}
-      <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 40px', background: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', position: 'sticky', top: 0, zIndex: 100 }}>
+      {/* ── NAVBAR ── */}
+      <nav style={{
+        display: 'flex', justifyContent: 'space-between',
+        alignItems: 'center', padding: '20px 48px',
+        background: 'rgba(2,8,23,0.8)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(139,92,246,0.15)',
+        position: 'sticky', top: 0, zIndex: 100,
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '28px' }}>🚀</span>
-          <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b' }}>LearnPath AI</span>
+          <div style={{
+            width: '36px', height: '36px',
+            background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+            borderRadius: '8px', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            fontSize: '18px',
+            boxShadow: '0 0 20px rgba(139,92,246,0.4)',
+          }}>📚</div>
+          <span style={{
+            fontFamily: 'Orbitron, sans-serif',
+            fontSize: '18px', fontWeight: '700',
+            background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>LEARNMAP</span>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button
-            onClick={function() { navigate('/login'); }}
-            style={{ padding: '8px 20px', background: 'transparent', border: '2px solid #8b5cf6', color: '#8b5cf6', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
-            Login
-          </button>
-          <button
-            onClick={function() { navigate('/signup'); }}
-            style={{ padding: '8px 20px', background: '#8b5cf6', border: 'none', color: 'white', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>
-            Get Started Free
-          </button>
+          <button onClick={() => navigate('/login')} style={{
+            background: 'transparent',
+            border: '1px solid rgba(139,92,246,0.4)',
+            borderRadius: '10px', padding: '10px 24px',
+            color: '#a78bfa', cursor: 'pointer',
+            fontFamily: 'Rajdhani, sans-serif',
+            fontWeight: '700', fontSize: '14px',
+            letterSpacing: '0.05em',
+            transition: 'all 0.2s ease',
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(139,92,246,0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >SIGN IN</button>
+          <button onClick={() => navigate('/signup')} style={{
+            background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+            border: 'none', borderRadius: '10px',
+            padding: '10px 24px', color: 'white',
+            cursor: 'pointer',
+            fontFamily: 'Rajdhani, sans-serif',
+            fontWeight: '700', fontSize: '14px',
+            letterSpacing: '0.05em',
+            boxShadow: '0 0 20px rgba(139,92,246,0.4)',
+            transition: 'all 0.2s ease',
+          }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 0 35px rgba(139,92,246,0.7)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 0 20px rgba(139,92,246,0.4)'}
+          >GET STARTED</button>
         </div>
       </nav>
 
-      {/* HERO SECTION */}
-      <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '80px 40px', textAlign: 'center', color: 'white' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <div style={{ display: 'inline-block', background: 'rgba(255,255,255,0.2)', borderRadius: '20px', padding: '6px 16px', fontSize: '13px', fontWeight: 'bold', marginBottom: '20px' }}>
-            Powered by Google Gemini AI
-          </div>
-          <h1 style={{ fontSize: '52px', fontWeight: 'bold', margin: '0 0 20px', lineHeight: '1.2' }}>
-            Learn Anything with
-            <span style={{ display: 'block', color: '#fbbf24' }}>AI-Powered Roadmaps</span>
-          </h1>
-          <p style={{ fontSize: '20px', opacity: 0.9, marginBottom: '40px', lineHeight: '1.6' }}>
-            Stop wondering where to start. Our AI creates personalized learning roadmaps,
-            tracks your progress, and helps you land your dream job.
-          </p>
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button
-              onClick={function() { navigate('/signup'); }}
-              style={{ padding: '16px 40px', background: '#fbbf24', color: '#1e293b', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '18px' }}>
-              Start Learning Free
-            </button>
-            <button
-              onClick={function() { navigate('/login'); }}
-              style={{ padding: '16px 40px', background: 'rgba(255,255,255,0.2)', color: 'white', border: '2px solid white', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '18px' }}>
-              Login
-            </button>
-          </div>
-          <p style={{ marginTop: '16px', fontSize: '14px', opacity: 0.8 }}>
-            Free forever. No credit card required.
-          </p>
+      {/* ── HERO ── */}
+      <div style={{
+        textAlign: 'center',
+        padding: '100px 24px 80px',
+        position: 'relative',
+      }}>
+        {/* Background orbs */}
+        <div style={{
+          position: 'absolute', top: '10%', left: '10%',
+          width: '400px', height: '400px',
+          background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)',
+          borderRadius: '50%', pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', top: '20%', right: '10%',
+          width: '350px', height: '350px',
+          background: 'radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%)',
+          borderRadius: '50%', pointerEvents: 'none',
+        }} />
+
+        {/* Badge */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: '8px',
+          background: 'rgba(139,92,246,0.1)',
+          border: '1px solid rgba(139,92,246,0.3)',
+          borderRadius: '20px', padding: '6px 18px',
+          marginBottom: '32px',
+          color: '#a78bfa', fontSize: '13px',
+          fontFamily: 'Rajdhani, sans-serif',
+          fontWeight: '600', letterSpacing: '0.08em',
+        }}>
+          <span style={{
+            width: '6px', height: '6px',
+            background: '#10b981', borderRadius: '50%',
+            boxShadow: '0 0 8px #10b981',
+            display: 'inline-block',
+          }} />
+          AI-POWERED LEARNING PLATFORM
+        </div>
+
+        {/* Main Heading */}
+        <h1 style={{
+          fontFamily: 'Rajdhani, sans-serif',
+          fontSize: '72px', fontWeight: '700',
+          lineHeight: '1.1', marginBottom: '24px',
+          color: '#f1f5f9',
+        }}>
+          Learn Smarter.<br />
+          <span style={{
+            background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>Grow Faster.</span>
+        </h1>
+
+        <p style={{
+          fontSize: '18px', color: '#64748b',
+          maxWidth: '600px', margin: '0 auto 48px',
+          lineHeight: '1.7',
+        }}>
+          Your AI-powered companion for building personalized learning roadmaps,
+          tracking progress, and accelerating your career growth.
+        </p>
+
+        {/* CTA Buttons */}
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => navigate('/signup')} style={{
+            background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+            border: 'none', borderRadius: '14px',
+            padding: '16px 40px', color: 'white',
+            cursor: 'pointer',
+            fontFamily: 'Rajdhani, sans-serif',
+            fontWeight: '700', fontSize: '16px',
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            boxShadow: '0 0 30px rgba(139,92,246,0.5)',
+            transition: 'all 0.3s ease',
+          }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.boxShadow = '0 0 50px rgba(139,92,246,0.7)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 0 30px rgba(139,92,246,0.5)';
+            }}
+          >🚀 Start For Free</button>
+
+          <button onClick={() => navigate('/login')} style={{
+            background: 'transparent',
+            border: '1px solid rgba(6,182,212,0.4)',
+            borderRadius: '14px', padding: '16px 40px',
+            color: '#67e8f9', cursor: 'pointer',
+            fontFamily: 'Rajdhani, sans-serif',
+            fontWeight: '700', fontSize: '16px',
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+            transition: 'all 0.3s ease',
+          }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(6,182,212,0.1)';
+              e.currentTarget.style.transform = 'translateY(-3px)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >Sign In →</button>
         </div>
       </div>
 
-      {/* STATS BAR */}
-      <div style={{ background: '#1e293b', padding: '30px 40px' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', textAlign: 'center' }}>
-          {[
-            { number: '10,000+', label: 'Active Learners' },
-            { number: '50,000+', label: 'Roadmaps Created' },
-            { number: '500+', label: 'Topics Covered' },
-            { number: '95%', label: 'Success Rate' }
-          ].map(function(stat, i) {
-            return (
-              <div key={i}>
-                <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#fbbf24' }}>{stat.number}</div>
-                <div style={{ fontSize: '14px', color: '#94a3b8', marginTop: '4px' }}>{stat.label}</div>
-              </div>
-            );
-          })}
-        </div>
+      {/* ── STATS BAR ── */}
+      <div style={{
+        display: 'flex', justifyContent: 'center',
+        gap: '0', flexWrap: 'wrap',
+        borderTop: '1px solid rgba(139,92,246,0.1)',
+        borderBottom: '1px solid rgba(139,92,246,0.1)',
+        background: 'rgba(139,92,246,0.03)',
+        marginBottom: '80px',
+      }}>
+        {stats.map((s, i) => (
+          <div key={i} style={{
+            padding: '32px 60px', textAlign: 'center',
+            borderRight: i < stats.length - 1
+              ? '1px solid rgba(139,92,246,0.1)' : 'none',
+          }}>
+            <div style={{
+              fontFamily: 'Orbitron, sans-serif',
+              fontSize: '36px', fontWeight: '700',
+              background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              marginBottom: '6px',
+            }}>{s.value}</div>
+            <div style={{
+              color: '#475569', fontSize: '13px',
+              fontFamily: 'Rajdhani, sans-serif',
+              fontWeight: '600', letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}>{s.label}</div>
+          </div>
+        ))}
       </div>
 
-      {/* FEATURES SECTION */}
-      <div style={{ padding: '80px 40px', background: '#f8fafc' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-            <h2 style={{ fontSize: '40px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 12px' }}>
-              Everything You Need to Succeed
-            </h2>
-            <p style={{ fontSize: '18px', color: '#64748b' }}>
-              One platform to learn, track, and land your dream job
-            </p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '24px' }}>
-            {features.map(function(feature, i) {
-              return (
-                <div key={i} style={{ background: 'white', borderRadius: '16px', padding: '28px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', transition: 'transform 0.2s' }}>
-                  <div style={{ fontSize: '40px', marginBottom: '16px' }}>{feature.icon}</div>
-                  <h3 style={{ margin: '0 0 8px', fontSize: '17px', color: '#1e293b' }}>{feature.title}</h3>
-                  <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.6' }}>{feature.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* HOW IT WORKS */}
-      <div style={{ padding: '80px 40px', background: 'white' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-            <h2 style={{ fontSize: '40px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 12px' }}>
-              How It Works
-            </h2>
-            <p style={{ fontSize: '18px', color: '#64748b' }}>
-              Get started in minutes
-            </p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '32px' }}>
-            {steps.map(function(step, i) {
-              return (
-                <div key={i} style={{ textAlign: 'center' }}>
-                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', fontWeight: 'bold', margin: '0 auto 16px' }}>
-                    {step.step}
-                  </div>
-                  <h3 style={{ margin: '0 0 8px', fontSize: '18px', color: '#1e293b' }}>{step.title}</h3>
-                  <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.6' }}>{step.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* TESTIMONIALS */}
-      <div style={{ padding: '80px 40px', background: '#f8fafc' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-            <h2 style={{ fontSize: '40px', fontWeight: 'bold', color: '#1e293b', margin: '0 0 12px' }}>
-              What Our Users Say
-            </h2>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
-            {testimonials.map(function(t, i) {
-              return (
-                <div key={i} style={{ background: 'white', borderRadius: '16px', padding: '28px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                  <p style={{ fontSize: '15px', color: '#475569', lineHeight: '1.6', margin: '0 0 20px', fontStyle: 'italic' }}>
-                    "{t.text}"
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px' }}>
-                      {t.avatar}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '15px' }}>{t.name}</div>
-                      <div style={{ color: '#64748b', fontSize: '13px' }}>{t.role}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* CTA SECTION */}
-      <div style={{ padding: '80px 40px', background: 'linear-gradient(135deg, #667eea, #764ba2)', textAlign: 'center', color: 'white' }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '40px', fontWeight: 'bold', margin: '0 0 16px' }}>
-            Ready to Start Your Journey?
+      {/* ── FEATURES ── */}
+      <div style={{ padding: '0 48px 100px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <h2 style={{
+            fontFamily: 'Rajdhani, sans-serif',
+            fontSize: '48px', fontWeight: '700',
+            color: '#f1f5f9', marginBottom: '16px',
+          }}>Everything You Need to<br />
+            <span style={{
+              background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>Level Up</span>
           </h2>
-          <p style={{ fontSize: '18px', opacity: 0.9, marginBottom: '40px' }}>
-            Join thousands of learners who are already building their dream careers.
+          <p style={{ color: '#64748b', fontSize: '16px' }}>
+            Powered by Google Gemini AI — built for serious learners
           </p>
-          <button
-            onClick={function() { navigate('/signup'); }}
-            style={{ padding: '18px 48px', background: '#fbbf24', color: '#1e293b', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '20px' }}>
-            Get Started Free Today
-          </button>
-          <p style={{ marginTop: '16px', fontSize: '14px', opacity: 0.8 }}>
-            No credit card required. Free forever.
-          </p>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '20px',
+        }}>
+          {features.map((f, i) => (
+            <div key={i} style={{
+              background: 'rgba(10,22,40,0.8)',
+              backdropFilter: 'blur(20px)',
+              border: `1px solid ${f.color}22`,
+              borderRadius: '20px', padding: '32px',
+              transition: 'all 0.3s ease',
+              position: 'relative', overflow: 'hidden',
+            }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = f.color + '55';
+                e.currentTarget.style.transform = 'translateY(-6px)';
+                e.currentTarget.style.boxShadow = `0 12px 40px ${f.color}18`;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = f.color + '22';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+                background: `linear-gradient(90deg, ${f.color}, transparent)`,
+              }} />
+              <div style={{
+                width: '52px', height: '52px',
+                background: `${f.color}18`,
+                border: `1px solid ${f.color}33`,
+                borderRadius: '14px',
+                display: 'flex', alignItems: 'center',
+                                justifyContent: 'center',
+                fontSize: '24px', marginBottom: '20px',
+              }}>
+                {f.icon}
+              </div>
+              <h3 style={{
+                fontFamily: 'Rajdhani, sans-serif',
+                fontSize: '20px', fontWeight: '700',
+                color: '#f1f5f9', marginBottom: '10px',
+              }}>{f.title}</h3>
+              <p style={{
+                color: '#64748b', fontSize: '14px',
+                lineHeight: '1.7',
+              }}>{f.desc}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* FOOTER */}
-      <div style={{ background: '#1e293b', padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '16px' }}>
-          <span style={{ fontSize: '24px' }}>🚀</span>
-          <span style={{ fontSize: '18px', fontWeight: 'bold', color: 'white' }}>LearnPath AI</span>
-        </div>
-        <p style={{ margin: '0 0 16px', fontSize: '14px' }}>
-          Built with React, Node.js, MySQL and Google Gemini AI
-        </p>
-        <p style={{ margin: 0, fontSize: '13px' }}>
-          Group: Nephilims — Karthikeya Reddy Maddikuntla and Sai Hari Chandra Prasad Cherukumalla
-        </p>
+      {/* ── CTA SECTION ── */}
+      <div style={{
+        textAlign: 'center',
+        padding: '80px 24px',
+        background: 'rgba(139,92,246,0.04)',
+        borderTop: '1px solid rgba(139,92,246,0.1)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '600px', height: '300px',
+          background: 'radial-gradient(ellipse, rgba(139,92,246,0.1) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+        <h2 style={{
+          fontFamily: 'Rajdhani, sans-serif',
+          fontSize: '48px', fontWeight: '700',
+          color: '#f1f5f9', marginBottom: '16px',
+        }}>Ready to Start Your Journey?</h2>
+        <p style={{
+          color: '#64748b', fontSize: '16px',
+          marginBottom: '40px',
+        }}>Join learners who are already building their dream careers.</p>
+        <button onClick={() => navigate('/signup')} style={{
+          background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+          border: 'none', borderRadius: '14px',
+          padding: '18px 52px', color: 'white',
+          cursor: 'pointer',
+          fontFamily: 'Rajdhani, sans-serif',
+          fontWeight: '700', fontSize: '18px',
+          letterSpacing: '0.08em', textTransform: 'uppercase',
+          boxShadow: '0 0 40px rgba(139,92,246,0.5)',
+          transition: 'all 0.3s ease',
+        }}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = 'translateY(-4px)';
+            e.currentTarget.style.boxShadow = '0 0 60px rgba(139,92,246,0.7)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 0 40px rgba(139,92,246,0.5)';
+          }}
+        >🚀 Get Started Free Today</button>
       </div>
 
+      {/* ── FOOTER ── */}
+      <div style={{
+        textAlign: 'center', padding: '32px',
+        borderTop: '1px solid rgba(139,92,246,0.1)',
+        color: '#334155', fontSize: '14px',
+        fontFamily: 'Rajdhani, sans-serif',
+        letterSpacing: '0.05em',
+      }}>
+        <span style={{
+          background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          fontWeight: '700',
+        }}>LEARNMAP</span>
+        {' '}· Built by Nephilims · Powered by Google Gemini AI
+      </div>
     </div>
   );
 }

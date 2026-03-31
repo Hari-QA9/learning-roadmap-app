@@ -1,53 +1,22 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 
 function Signup() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      return setError('Passwords do not match');
-    }
-
-    if (formData.password.length < 6) {
-      return setError('Password must be at least 6 characters');
-    }
-
     setLoading(true);
-
+    setError('');
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password
-      });
-
-      // Save token to localStorage
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-
-      // Redirect to dashboard
-      navigate('/dashboard');
+      await axios.post('http://localhost:5000/api/auth/register', form);
+      navigate('/login');
     } catch (err) {
-      console.error('Signup error:', err);
-      setError(err.response?.data?.error || 'Signup failed. Try again.');
+      setError(err.response?.data?.message || 'Signup failed. Try again.');
     } finally {
       setLoading(false);
     }
@@ -56,154 +25,159 @@ function Signup() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: 'var(--bg-primary)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '20px'
+      padding: '24px',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
-      <div style={{
-        background: 'white',
-        padding: '40px',
-        borderRadius: '12px',
-        boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-        width: '100%',
-        maxWidth: '420px'
-      }}>
-        <h2 style={{ margin: '0 0 8px 0', color: '#1f2937', textAlign: 'center' }}>
-          Create Account
-        </h2>
-        <p style={{ margin: '0 0 24px 0', color: '#6b7280', textAlign: 'center' }}>
-          Start your learning journey today 🚀
-        </p>
 
+      {/* Background glow orbs */}
+      <div style={{
+        position: 'absolute', top: '15%', right: '15%',
+        width: '300px', height: '300px',
+        background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)',
+        borderRadius: '50%', pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '15%', left: '15%',
+        width: '250px', height: '250px',
+        background: 'radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)',
+        borderRadius: '50%', pointerEvents: 'none',
+      }} />
+
+      {/* Card */}
+      <div style={{
+        width: '100%', maxWidth: '440px',
+        background: 'rgba(10, 22, 40, 0.9)',
+        backdropFilter: 'blur(30px)',
+        border: '1px solid rgba(139,92,246,0.3)',
+        borderRadius: '24px',
+        padding: '48px 40px',
+        boxShadow: '0 0 60px rgba(139,92,246,0.15)',
+        position: 'relative',
+      }}>
+
+        {/* Top accent line */}
+        <div style={{
+          position: 'absolute', top: 0, left: '10%', right: '10%', height: '2px',
+          background: 'linear-gradient(90deg, transparent, #8b5cf6, #06b6d4, transparent)',
+          borderRadius: '2px',
+        }} />
+
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <div style={{
+            width: '60px', height: '60px', margin: '0 auto 16px',
+            background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+            borderRadius: '16px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '28px',
+            boxShadow: '0 0 30px rgba(139,92,246,0.4)',
+          }}>📚</div>
+          <h1 style={{
+            fontFamily: 'Orbitron, sans-serif',
+            fontSize: '22px', fontWeight: '700',
+            background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '8px',
+          }}>LEARNMAP</h1>
+          <p style={{ color: '#64748b', fontSize: '14px' }}>Create your free account</p>
+        </div>
+
+        {/* Error */}
         {error && (
           <div style={{
-            background: '#fef2f2',
-            color: '#dc2626',
-            padding: '12px',
-            borderRadius: '6px',
-            marginBottom: '16px',
-            fontSize: '14px',
-            borderLeft: '4px solid #dc2626'
-          }}>
-            {error}
-          </div>
+            background: 'rgba(239,68,68,0.1)',
+            border: '1px solid rgba(239,68,68,0.3)',
+            borderRadius: '10px', padding: '12px 16px',
+            color: '#f87171', fontSize: '14px', marginBottom: '20px',
+          }}>{error}</div>
         )}
 
+        {/* Form */}
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '14px', color: '#374151' }}>
-              Full Name
-            </label>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'block', marginBottom: '8px',
+              color: '#94a3b8', fontSize: '13px',
+              fontFamily: 'Rajdhani, sans-serif',
+              fontWeight: '600', letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}>Full Name</label>
             <input
               type="text"
-              name="name"
-              placeholder="Karthikeya Reddy"
-              value={formData.name}
-              onChange={handleChange}
+              placeholder="John Doe"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
               required
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
             />
           </div>
 
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '14px', color: '#374151' }}>
-              Email
-            </label>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'block', marginBottom: '8px',
+              color: '#94a3b8', fontSize: '13px',
+              fontFamily: 'Rajdhani, sans-serif',
+              fontWeight: '600', letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}>Email Address</label>
             <input
               type="email"
-              name="email"
-              placeholder="your.email@example.com"
-              value={formData.email}
-              onChange={handleChange}
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
               required
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
             />
           </div>
 
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '14px', color: '#374151' }}>
-              Password
-            </label>
+          <div style={{ marginBottom: '28px' }}>
+            <label style={{
+              display: 'block', marginBottom: '8px',
+              color: '#94a3b8', fontSize: '13px',
+              fontFamily: 'Rajdhani, sans-serif',
+              fontWeight: '600', letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}>Password</label>
             <input
               type="password"
-              name="password"
-              placeholder="At least 6 characters"
-              value={formData.password}
-              onChange={handleChange}
+              placeholder="••••••••"
+              value={form.password}
+              onChange={e => setForm({ ...form, password: e.target.value })}
               required
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
             />
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '14px', color: '#374151' }}>
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Repeat your password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                fontSize: '14px',
-                boxSizing: 'border-box'
-              }}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: loading ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: loading ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {loading ? 'Creating Account...' : 'Sign Up'}
+          <button type="submit" disabled={loading} style={{
+            width: '100%', padding: '14px',
+            background: loading
+              ? 'rgba(139,92,246,0.4)'
+              : 'linear-gradient(135deg, #8b5cf6, #06b6d4)',
+            border: 'none', borderRadius: '12px',
+            color: 'white', fontSize: '15px',
+            fontFamily: 'Rajdhani, sans-serif',
+            fontWeight: '700', letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            transition: 'all 0.3s ease',
+            boxShadow: loading ? 'none' : '0 0 25px rgba(139,92,246,0.4)',
+          }}>
+            {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT →'}
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', marginTop: '20px', color: '#6b7280', fontSize: '14px' }}>
+        <p style={{
+          textAlign: 'center', marginTop: '24px',
+          color: '#475569', fontSize: '14px',
+        }}>
           Already have an account?{' '}
-          <Link to="/login" style={{ color: '#667eea', fontWeight: '600', textDecoration: 'none' }}>
-            Login
-          </Link>
+          <Link to="/login" style={{
+            color: '#8b5cf6', fontWeight: '600',
+            textDecoration: 'none',
+          }}>Sign in →</Link>
         </p>
       </div>
     </div>
