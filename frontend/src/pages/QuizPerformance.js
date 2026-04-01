@@ -9,223 +9,339 @@ function QuizPerformance() {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
 
-  useEffect(function() {
+  useEffect(() => {
     fetchPerformance();
   }, []);
 
-  function fetchPerformance() {
-    axios.get('http://localhost:5000/api/quiz/my-performance', {
-      headers: { Authorization: 'Bearer ' + token }
-    }).then(function(res) {
+  const fetchPerformance = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/quiz/my-performance', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setPerformance(res.data);
+    } catch (err) {
+      console.error('Error fetching performance:', err);
+    } finally {
       setLoading(false);
-    }).catch(function(err) {
-      console.log(err);
-      setLoading(false);
-    });
-  }
+    }
+  };
 
-  function getAccuracyColor(accuracy) {
+  const getAccuracyColor = (accuracy) => {
     if (accuracy >= 80) return '#22c55e';
     if (accuracy >= 50) return '#f59e0b';
     return '#ef4444';
-  }
+  };
 
-  function getAccuracyLabel(accuracy) {
+  const getAccuracyLabel = (accuracy) => {
     if (accuracy >= 80) return 'Excellent';
     if (accuracy >= 50) return 'Good';
     return 'Needs Work';
-  }
+  };
 
-  function toggleQuiz(index) {
-    if (selectedQuiz === index) {
-      setSelectedQuiz(null);
-    } else {
-      setSelectedQuiz(index);
-    }
-  }
+  const toggleQuiz = (index) => {
+    setSelectedQuiz(selectedQuiz === index ? null : index);
+  };
 
   if (loading) {
     return (
-      <div style={{ padding: '60px', textAlign: 'center', fontFamily: 'Segoe UI, sans-serif', color: '#64748b' }}>
-        Loading performance data...
+      <div style={pageStyle}>
+        <div style={containerStyle}>
+          <p style={{ color: '#fff' }}>Loading performance data...</p>
+        </div>
       </div>
     );
   }
 
-  var history = performance ? performance.quizHistory || [] : [];
-  var overall = performance ? performance.overall : null;
-  var suggestions = performance ? performance.suggestions || [] : [];
-  var accuracy = overall ? overall.accuracy : 0;
+  const history = performance?.quizHistory || [];
+  const overall = performance?.overall || {
+    totalAttempts: 0,
+    totalCorrect: 0,
+    accuracy: 0,
+    uniqueQuestions: 0,
+  };
+  const suggestions = performance?.suggestions || [];
+  const accuracy = overall.accuracy || 0;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9', padding: '24px', fontFamily: 'Segoe UI, sans-serif' }}>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
-        <button
-          onClick={function() { navigate('/dashboard'); }}
-          style={{ padding: '8px 16px', background: '#64748b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-          Back
+    <div style={pageStyle}>
+      <div style={containerStyle}>
+        <button onClick={() => navigate('/dashboard')} style={backBtn}>
+          ← Back
         </button>
-        <h1 style={{ margin: 0, fontSize: '24px', color: '#1e293b', flex: 1 }}>
-          Quiz Performance
-        </h1>
-        <button
-          onClick={function() { navigate('/quiz'); }}
-          style={{ padding: '8px 20px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+
+        <h1 style={{ color: '#fff', marginBottom: '10px' }}>Quiz Performance</h1>
+        <p style={{ color: '#cbd5e1', marginBottom: '24px' }}>
+          Review your quiz history and progress.
+        </p>
+
+        <button onClick={() => navigate('/quiz')} style={primaryBtn}>
           Take New Quiz
         </button>
-      </div>
 
-      {!overall || overall.totalAttempts === 0 ? (
-        <div style={{ background: 'white', borderRadius: '16px', padding: '60px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-          <div style={{ fontSize: '60px', marginBottom: '16px' }}>📝</div>
-          <h2 style={{ margin: '0 0 8px', color: '#1e293b' }}>No Quizzes Taken Yet</h2>
-          <p style={{ color: '#64748b', marginBottom: '24px' }}>
-            Take your first quiz to see your performance here!
-          </p>
-          <button
-            onClick={function() { navigate('/quiz'); }}
-            style={{ padding: '12px 32px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
-            Take First Quiz
-          </button>
-        </div>
-      ) : (
-        <div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', borderTop: '4px solid ' + getAccuracyColor(accuracy) }}>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: getAccuracyColor(accuracy) }}>
-                {accuracy}%
-              </div>
-              <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Overall Accuracy</div>
-              <div style={{ fontSize: '12px', fontWeight: 'bold', color: getAccuracyColor(accuracy), marginTop: '4px' }}>
-                {getAccuracyLabel(accuracy)}
-              </div>
-            </div>
-            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', borderTop: '4px solid #22c55e' }}>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#22c55e' }}>
-                {overall.totalCorrect}
-              </div>
-              <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Correct Answers</div>
-            </div>
-            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', borderTop: '4px solid #3b82f6' }}>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#3b82f6' }}>
-                {overall.totalAttempts}
-              </div>
-              <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Total Attempts</div>
-            </div>
-            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', borderTop: '4px solid #f59e0b' }}>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#f59e0b' }}>
-                {overall.uniqueQuestions}
-              </div>
-              <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Questions Tried</div>
-            </div>
+        {overall.totalAttempts === 0 ? (
+          <div style={cardStyle}>
+            <div style={{ fontSize: '42px', marginBottom: '12px' }}>📝</div>
+            <h2 style={{ color: '#fff' }}>No Quizzes Taken Yet</h2>
+            <p style={{ color: '#cbd5e1' }}>
+              Take your first quiz to see your performance here.
+            </p>
+            <button onClick={() => navigate('/quiz')} style={primaryBtn}>
+              Take First Quiz
+            </button>
           </div>
-
-          <div style={{ background: 'linear-gradient(135deg, #8b5cf6, #3b82f6)', borderRadius: '16px', padding: '24px', marginBottom: '24px', color: 'white' }}>
-            <h3 style={{ margin: '0 0 16px', fontSize: '18px' }}>
-              AI Improvement Suggestions
-            </h3>
-            {suggestions.map(function(s, i) {
-              return (
-                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '16px', flexShrink: 0 }}>💡</span>
-                  <span style={{ fontSize: '14px', opacity: 0.95, lineHeight: '1.5' }}>{s}</span>
+        ) : (
+          <>
+            <div style={statsGrid}>
+              <div style={statCard(getAccuracyColor(accuracy))}>
+                <div style={statValue}>{accuracy}%</div>
+                <div style={statLabel}>Overall Accuracy</div>
+                <div style={{ color: getAccuracyColor(accuracy), fontWeight: '700' }}>
+                  {getAccuracyLabel(accuracy)}
                 </div>
-              );
-            })}
-          </div>
+              </div>
 
-          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <h3 style={{ margin: '0 0 20px', fontSize: '18px', color: '#1e293b', fontWeight: 'bold' }}>
-              Quiz History ({history.length} answers)
-            </h3>
+              <div style={statCard('#22c55e')}>
+                <div style={statValue}>{overall.totalCorrect}</div>
+                <div style={statLabel}>Correct Answers</div>
+              </div>
 
-            {history.length === 0 && (
-              <p style={{ color: '#94a3b8', textAlign: 'center', padding: '20px' }}>
-                No quiz history yet.
-              </p>
-            )}
+              <div style={statCard('#8b5cf6')}>
+                <div style={statValue}>{overall.totalAttempts}</div>
+                <div style={statLabel}>Total Attempts</div>
+              </div>
 
-            {history.map(function(item, i) {
-              var isOpen = selectedQuiz === i;
-              var borderColor = item.is_correct ? '#22c55e' : '#ef4444';
-              return (
-                <div key={i} style={{ marginBottom: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', borderLeft: '4px solid ' + borderColor, overflow: 'hidden' }}>
+              <div style={statCard('#06b6d4')}>
+                <div style={statValue}>{overall.uniqueQuestions}</div>
+                <div style={statLabel}>Questions Tried</div>
+              </div>
+            </div>
+
+            <div style={cardStyle}>
+              <h2 style={{ color: '#fff', marginTop: 0 }}>AI Improvement Suggestions</h2>
+              {suggestions.map((s, i) => (
+                <div key={i} style={suggestionItem}>
+                  <span style={{ marginRight: '10px' }}>💡</span>
+                  <span>{s}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={cardStyle}>
+              <h2 style={{ color: '#fff', marginTop: 0 }}>
+                Quiz History ({history.length} answers)
+              </h2>
+
+              {history.length === 0 && (
+                <p style={{ color: '#cbd5e1' }}>No quiz history yet.</p>
+              )}
+
+              {history.map((item, i) => {
+                const isOpen = selectedQuiz === i;
+                const borderColor = item.is_correct ? '#22c55e' : '#ef4444';
+
+                return (
                   <div
-                    onClick={function() { toggleQuiz(i); }}
-                    style={{ padding: '14px 16px', cursor: 'pointer', background: isOpen ? '#f8fafc' : 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                      <span style={{ fontSize: '18px' }}>{item.is_correct ? '✅' : '❌'}</span>
-                      <span style={{ fontSize: '14px', color: '#1e293b', flex: 1, lineHeight: '1.4' }}>
-                        {item.question}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-                      <span style={{ background: item.is_correct ? '#f0fdf4' : '#fef2f2', color: item.is_correct ? '#22c55e' : '#ef4444', padding: '2px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
-                        {item.is_correct ? 'Correct' : 'Wrong'}
-                      </span>
-                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                        {new Date(item.answered_at).toLocaleDateString()}
-                      </span>
-                      <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        {isOpen ? '▲' : '▼'}
-                      </span>
-                    </div>
-                  </div>
+                    key={i}
+                    style={{
+                      background: '#0f172a',
+                      border: `1px solid ${borderColor}55`,
+                      borderRadius: '12px',
+                      marginBottom: '14px',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      onClick={() => toggleQuiz(i)}
+                      style={{
+                        padding: '16px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <div>
+                        <div style={{ color: '#fff', fontWeight: '700', marginBottom: '8px' }}>
+                          {item.is_correct ? '✅' : '❌'} {item.question}
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                          <span
+                            style={{
+                              color: item.is_correct ? '#22c55e' : '#ef4444',
+                              fontWeight: '700',
+                            }}
+                          >
+                            {item.is_correct ? 'Correct' : 'Wrong'}
+                          </span>
+                          <span style={{ color: '#94a3b8' }}>
+                            {new Date(item.answered_at).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
 
-                  {isOpen && (
-                    <div style={{ padding: '16px', borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                        {['A', 'B', 'C', 'D'].map(function(opt) {
-                          var isCorrectOpt = opt === item.correct_answer;
-                          var isSelectedOpt = opt === item.selected_answer;
-                          var bg = 'white';
-                          var borderCol = '#e2e8f0';
-                          var textColor = '#1e293b';
+                      <div style={{ color: '#cbd5e1', fontSize: '18px' }}>
+                        {isOpen ? '▲' : '▼'}
+                      </div>
+                    </div>
+
+                    {isOpen && (
+                      <div
+                        style={{
+                          borderTop: '1px solid #334155',
+                          padding: '16px',
+                          background: '#111827',
+                        }}
+                      >
+                        {['A', 'B', 'C', 'D'].map((opt) => {
+                          const isCorrectOpt = opt === item.correct_answer;
+                          const isSelectedOpt = opt === item.selected_answer;
+
+                          let bg = '#fff';
+                          let border = '#e2e8f0';
+                          let color = '#111827';
+
                           if (isCorrectOpt) {
-                            bg = '#f0fdf4';
-                            borderCol = '#22c55e';
-                            textColor = '#15803d';
+                            bg = '#dcfce7';
+                            border = '#22c55e';
+                            color = '#166534';
                           }
+
                           if (isSelectedOpt && !isCorrectOpt) {
-                            bg = '#fef2f2';
-                            borderCol = '#ef4444';
-                            textColor = '#dc2626';
+                            bg = '#fee2e2';
+                            border = '#ef4444';
+                            color = '#991b1b';
                           }
+
                           return (
-                            <div key={opt} style={{ padding: '10px 14px', borderRadius: '8px', border: '2px solid ' + borderCol, background: bg, color: textColor, fontSize: '13px' }}>
-                              <strong>{opt}.</strong> {item['option_' + opt.toLowerCase()] || 'N/A'}
+                            <div
+                              key={opt}
+                              style={{
+                                background: bg,
+                                border: `1px solid ${border}`,
+                                color,
+                                borderRadius: '10px',
+                                padding: '12px',
+                                marginBottom: '10px',
+                                fontWeight: '600',
+                              }}
+                            >
+                              <strong>{opt}.</strong> {item[`option_${opt.toLowerCase()}`] || 'N/A'}
                               {isCorrectOpt && (
-                                <span style={{ marginLeft: '6px', fontSize: '11px', fontWeight: 'bold' }}>
+                                <span style={{ marginLeft: '10px', fontWeight: '700' }}>
                                   (Correct)
                                 </span>
                               )}
                               {isSelectedOpt && !isCorrectOpt && (
-                                <span style={{ marginLeft: '6px', fontSize: '11px', fontWeight: 'bold' }}>
+                                <span style={{ marginLeft: '10px', fontWeight: '700' }}>
                                   (Your Answer)
                                 </span>
                               )}
                             </div>
                           );
                         })}
+
+                        {!item.is_correct && (
+                          <div
+                            style={{
+                              marginTop: '12px',
+                              color: '#fca5a5',
+                              fontWeight: '700',
+                            }}
+                          >
+                            The correct answer was: {item.correct_answer}
+                          </div>
+                        )}
                       </div>
-                      {!item.is_correct && (
-                        <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', color: '#1d4ed8' }}>
-                          The correct answer was: <strong>{item.correct_answer}</strong>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
+
+const pageStyle = {
+  minHeight: '100vh',
+  background: '#0f172a',
+  padding: '24px',
+  fontFamily: 'Arial, sans-serif',
+};
+
+const containerStyle = {
+  maxWidth: '1100px',
+  margin: '0 auto',
+};
+
+const backBtn = {
+  background: '#1e293b',
+  color: '#fff',
+  border: '1px solid #334155',
+  padding: '10px 16px',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  marginBottom: '20px',
+};
+
+const primaryBtn = {
+  background: '#8b5cf6',
+  color: '#fff',
+  border: 'none',
+  padding: '12px 18px',
+  borderRadius: '10px',
+  cursor: 'pointer',
+  fontWeight: '700',
+  marginBottom: '24px',
+};
+
+const cardStyle = {
+  background: '#1e293b',
+  border: '1px solid #334155',
+  borderRadius: '16px',
+  padding: '20px',
+  marginBottom: '20px',
+};
+
+const statsGrid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: '16px',
+  marginBottom: '20px',
+};
+
+const statCard = (color) => ({
+  background: '#1e293b',
+  border: `1px solid ${color}55`,
+  borderRadius: '16px',
+  padding: '20px',
+});
+
+const statValue = {
+  color: '#fff',
+  fontSize: '32px',
+  fontWeight: '800',
+  marginBottom: '8px',
+};
+
+const statLabel = {
+  color: '#cbd5e1',
+  fontSize: '14px',
+};
+
+const suggestionItem = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  color: '#cbd5e1',
+  background: '#0f172a',
+  border: '1px solid #334155',
+  borderRadius: '10px',
+  padding: '12px',
+  marginBottom: '10px',
+};
 
 export default QuizPerformance;

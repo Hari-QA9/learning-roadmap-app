@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,6 +21,8 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: '12px',
+    flexWrap: 'wrap',
     padding: '14px 28px',
     background: '#1e293b',
     borderBottom: '1px solid #334155',
@@ -37,6 +39,7 @@ const styles = {
   navActions: {
     display: 'flex',
     gap: '10px',
+    flexWrap: 'wrap',
   },
   backBtn: {
     background: 'transparent',
@@ -86,9 +89,49 @@ const styles = {
     cursor: 'pointer',
     fontSize: '14px',
   },
+  actionBtnBlue: {
+    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+    border: 'none',
+    color: '#fff',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+  },
+  actionBtnGreen: {
+    background: 'linear-gradient(135deg, #10b981, #059669)',
+    border: 'none',
+    color: '#fff',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+  },
+  actionBtnOrange: {
+    background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+    border: 'none',
+    color: '#fff',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+  },
+  disabledBtn: {
+    background: '#475569',
+    border: 'none',
+    color: '#fff',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    cursor: 'not-allowed',
+    fontSize: '14px',
+    fontWeight: '600',
+  },
   mainLayout: {
     display: 'flex',
-    height: 'calc(100vh - 61px)',
+    minHeight: 'calc(100vh - 61px)',
     overflow: 'hidden',
   },
   editorPanel: {
@@ -162,6 +205,7 @@ const styles = {
     padding: '10px 14px',
     color: '#f1f5f9',
     fontSize: '14px',
+    width: '100%',
   },
   textarea: {
     background: '#0f172a',
@@ -229,16 +273,6 @@ const styles = {
     overflowY: 'auto',
     background: '#f8fafc',
     padding: '40px',
-  },
-  resumeHeader: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: '20px',
-    background: 'linear-gradient(135deg, #1e293b, #334155)',
-    borderRadius: '12px',
-    padding: '28px',
-    marginBottom: '24px',
-    color: '#fff',
   },
   resumeInitial: {
     width: '64px',
@@ -357,6 +391,14 @@ const styles = {
   },
 };
 
+const templateOptions = [
+  { id: 'modern', label: 'Modern', color: '#6366f1' },
+  { id: 'classic', label: 'Classic', color: '#475569' },
+  { id: 'creative', label: 'Creative', color: '#10b981' },
+];
+
+const sections = ['personal', 'summary', 'skills', 'experience', 'education'];
+
 export default function ResumeBuilder() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -365,11 +407,11 @@ export default function ResumeBuilder() {
   const [saved, setSaved] = useState(false);
   const [activeSection, setActiveSection] = useState('personal');
   const [template, setTemplate] = useState('modern');
-const [atsResult, setAtsResult] = useState(null);
-const [atsChecking, setAtsChecking] = useState(false);
+  const [atsResult, setAtsResult] = useState(null);
+  const [atsChecking, setAtsChecking] = useState(false);
+  const [score, setScore] = useState(null);
+  const [scoring, setScoring] = useState(false);
 
-  
-  // Form States
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -387,19 +429,25 @@ const [atsChecking, setAtsChecking] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
       try {
         const profileRes = await axios.get('http://localhost:5000/api/resume', {
-          headers: { Authorization: 'Bearer ' + token }
+          headers: { Authorization: `Bearer ${token}` },
         });
-        setUserData(profileRes.data);
-        setName(profileRes.data.user?.name || '');
-        setEmail(profileRes.data.user?.email || '');
+
+        setUserData(profileRes.data || {});
+        setName(profileRes.data?.user?.name || '');
+        setEmail(profileRes.data?.user?.email || '');
 
         const resumeRes = await axios.get('http://localhost:5000/api/resume/saved', {
-          headers: { Authorization: 'Bearer ' + token }
+          headers: { Authorization: `Bearer ${token}` },
         });
-        
-        if (resumeRes.data.resume) {
+
+        if (resumeRes.data?.resume) {
           const r = resumeRes.data.resume;
           setPhone(r.phone || '');
           setUserLocation(r.location || '');
@@ -410,135 +458,166 @@ const [atsChecking, setAtsChecking] = useState(false);
           setExperience(r.experience || '');
           setEducation(r.education || '');
           setGoal(r.goal || '');
+          if (r.name) setName(r.name);
+          if (r.email) setEmail(r.email);
         }
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error('Error fetching resume data:', err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [token]);
+  }, [token, navigate]);
 
-  function generateSummary() {
+  const skillsList = useMemo(() => {
+    return skills
+      ? skills.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+  }, [skills]);
+
+  const allRoadmaps = userData?.allRoadmaps || [];
+  const badges = userData?.badges || [];
+
+  const generateSummary = async () => {
     if (!skills.trim()) {
       alert('Please enter your skills first!');
       return;
     }
-    setGenerating(true);
-    axios.post(
-      'http://localhost:5000/api/resume/generate-summary',
-      { skills, experience, goal },
-      { headers: { Authorization: 'Bearer ' + token } }
-    )
-      .then((res) => {
-        setSummary(res.data.summary);
-      })
-      .catch((err) => console.error(err))
-      .finally(() => setGenerating(false));
-  }
 
-  function saveResume() {
-    setSaving(true);
-    axios.post(
-      'http://localhost:5000/api/resume/save',
-      {
-        resume_data: {
-          name, email, phone,
-          location: userLocation,
-          linkedin, github, summary,
-          skills, experience, education, goal
-        }
-      },
-      { headers: { Authorization: 'Bearer ' + token } }
-    )
-      .then(() => {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-      })
-      .catch((err) => console.error(err))
-      .finally(() => setSaving(false));
-  }
+    try {
+      setGenerating(true);
+      const res = await axios.post(
+        'http://localhost:5000/api/resume/generate-summary',
+        { skills, experience, goal },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-  const [score, setScore] = useState(null);
-const [scoring, setScoring] = useState(false);
-
-function generateScore() {
-  if (!summary && !skills && !experience) {
-    alert('Please fill in at least summary, skills, and experience first!');
-    return;
-  }
-  setScoring(true);
-  axios.post(
-    'http://localhost:5000/api/resume/score',
-    { name, summary, skills, experience, education, goal },
-    { headers: { Authorization: 'Bearer ' + token } }
-  )
-    .then((res) => {
-      setScore(res.data);
-      setScoring(false);
-    })
-    .catch(() => setScoring(false));
-}
-
-function downloadPDF() {
-  const element = document.getElementById('resume-preview');
-  const options = {
-    margin: 10,
-    filename: (name || 'resume') + '_resume.pdf',
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait',
-    },
+      setSummary(res.data?.summary || '');
+    } catch (err) {
+      console.error('Generate summary error:', err);
+      alert('Failed to generate summary');
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  const html2pdf = require('html2pdf.js');
-  html2pdf().set(options).from(element).save();
-}
+  const saveResume = async () => {
+    try {
+      setSaving(true);
+      await axios.post(
+        'http://localhost:5000/api/resume/save',
+        {
+          resume_data: {
+            name,
+            email,
+            phone,
+            location: userLocation,
+            linkedin,
+            github,
+            summary,
+            skills,
+            experience,
+            education,
+            goal,
+          },
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-function checkATS() {
-  if (!skills.trim() || !experience.trim()) {
-    alert('Please fill in skills and experience first!');
-    return;
-  }
-  setAtsChecking(true);
-  axios.post(
-    'http://localhost:5000/api/resume/ats-check',
-    { name, summary, skills, experience, education, goal },
-    { headers: { Authorization: 'Bearer ' + token } }
-  )
-    .then((res) => {
-      setAtsResult(res.data);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error('Save resume error:', err);
+      alert('Failed to save resume');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const generateScore = async () => {
+    if (!summary.trim() && !skills.trim() && !experience.trim()) {
+      alert('Please fill in at least summary, skills, and experience first!');
+      return;
+    }
+
+    try {
+      setScoring(true);
+      const res = await axios.post(
+        'http://localhost:5000/api/resume/score',
+        { name, summary, skills, experience, education, goal },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setScore(res.data || null);
+    } catch (err) {
+      console.error('Resume score error:', err);
+      alert('Failed to score resume');
+    } finally {
+      setScoring(false);
+    }
+  };
+
+  const checkATS = async () => {
+    if (!skills.trim() || !experience.trim()) {
+      alert('Please fill in skills and experience first!');
+      return;
+    }
+
+    try {
+      setAtsChecking(true);
+      const res = await axios.post(
+        'http://localhost:5000/api/resume/ats-check',
+        { name, summary, skills, experience, education, goal },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAtsResult(res.data || null);
+    } catch (err) {
+      console.error('ATS check error:', err);
+      alert('Failed to check ATS');
+    } finally {
       setAtsChecking(false);
-    })
-    .catch(() => setAtsChecking(false));
-}
+    }
+  };
 
+  const downloadPDF = async () => {
+    try {
+      const element = document.getElementById('resume-preview');
+      if (!element) {
+        alert('Resume preview not found');
+        return;
+      }
 
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default || html2pdfModule;
 
+      const options = {
+        margin: 10,
+        filename: `${name || 'resume'}_resume.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait',
+        },
+      };
 
-  const skillsList = skills
-    ? skills.split(',').map((s) => s.trim()).filter(Boolean)
-    : [];
-
-  const allRoadmaps = userData?.allRoadmaps || [];
-  const badges = userData?.badges || [];
-  const sections = ['personal', 'summary', 'skills', 'experience', 'education'];
+      html2pdf().set(options).from(element).save();
+    } catch (err) {
+      console.error('PDF download error:', err);
+      alert('html2pdf.js is missing. Run: npm install html2pdf.js');
+    }
+  };
 
   if (loading) {
     return (
       <div style={styles.loadingContainer}>
-        <p style={{ color: '#94a3b8', fontSize: '18px' }}>
-          Loading Resume Builder...
-        </p>
+        <p style={{ color: '#94a3b8', fontSize: '18px' }}>Loading Resume Builder...</p>
       </div>
     );
   }
@@ -549,71 +628,36 @@ function checkATS() {
         <button style={styles.backBtn} onClick={() => navigate('/dashboard')}>
           Back
         </button>
+
         <h2 style={styles.navTitle}>Resume Builder</h2>
+
         <div style={styles.navActions}>
           <button style={styles.printBtn} onClick={() => window.print()}>
             Print PDF
-</button>
+          </button>
 
-<button
-  style={{
-    background: atsChecking
-      ? '#475569'
-      : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-    border: 'none',
-    color: '#fff',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
-  }}
-  onClick={checkATS}
-  disabled={atsChecking}
->
-  {atsChecking ? 'Checking...' : 'ATS Check'}
-</button>
-
-            <button
-  style={{
-    background: 'linear-gradient(135deg, #10b981, #059669)',
-    border: 'none',
-    color: '#fff',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
-  }}
-  onClick={downloadPDF}
->
-  Download PDF
-</button>
-
-            <button
-  style={{
-    background: scoring
-      ? '#475569'
-      : 'linear-gradient(135deg, #f59e0b, #ef4444)',
-    border: 'none',
-    color: '#fff',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
-  }}
-  onClick={generateScore}
-  disabled={scoring}
->
-  {scoring ? 'Scoring...' : 'Score My Resume'}
-</button>
-
-          
           <button
-            style={
-              saved ? styles.savedBtn : saving ? styles.savingBtn : styles.saveBtn
-            }
+            style={atsChecking ? styles.disabledBtn : styles.actionBtnBlue}
+            onClick={checkATS}
+            disabled={atsChecking}
+          >
+            {atsChecking ? 'Checking...' : 'ATS Check'}
+          </button>
+
+          <button style={styles.actionBtnGreen} onClick={downloadPDF}>
+            Download PDF
+          </button>
+
+          <button
+            style={scoring ? styles.disabledBtn : styles.actionBtnOrange}
+            onClick={generateScore}
+            disabled={scoring}
+          >
+            {scoring ? 'Scoring...' : 'Score My Resume'}
+          </button>
+
+          <button
+            style={saved ? styles.savedBtn : saving ? styles.savingBtn : styles.saveBtn}
             onClick={saveResume}
             disabled={saving}
           >
@@ -623,274 +667,306 @@ function checkATS() {
       </div>
 
       {score && (
-  <div style={{
-    background: '#1e293b',
-    borderBottom: '1px solid #334155',
-    padding: '16px 28px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '24px',
-    flexWrap: 'wrap',
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <div style={{
-        width: '64px',
-        height: '64px',
-        borderRadius: '50%',
-        background: score.score >= 80
-          ? 'linear-gradient(135deg, #10b981, #059669)'
-          : score.score >= 60
-          ? 'linear-gradient(135deg, #f59e0b, #d97706)'
-          : 'linear-gradient(135deg, #ef4444, #dc2626)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '20px',
-        fontWeight: '800',
-        color: '#fff',
-        flexShrink: 0,
-      }}>
-        {score.score}
-      </div>
-      <div>
-        <p style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: '#f1f5f9' }}>
-          Resume Score
-        </p>
-        <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
-          {score.score >= 80 ? 'Excellent!' : score.score >= 60 ? 'Good, needs improvement' : 'Needs work'}
-        </p>
-      </div>
-    </div>
+        <div
+          style={{
+            background: '#1e293b',
+            borderBottom: '1px solid #334155',
+            padding: '16px 28px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '24px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background:
+                  score.score >= 80
+                    ? 'linear-gradient(135deg, #10b981, #059669)'
+                    : score.score >= 60
+                    ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+                    : 'linear-gradient(135deg, #ef4444, #dc2626)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                fontWeight: '800',
+                color: '#fff',
+                flexShrink: 0,
+              }}
+            >
+              {score.score}
+            </div>
 
-    <div style={{ flex: 1 }}>
-      <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#94a3b8', fontWeight: '600' }}>
-        Tips to Improve:
-      </p>
-      <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6' }}>
-        {score.tips}
-      </p>
-    </div>
+            <div>
+              <p style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: '#f1f5f9' }}>
+                Resume Score
+              </p>
+              <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+                {score.score >= 80
+                  ? 'Excellent!'
+                  : score.score >= 60
+                  ? 'Good, needs improvement'
+                  : 'Needs work'}
+              </p>
+            </div>
+          </div>
 
-    <button
-      onClick={() => setScore(null)}
-      style={{
-        background: 'transparent',
-        border: 'none',
-        color: '#64748b',
-        cursor: 'pointer',
-        fontSize: '18px',
-      }}
-    >
-      ✕
-    </button>
-  </div>
-)}
+          <div style={{ flex: 1 }}>
+            <p
+              style={{
+                margin: '0 0 6px 0',
+                fontSize: '13px',
+                color: '#94a3b8',
+                fontWeight: '600',
+              }}
+            >
+              Tips to Improve:
+            </p>
+            <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6' }}>
+              {score.tips || 'Add more measurable outcomes, targeted keywords, and clearer experience bullets.'}
+            </p>
+          </div>
 
-{atsResult && (
-  <div style={{
-    background: '#1e293b',
-    borderBottom: '1px solid #334155',
-    padding: '20px 28px',
-  }}>
-    <div style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '16px',
-    }}>
-      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#f1f5f9' }}>
-        ATS Compatibility Report
-      </h3>
-      <button
-        onClick={() => setAtsResult(null)}
-        style={{
-          background: 'transparent',
-          border: 'none',
-          color: '#64748b',
-          cursor: 'pointer',
-          fontSize: '18px',
-        }}
-      >
-        ✕
-      </button>
-    </div>
-
-    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-
-      {/* ATS SCORE */}
-      <div style={{
-        background: '#0f172a',
-        borderRadius: '10px',
-        padding: '16px 20px',
-        minWidth: '140px',
-        textAlign: 'center',
-        border: '1px solid #334155',
-      }}>
-        <div style={{
-          fontSize: '36px',
-          fontWeight: '800',
-          color: atsResult.atsScore >= 80
-            ? '#10b981'
-            : atsResult.atsScore >= 60
-            ? '#f59e0b'
-            : '#ef4444',
-        }}>
-          {atsResult.atsScore}%
+          <button
+            onClick={() => setScore(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#64748b',
+              cursor: 'pointer',
+              fontSize: '18px',
+            }}
+          >
+            ✕
+          </button>
         </div>
-        <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
-          ATS Score
-        </p>
-      </div>
+      )}
 
-      {/* KEYWORDS FOUND */}
-      <div style={{
-        background: '#0f172a',
-        borderRadius: '10px',
-        padding: '16px 20px',
-        flex: 1,
-        border: '1px solid #334155',
-        minWidth: '200px',
-      }}>
-        <p style={{
-          margin: '0 0 10px 0',
-          fontSize: '12px',
-          color: '#64748b',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          fontWeight: '600',
-        }}>
-          Keywords Found
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-          {(atsResult.keywordsFound || []).map((kw, i) => (
-            <span key={i} style={{
-              background: 'rgba(16,185,129,0.15)',
-              color: '#10b981',
-              padding: '3px 10px',
-              borderRadius: '10px',
-              fontSize: '12px',
-              border: '1px solid rgba(16,185,129,0.3)',
-            }}>
-              {kw}
-            </span>
-          ))}
+      {atsResult && (
+        <div
+          style={{
+            background: '#1e293b',
+            borderBottom: '1px solid #334155',
+            padding: '20px 28px',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px',
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#f1f5f9' }}>
+              ATS Compatibility Report
+            </h3>
+
+            <button
+              onClick={() => setAtsResult(null)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#64748b',
+                cursor: 'pointer',
+                fontSize: '18px',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <div
+              style={{
+                background: '#0f172a',
+                borderRadius: '10px',
+                padding: '16px 20px',
+                minWidth: '140px',
+                textAlign: 'center',
+                border: '1px solid #334155',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '36px',
+                  fontWeight: '800',
+                  color:
+                    atsResult.atsScore >= 80
+                      ? '#10b981'
+                      : atsResult.atsScore >= 60
+                      ? '#f59e0b'
+                      : '#ef4444',
+                }}
+              >
+                {atsResult.atsScore || 0}%
+              </div>
+              <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>ATS Score</p>
+            </div>
+
+            <div
+              style={{
+                background: '#0f172a',
+                borderRadius: '10px',
+                padding: '16px 20px',
+                flex: 1,
+                border: '1px solid #334155',
+                minWidth: '200px',
+              }}
+            >
+              <p
+                style={{
+                  margin: '0 0 10px 0',
+                  fontSize: '12px',
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  fontWeight: '600',
+                }}
+              >
+                Keywords Found
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {(atsResult.keywordsFound || []).map((kw, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      background: 'rgba(16,185,129,0.15)',
+                      color: '#10b981',
+                      padding: '3px 10px',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      border: '1px solid rgba(16,185,129,0.3)',
+                    }}
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: '#0f172a',
+                borderRadius: '10px',
+                padding: '16px 20px',
+                flex: 1,
+                border: '1px solid #334155',
+                minWidth: '200px',
+              }}
+            >
+              <p
+                style={{
+                  margin: '0 0 10px 0',
+                  fontSize: '12px',
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  fontWeight: '600',
+                }}
+              >
+                Keywords Missing
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {(atsResult.keywordsMissing || []).map((kw, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      background: 'rgba(239,68,68,0.15)',
+                      color: '#ef4444',
+                      padding: '3px 10px',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                    }}
+                  >
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {atsResult.suggestions && (
+            <div
+              style={{
+                marginTop: '14px',
+                background: '#0f172a',
+                borderRadius: '10px',
+                padding: '16px 20px',
+                border: '1px solid #334155',
+              }}
+            >
+              <p
+                style={{
+                  margin: '0 0 8px 0',
+                  fontSize: '12px',
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  fontWeight: '600',
+                }}
+              >
+                Suggestions to Improve ATS Score
+              </p>
+              <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1', lineHeight: '1.7' }}>
+                {atsResult.suggestions}
+              </p>
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* KEYWORDS MISSING */}
-      <div style={{
-        background: '#0f172a',
-        borderRadius: '10px',
-        padding: '16px 20px',
-        flex: 1,
-        border: '1px solid #334155',
-        minWidth: '200px',
-      }}>
-        <p style={{
-          margin: '0 0 10px 0',
-          fontSize: '12px',
-          color: '#64748b',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          fontWeight: '600',
-        }}>
-          Keywords Missing
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-          {(atsResult.keywordsMissing || []).map((kw, i) => (
-            <span key={i} style={{
-              background: 'rgba(239,68,68,0.15)',
-              color: '#ef4444',
-              padding: '3px 10px',
-              borderRadius: '10px',
-              fontSize: '12px',
-              border: '1px solid rgba(239,68,68,0.3)',
-            }}>
-              {kw}
-            </span>
-          ))}
-        </div>
-      </div>
-
-    </div>
-
-    {/* SUGGESTIONS */}
-    {atsResult.suggestions && (
-      <div style={{
-        marginTop: '14px',
-        background: '#0f172a',
-        borderRadius: '10px',
-        padding: '16px 20px',
-        border: '1px solid #334155',
-      }}>
-        <p style={{
-          margin: '0 0 8px 0',
-          fontSize: '12px',
-          color: '#64748b',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          fontWeight: '600',
-        }}>
-          Suggestions to Improve ATS Score
-        </p>
-        <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1', lineHeight: '1.7' }}>
-          {atsResult.suggestions}
-        </p>
-      </div>
-    )}
-  </div>
-)}
-
+      )}
 
       <div style={styles.mainLayout}>
         <div style={styles.editorPanel}>
-            {/* TEMPLATE SELECTOR */}
-<div style={{
-  padding: '16px',
-  borderBottom: '1px solid #334155',
-  background: '#0f172a',
-}}>
-  <p style={{
-    margin: '0 0 10px 0',
-    fontSize: '12px',
-    color: '#64748b',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    fontWeight: '600',
-  }}>
-    Choose Template
-  </p>
-  <div style={{ display: 'flex', gap: '8px' }}>
-    {[
-      { id: 'modern', label: 'Modern', color: '#6366f1' },
-      { id: 'classic', label: 'Classic', color: '#475569' },
-      { id: 'creative', label: 'Creative', color: '#10b981' },
-    ].map((t) => (
-      <button
-        key={t.id}
-        onClick={() => setTemplate(t.id)}
-        style={{
-          flex: 1,
-          padding: '8px 4px',
-          borderRadius: '8px',
-          border: template === t.id
-            ? '2px solid ' + t.color
-            : '2px solid #334155',
-          background: template === t.id
-            ? t.color + '22'
-            : 'transparent',
-          color: template === t.id ? t.color : '#64748b',
-          cursor: 'pointer',
-          fontSize: '12px',
-          fontWeight: '600',
-          transition: 'all 0.2s',
-        }}
-      >
-        {t.label}
-      </button>
-    ))}
-  </div>
-</div>
+          <div
+            style={{
+              padding: '16px',
+              borderBottom: '1px solid #334155',
+              background: '#0f172a',
+            }}
+          >
+            <p
+              style={{
+                margin: '0 0 10px 0',
+                fontSize: '12px',
+                color: '#64748b',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontWeight: '600',
+              }}
+            >
+              Choose Template
+            </p>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {templateOptions.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTemplate(t.id)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 4px',
+                    borderRadius: '8px',
+                    border: template === t.id ? `2px solid ${t.color}` : '2px solid #334155',
+                    background: template === t.id ? `${t.color}22` : 'transparent',
+                    color: template === t.id ? t.color : '#64748b',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div style={styles.sectionTabs}>
             {sections.map((sec) => (
@@ -907,6 +983,7 @@ function checkATS() {
           {activeSection === 'personal' && (
             <div style={styles.formSection}>
               <h3 style={styles.sectionTitle}>Personal Information</h3>
+
               {[
                 { label: 'Full Name', val: name, fn: setName, type: 'text', placeholder: 'John Doe' },
                 { label: 'Email', val: email, fn: setEmail, type: 'email', placeholder: 'john@email.com' },
@@ -933,9 +1010,8 @@ function checkATS() {
           {activeSection === 'summary' && (
             <div style={styles.formSection}>
               <h3 style={styles.sectionTitle}>Professional Summary</h3>
-              <p style={styles.hint}>
-                Fill in your skills first, then click Generate with AI.
-              </p>
+              <p style={styles.hint}>Fill in your skills first, then click Generate with AI.</p>
+
               <textarea
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
@@ -943,6 +1019,7 @@ function checkATS() {
                 style={styles.textarea}
                 rows={6}
               />
+
               <button
                 style={generating ? styles.generatingBtn : styles.aiBtn}
                 onClick={generateSummary}
@@ -957,6 +1034,7 @@ function checkATS() {
             <div style={styles.formSection}>
               <h3 style={styles.sectionTitle}>Skills</h3>
               <p style={styles.hint}>Enter skills separated by commas.</p>
+
               <textarea
                 value={skills}
                 onChange={(e) => setSkills(e.target.value)}
@@ -964,6 +1042,7 @@ function checkATS() {
                 style={styles.textarea}
                 rows={5}
               />
+
               {skillsList.length > 0 && (
                 <div style={styles.skillPreview}>
                   <p style={styles.previewLabel}>Preview:</p>
@@ -982,15 +1061,12 @@ function checkATS() {
           {activeSection === 'experience' && (
             <div style={styles.formSection}>
               <h3 style={styles.sectionTitle}>Work Experience</h3>
-              <p style={styles.hint}>
-                Add each job on a new line. Example: Company | Role | Year
-              </p>
+              <p style={styles.hint}>Add each job on a new line. Example: Company | Role | Year</p>
+
               <textarea
                 value={experience}
                 onChange={(e) => setExperience(e.target.value)}
-                placeholder={
-                  'Google | Software Engineer Intern | 2024\n- Built REST APIs\n- Improved performance by 30%'
-                }
+                placeholder={'Google | Software Engineer Intern | 2024\n- Built REST APIs\n- Improved performance by 30%'}
                 style={styles.textarea}
                 rows={10}
               />
@@ -1000,550 +1076,468 @@ function checkATS() {
           {activeSection === 'education' && (
             <div style={styles.formSection}>
               <h3 style={styles.sectionTitle}>Education</h3>
-              <p style={styles.hint}>
-                Add your degrees and certifications.
-              </p>
+              <p style={styles.hint}>Add your degrees and certifications.</p>
+
               <textarea
                 value={education}
                 onChange={(e) => setEducation(e.target.value)}
-                placeholder={
-                  'Masters in Computer Science | NJIT | 2024\nBachelors in IT | XYZ University | 2022'
-                }
+                placeholder={'Masters in Computer Science | NJIT | 2024\nBachelors in IT | XYZ University | 2022'}
                 style={styles.textarea}
                 rows={6}
               />
             </div>
           )}
         </div>
-<div style={styles.previewPanel} id="resume-preview">
 
-  {/* ── MODERN TEMPLATE ── */}
-  {template === 'modern' && (
-    <div>
-      <div style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '20px',
-        background: 'linear-gradient(135deg, #1e293b, #334155)',
-        borderRadius: '12px',
-        padding: '28px',
-        marginBottom: '24px',
-      }}>
-        <div style={styles.resumeInitial}>
-          {name ? name.charAt(0).toUpperCase() : 'Y'}
-        </div>
-        <div style={{ flex: 1 }}>
-          <h1 style={styles.resumeName}>{name || 'Your Name'}</h1>
-          <p style={styles.resumeGoal}>{goal || 'Career Goal'}</p>
-          <div style={styles.contactRow}>
-            {email && <span style={styles.contactItem}>{email}</span>}
-            {phone && <span style={styles.contactItem}>{phone}</span>}
-            {userLocation && <span style={styles.contactItem}>{userLocation}</span>}
-            {linkedin && <span style={styles.contactItem}>{linkedin}</span>}
-            {github && <span style={styles.contactItem}>{github}</span>}
-          </div>
-        </div>
-      </div>
-      <div style={styles.resumeBody}>
-        {summary && (
-          <div style={styles.resumeSection}>
-            <h3 style={styles.resumeSectionTitle}>Professional Summary</h3>
-            <div style={styles.resumeDivider}></div>
-            <p style={styles.resumeText}>{summary}</p>
-          </div>
-        )}
-        {skillsList.length > 0 && (
-          <div style={styles.resumeSection}>
-            <h3 style={styles.resumeSectionTitle}>Technical Skills</h3>
-            <div style={styles.resumeDivider}></div>
-            <div style={styles.resumeSkillTags}>
-              {skillsList.map((skill, i) => (
-                <span key={i} style={styles.resumeSkillTag}>{skill}</span>
-              ))}
-            </div>
-          </div>
-        )}
-        {experience && (
-          <div style={styles.resumeSection}>
-            <h3 style={styles.resumeSectionTitle}>Work Experience</h3>
-            <div style={styles.resumeDivider}></div>
-            <pre style={styles.resumePre}>{experience}</pre>
-          </div>
-        )}
-        {education && (
-          <div style={styles.resumeSection}>
-            <h3 style={styles.resumeSectionTitle}>Education</h3>
-            <div style={styles.resumeDivider}></div>
-            <pre style={styles.resumePre}>{education}</pre>
-          </div>
-        )}
-        {allRoadmaps.length > 0 && (
-          <div style={styles.resumeSection}>
-            <h3 style={styles.resumeSectionTitle}>Learning Roadmaps</h3>
-            <div style={styles.resumeDivider}></div>
-            <div style={styles.roadmapList}>
-              {allRoadmaps.map((r, i) => (
-                <div key={i} style={styles.roadmapItem}>{r.title}</div>
-              ))}
-            </div>
-          </div>
-        )}
-        {badges.length > 0 && (
-          <div style={styles.resumeSection}>
-            <h3 style={styles.resumeSectionTitle}>Achievements</h3>
-            <div style={styles.resumeDivider}></div>
-            <div style={styles.badgeList}>
-              {badges.map((b, i) => (
-                <span key={i} style={styles.badge}>{b.name}</span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )}
+        <div style={styles.previewPanel} id="resume-preview">
+          {template === 'modern' && (
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '20px',
+                  background: 'linear-gradient(135deg, #1e293b, #334155)',
+                  borderRadius: '12px',
+                  padding: '28px',
+                  marginBottom: '24px',
+                }}
+              >
+                <div style={styles.resumeInitial}>{name ? name.charAt(0).toUpperCase() : 'Y'}</div>
 
-  {/* ── CLASSIC TEMPLATE ── */}
-  {template === 'classic' && (
-    <div style={{
-      background: '#fff',
-      borderRadius: '12px',
-      padding: '40px',
-      boxShadow: '0 2px 16px rgba(0,0,0,0.08)',
-      color: '#1e293b',
-    }}>
-      <div style={{
-        textAlign: 'center',
-        borderBottom: '3px double #1e293b',
-        paddingBottom: '20px',
-        marginBottom: '24px',
-      }}>
-        <h1 style={{
-          margin: '0 0 6px 0',
-          fontSize: '30px',
-          fontWeight: '800',
-          color: '#0f172a',
-          letterSpacing: '0.05em',
-          textTransform: 'uppercase',
-        }}>
-          {name || 'Your Name'}
-        </h1>
-        <p style={{
-          margin: '0 0 10px 0',
-          fontSize: '14px',
-          color: '#475569',
-          fontWeight: '500',
-        }}>
-          {goal || 'Career Goal / Job Title'}
-        </p>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-          gap: '16px',
-          fontSize: '13px',
-          color: '#475569',
-        }}>
-          {email && <span>{email}</span>}
-          {phone && <span>{phone}</span>}
-          {userLocation && <span>{userLocation}</span>}
-          {linkedin && <span>{linkedin}</span>}
-          {github && <span>{github}</span>}
-        </div>
-      </div>
+                <div style={{ flex: 1 }}>
+                  <h1 style={styles.resumeName}>{name || 'Your Name'}</h1>
+                  <p style={styles.resumeGoal}>{goal || 'Career Goal'}</p>
 
-      {summary && (
-        <div style={{ marginBottom: '20px' }}>
-          <h3 style={{
-            fontSize: '13px',
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: '#0f172a',
-            margin: '0 0 8px 0',
-            borderBottom: '1px solid #cbd5e1',
-            paddingBottom: '4px',
-          }}>
-            Professional Summary
-          </h3>
-          <p style={{ fontSize: '14px', color: '#475569', lineHeight: '1.7', margin: 0 }}>
-            {summary}
-          </p>
-        </div>
-      )}
-
-      {skillsList.length > 0 && (
-        <div style={{ marginBottom: '20px' }}>
-          <h3 style={{
-            fontSize: '13px',
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: '#0f172a',
-            margin: '0 0 8px 0',
-            borderBottom: '1px solid #cbd5e1',
-            paddingBottom: '4px',
-          }}>
-            Skills
-          </h3>
-          <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}>
-            {skillsList.join(' • ')}
-          </p>
-        </div>
-      )}
-
-      {experience && (
-        <div style={{ marginBottom: '20px' }}>
-          <h3 style={{
-            fontSize: '13px',
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: '#0f172a',
-            margin: '0 0 8px 0',
-            borderBottom: '1px solid #cbd5e1',
-            paddingBottom: '4px',
-          }}>
-            Work Experience
-          </h3>
-          <pre style={{
-            fontSize: '13px',
-            color: '#475569',
-            lineHeight: '1.7',
-            whiteSpace: 'pre-wrap',
-            fontFamily: "'Segoe UI', sans-serif",
-            margin: 0,
-          }}>
-            {experience}
-          </pre>
-        </div>
-      )}
-
-      {education && (
-        <div style={{ marginBottom: '20px' }}>
-          <h3 style={{
-            fontSize: '13px',
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: '#0f172a',
-            margin: '0 0 8px 0',
-            borderBottom: '1px solid #cbd5e1',
-            paddingBottom: '4px',
-          }}>
-            Education
-          </h3>
-          <pre style={{
-            fontSize: '13px',
-            color: '#475569',
-            lineHeight: '1.7',
-            whiteSpace: 'pre-wrap',
-            fontFamily: "'Segoe UI', sans-serif",
-            margin: 0,
-          }}>
-            {education}
-          </pre>
-        </div>
-      )}
-
-      {allRoadmaps.length > 0 && (
-        <div style={{ marginBottom: '20px' }}>
-          <h3 style={{
-            fontSize: '13px',
-            fontWeight: '700',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: '#0f172a',
-            margin: '0 0 8px 0',
-            borderBottom: '1px solid #cbd5e1',
-            paddingBottom: '4px',
-          }}>
-            Learning Roadmaps
-          </h3>
-          {allRoadmaps.map((r, i) => (
-            <p key={i} style={{ margin: '4px 0', fontSize: '13px', color: '#475569' }}>
-              • {r.title}
-            </p>
-          ))}
-        </div>
-      )}
-    </div>
-  )}
-
-  {/* ── CREATIVE TEMPLATE ── */}
-  {template === 'creative' && (
-    <div style={{
-      display: 'flex',
-      borderRadius: '12px',
-      overflow: 'hidden',
-      boxShadow: '0 2px 16px rgba(0,0,0,0.12)',
-      minHeight: '600px',
-    }}>
-      {/* LEFT SIDEBAR */}
-      <div style={{
-        width: '35%',
-        background: 'linear-gradient(180deg, #10b981, #059669)',
-        padding: '32px 24px',
-        color: '#fff',
-      }}>
-        <div style={{
-          width: '80px',
-          height: '80px',
-          borderRadius: '50%',
-          background: 'rgba(255,255,255,0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '32px',
-          fontWeight: '800',
-          marginBottom: '16px',
-          border: '3px solid rgba(255,255,255,0.4)',
-        }}>
-          {name ? name.charAt(0).toUpperCase() : 'Y'}
-        </div>
-
-        <h1 style={{
-          margin: '0 0 4px 0',
-          fontSize: '22px',
-          fontWeight: '800',
-          lineHeight: '1.2',
-        }}>
-          {name || 'Your Name'}
-        </h1>
-        <p style={{
-          margin: '0 0 24px 0',
-          fontSize: '13px',
-          opacity: 0.85,
-          fontWeight: '500',
-        }}>
-          {goal || 'Career Goal'}
-        </p>
-
-        <div style={{ marginBottom: '24px' }}>
-          <p style={{
-            margin: '0 0 10px 0',
-            fontSize: '11px',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            opacity: 0.7,
-            fontWeight: '700',
-          }}>
-            Contact
-          </p>
-          {email && <p style={{ margin: '4px 0', fontSize: '12px', opacity: 0.9 }}>{email}</p>}
-          {phone && <p style={{ margin: '4px 0', fontSize: '12px', opacity: 0.9 }}>{phone}</p>}
-          {userLocation && <p style={{ margin: '4px 0', fontSize: '12px', opacity: 0.9 }}>{userLocation}</p>}
-          {linkedin && <p style={{ margin: '4px 0', fontSize: '12px', opacity: 0.9 }}>{linkedin}</p>}
-          {github && <p style={{ margin: '4px 0', fontSize: '12px', opacity: 0.9 }}>{github}</p>}
-        </div>
-
-        {skillsList.length > 0 && (
-          <div>
-            <p style={{
-              margin: '0 0 10px 0',
-              fontSize: '11px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              opacity: 0.7,
-              fontWeight: '700',
-            }}>
-              Skills
-            </p>
-            {skillsList.map((skill, i) => (
-              <div key={i} style={{ marginBottom: '8px' }}>
-                <p style={{ margin: '0 0 4px 0', fontSize: '12px', opacity: 0.9 }}>{skill}</p>
-                <div style={{
-                  height: '4px',
-                  background: 'rgba(255,255,255,0.2)',
-                  borderRadius: '2px',
-                }}>
-                  <div style={{
-                    height: '4px',
-                    width: '80%',
-                    background: '#fff',
-                    borderRadius: '2px',
-                  }}></div>
+                  <div style={styles.contactRow}>
+                    {email && <span style={styles.contactItem}>{email}</span>}
+                    {phone && <span style={styles.contactItem}>{phone}</span>}
+                    {userLocation && <span style={styles.contactItem}>{userLocation}</span>}
+                    {linkedin && <span style={styles.contactItem}>{linkedin}</span>}
+                    {github && <span style={styles.contactItem}>{github}</span>}
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
 
-      {/* RIGHT CONTENT */}
-      <div style={{
-        flex: 1,
-        background: '#fff',
-        padding: '32px 28px',
-      }}>
-        {summary && (
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{
-              margin: '0 0 8px 0',
-              fontSize: '14px',
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: '#10b981',
-            }}>
-              About Me
-            </h3>
-            <div style={{
-              height: '2px',
-              background: 'linear-gradient(90deg, #10b981, transparent)',
-              marginBottom: '10px',
-              borderRadius: '2px',
-            }}></div>
-            <p style={{
-              fontSize: '13px',
-              color: '#475569',
-              lineHeight: '1.7',
-              margin: 0,
-            }}>
-              {summary}
-            </p>
-          </div>
-        )}
+              <div style={styles.resumeBody}>
+                {summary && (
+                  <div style={styles.resumeSection}>
+                    <h3 style={styles.resumeSectionTitle}>Professional Summary</h3>
+                    <div style={styles.resumeDivider}></div>
+                    <p style={styles.resumeText}>{summary}</p>
+                  </div>
+                )}
 
-        {experience && (
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{
-              margin: '0 0 8px 0',
-              fontSize: '14px',
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: '#10b981',
-            }}>
-              Work Experience
-            </h3>
-            <div style={{
-              height: '2px',
-              background: 'linear-gradient(90deg, #10b981, transparent)',
-              marginBottom: '10px',
-              borderRadius: '2px',
-            }}></div>
-            <pre style={{
-              fontSize: '13px',
-              color: '#475569',
-              lineHeight: '1.7',
-              whiteSpace: 'pre-wrap',
-              fontFamily: "'Segoe UI', sans-serif",
-              margin: 0,
-            }}>
-              {experience}
-            </pre>
-          </div>
-        )}
+                {skillsList.length > 0 && (
+                  <div style={styles.resumeSection}>
+                    <h3 style={styles.resumeSectionTitle}>Technical Skills</h3>
+                    <div style={styles.resumeDivider}></div>
+                    <div style={styles.resumeSkillTags}>
+                      {skillsList.map((skill, i) => (
+                        <span key={i} style={styles.resumeSkillTag}>
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-        {education && (
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{
-              margin: '0 0 8px 0',
-              fontSize: '14px',
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: '#10b981',
-            }}>
-              Education
-            </h3>
-            <div style={{
-              height: '2px',
-              background: 'linear-gradient(90deg, #10b981, transparent)',
-              marginBottom: '10px',
-              borderRadius: '2px',
-            }}></div>
-            <pre style={{
-              fontSize: '13px',
-              color: '#475569',
-              lineHeight: '1.7',
-              whiteSpace: 'pre-wrap',
-              fontFamily: "'Segoe UI', sans-serif",
-              margin: 0,
-            }}>
-              {education}
-            </pre>
-          </div>
-        )}
+                {experience && (
+                  <div style={styles.resumeSection}>
+                    <h3 style={styles.resumeSectionTitle}>Work Experience</h3>
+                    <div style={styles.resumeDivider}></div>
+                    <pre style={styles.resumePre}>{experience}</pre>
+                  </div>
+                )}
 
-        {allRoadmaps.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{
-              margin: '0 0 8px 0',
-              fontSize: '14px',
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: '#10b981',
-            }}>
-              Learning Roadmaps
-            </h3>
-            <div style={{
-              height: '2px',
-              background: 'linear-gradient(90deg, #10b981, transparent)',
-              marginBottom: '10px',
-              borderRadius: '2px',
-            }}></div>
-            {allRoadmaps.map((r, i) => (
-              <p key={i} style={{
-                margin: '4px 0',
-                fontSize: '13px',
-                color: '#475569',
-              }}>
-                • {r.title}
-              </p>
-            ))}
-          </div>
-        )}
+                {education && (
+                  <div style={styles.resumeSection}>
+                    <h3 style={styles.resumeSectionTitle}>Education</h3>
+                    <div style={styles.resumeDivider}></div>
+                    <pre style={styles.resumePre}>{education}</pre>
+                  </div>
+                )}
 
-        {badges.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{
-              margin: '0 0 8px 0',
-              fontSize: '14px',
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: '#10b981',
-            }}>
-              Achievements
-            </h3>
-            <div style={{
-              height: '2px',
-              background: 'linear-gradient(90deg, #10b981, transparent)',
-              marginBottom: '10px',
-              borderRadius: '2px',
-            }}></div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {badges.map((b, i) => (
-                <span key={i} style={{
-                  background: '#d1fae5',
-                  color: '#065f46',
-                  padding: '4px 12px',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  border: '1px solid #a7f3d0',
-                }}>
-                  {b.name}
-                </span>
-              ))}
+                {allRoadmaps.length > 0 && (
+                  <div style={styles.resumeSection}>
+                    <h3 style={styles.resumeSectionTitle}>Learning Roadmaps</h3>
+                    <div style={styles.resumeDivider}></div>
+                    <div style={styles.roadmapList}>
+                      {allRoadmaps.map((r, i) => (
+                        <div key={i} style={styles.roadmapItem}>
+                          {r.title}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {badges.length > 0 && (
+                  <div style={styles.resumeSection}>
+                    <h3 style={styles.resumeSectionTitle}>Achievements</h3>
+                    <div style={styles.resumeDivider}></div>
+                    <div style={styles.badgeList}>
+                      {badges.map((b, i) => (
+                        <span key={i} style={styles.badge}>
+                          {b.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )}
+          )}
 
-</div>
+          {template === 'classic' && (
+            <div
+              style={{
+                background: '#fff',
+                borderRadius: '12px',
+                padding: '40px',
+                boxShadow: '0 2px 16px rgba(0,0,0,0.08)',
+                color: '#1e293b',
+              }}
+            >
+              <div
+                style={{
+                  textAlign: 'center',
+                  borderBottom: '3px double #1e293b',
+                  paddingBottom: '20px',
+                  marginBottom: '24px',
+                }}
+              >
+                <h1
+                  style={{
+                    margin: '0 0 6px 0',
+                    fontSize: '30px',
+                    fontWeight: '800',
+                    color: '#0f172a',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {name || 'Your Name'}
+                </h1>
 
+                <p
+                  style={{
+                    margin: '0 0 10px 0',
+                    fontSize: '14px',
+                    color: '#475569',
+                    fontWeight: '500',
+                  }}
+                >
+                  {goal || 'Career Goal / Job Title'}
+                </p>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    flexWrap: 'wrap',
+                    gap: '16px',
+                    fontSize: '13px',
+                    color: '#475569',
+                  }}
+                >
+                  {email && <span>{email}</span>}
+                  {phone && <span>{phone}</span>}
+                  {userLocation && <span>{userLocation}</span>}
+                  {linkedin && <span>{linkedin}</span>}
+                  {github && <span>{github}</span>}
+                </div>
+              </div>
+
+              {summary && (
+                <ClassicSection title="Professional Summary">
+                  <p style={{ fontSize: '14px', color: '#475569', lineHeight: '1.7', margin: 0 }}>{summary}</p>
+                </ClassicSection>
+              )}
+
+              {skillsList.length > 0 && (
+                <ClassicSection title="Skills">
+                  <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}>
+                    {skillsList.join(' • ')}
+                  </p>
+                </ClassicSection>
+              )}
+
+              {experience && (
+                <ClassicSection title="Work Experience">
+                  <pre
+                    style={{
+                      fontSize: '13px',
+                      color: '#475569',
+                      lineHeight: '1.7',
+                      whiteSpace: 'pre-wrap',
+                      fontFamily: "'Segoe UI', sans-serif",
+                      margin: 0,
+                    }}
+                  >
+                    {experience}
+                  </pre>
+                </ClassicSection>
+              )}
+
+              {education && (
+                <ClassicSection title="Education">
+                  <pre
+                    style={{
+                      fontSize: '13px',
+                      color: '#475569',
+                      lineHeight: '1.7',
+                      whiteSpace: 'pre-wrap',
+                      fontFamily: "'Segoe UI', sans-serif",
+                      margin: 0,
+                    }}
+                  >
+                    {education}
+                  </pre>
+                </ClassicSection>
+              )}
+
+              {allRoadmaps.length > 0 && (
+                <ClassicSection title="Learning Roadmaps">
+                  {allRoadmaps.map((r, i) => (
+                    <p key={i} style={{ margin: '4px 0', fontSize: '13px', color: '#475569' }}>
+                      • {r.title}
+                    </p>
+                  ))}
+                </ClassicSection>
+              )}
+
+              {badges.length > 0 && (
+                <ClassicSection title="Achievements">
+                  {badges.map((b, i) => (
+                    <p key={i} style={{ margin: '4px 0', fontSize: '13px', color: '#475569' }}>
+                      • {b.name}
+                    </p>
+                  ))}
+                </ClassicSection>
+              )}
+            </div>
+          )}
+
+          {template === 'creative' && (
+            <div
+              style={{
+                display: 'flex',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                boxShadow: '0 2px 16px rgba(0,0,0,0.12)',
+                minHeight: '600px',
+              }}
+            >
+              <div
+                style={{
+                  width: '35%',
+                  background: 'linear-gradient(180deg, #10b981, #059669)',
+                  padding: '32px 24px',
+                  color: '#fff',
+                }}
+              >
+                <div
+                  style={{
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '32px',
+                    fontWeight: '800',
+                    marginBottom: '16px',
+                    border: '3px solid rgba(255,255,255,0.4)',
+                  }}
+                >
+                  {name ? name.charAt(0).toUpperCase() : 'Y'}
+                </div>
+
+                <h1
+                  style={{
+                    margin: '0 0 4px 0',
+                    fontSize: '22px',
+                    fontWeight: '800',
+                    lineHeight: '1.2',
+                  }}
+                >
+                  {name || 'Your Name'}
+                </h1>
+
+                <p
+                  style={{
+                    margin: '0 0 24px 0',
+                    fontSize: '13px',
+                    opacity: 0.85,
+                    fontWeight: '500',
+                  }}
+                >
+                  {goal || 'Career Goal'}
+                </p>
+
+                <div style={{ marginBottom: '24px' }}>
+                  <p
+                    style={{
+                      margin: '0 0 10px 0',
+                      fontSize: '11px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      opacity: 0.7,
+                      fontWeight: '700',
+                    }}
+                  >
+                    Contact
+                  </p>
+                  {email && <p style={{ margin: '4px 0', fontSize: '12px', opacity: 0.9 }}>{email}</p>}
+                  {phone && <p style={{ margin: '4px 0', fontSize: '12px', opacity: 0.9 }}>{phone}</p>}
+                  {userLocation && (
+                    <p style={{ margin: '4px 0', fontSize: '12px', opacity: 0.9 }}>{userLocation}</p>
+                  )}
+                  {linkedin && <p style={{ margin: '4px 0', fontSize: '12px', opacity: 0.9 }}>{linkedin}</p>}
+                  {github && <p style={{ margin: '4px 0', fontSize: '12px', opacity: 0.9 }}>{github}</p>}
+                </div>
+
+                {skillsList.length > 0 && (
+                  <div>
+                    <p
+                      style={{
+                        margin: '0 0 10px 0',
+                        fontSize: '11px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        opacity: 0.7,
+                        fontWeight: '700',
+                      }}
+                    >
+                      Skills
+                    </p>
+
+                    {skillsList.map((skill, i) => (
+                      <div key={i} style={{ marginBottom: '8px' }}>
+                        <p style={{ margin: '0 0 4px 0', fontSize: '12px', opacity: 0.9 }}>{skill}</p>
+                        <div
+                          style={{
+                            height: '4px',
+                            background: 'rgba(255,255,255,0.2)',
+                            borderRadius: '2px',
+                          }}
+                        >
+                          <div
+                            style={{
+                              height: '4px',
+                              width: '80%',
+                              background: '#fff',
+                              borderRadius: '2px',
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div
+                style={{
+                  flex: 1,
+                  background: '#fff',
+                  padding: '32px 28px',
+                }}
+              >
+                {summary && (
+                  <CreativeSection title="About Me">
+                    <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.7', margin: 0 }}>{summary}</p>
+                  </CreativeSection>
+                )}
+
+                {experience && (
+                  <CreativeSection title="Work Experience">
+                    <pre
+                      style={{
+                        fontSize: '13px',
+                        color: '#475569',
+                        lineHeight: '1.7',
+                        whiteSpace: 'pre-wrap',
+                        fontFamily: "'Segoe UI', sans-serif",
+                        margin: 0,
+                      }}
+                    >
+                      {experience}
+                    </pre>
+                  </CreativeSection>
+                )}
+
+                {education && (
+                  <CreativeSection title="Education">
+                    <pre
+                      style={{
+                        fontSize: '13px',
+                        color: '#475569',
+                        lineHeight: '1.7',
+                        whiteSpace: 'pre-wrap',
+                        fontFamily: "'Segoe UI', sans-serif",
+                        margin: 0,
+                      }}
+                    >
+                      {education}
+                    </pre>
+                  </CreativeSection>
+                )}
+
+                {allRoadmaps.length > 0 && (
+                  <CreativeSection title="Learning Roadmaps">
+                    {allRoadmaps.map((r, i) => (
+                      <p key={i} style={{ margin: '4px 0', fontSize: '13px', color: '#475569' }}>
+                        • {r.title}
+                      </p>
+                    ))}
+                  </CreativeSection>
+                )}
+
+                {badges.length > 0 && (
+                  <CreativeSection title="Achievements">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {badges.map((b, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            background: '#d1fae5',
+                            color: '#065f46',
+                            padding: '4px 12px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            border: '1px solid #a7f3d0',
+                          }}
+                        >
+                          {b.name}
+                        </span>
+                      ))}
+                    </div>
+                  </CreativeSection>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <style>{`
+        @media (max-width: 1024px) {
+          .resume-builder-stack {
+            flex-direction: column;
+          }
+        }
+
         @media print {
-          body * { visibility: hidden; }
-          #resume-preview, #resume-preview * { visibility: visible; }
+          body * {
+            visibility: hidden;
+          }
+          #resume-preview, #resume-preview * {
+            visibility: visible;
+          }
           #resume-preview {
             position: absolute;
             left: 0;
@@ -1555,13 +1549,67 @@ function checkATS() {
             padding: 0;
           }
         }
+
         input:focus, textarea:focus {
           outline: none;
           border-color: #6366f1 !important;
           box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
         }
-        * { box-sizing: border-box; }
+
+        * {
+          box-sizing: border-box;
+        }
       `}</style>
+    </div>
+  );
+}
+
+function ClassicSection({ title, children }) {
+  return (
+    <div style={{ marginBottom: '20px' }}>
+      <h3
+        style={{
+          fontSize: '13px',
+          fontWeight: '700',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          color: '#0f172a',
+          margin: '0 0 8px 0',
+          borderBottom: '1px solid #cbd5e1',
+          paddingBottom: '4px',
+        }}
+      >
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+function CreativeSection({ title, children }) {
+  return (
+    <div style={{ marginBottom: '24px' }}>
+      <h3
+        style={{
+          margin: '0 0 8px 0',
+          fontSize: '14px',
+          fontWeight: '700',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          color: '#10b981',
+        }}
+      >
+        {title}
+      </h3>
+      <div
+        style={{
+          height: '2px',
+          background: 'linear-gradient(90deg, #10b981, transparent)',
+          marginBottom: '10px',
+          borderRadius: '2px',
+        }}
+      ></div>
+      {children}
     </div>
   );
 }
