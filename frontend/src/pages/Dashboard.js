@@ -193,7 +193,7 @@ function Dashboard() {
               <div
                 key={i}
                 style={{
-                  background: '#0f172a',
+                  background: 'rgba(255,255,255,0.03)',
                   border: `1px solid ${item.is_correct ? '#22c55e55' : '#ef444455'}`,
                   borderRadius: '12px',
                   padding: '14px',
@@ -223,9 +223,9 @@ function Dashboard() {
 
 const pageStyle = {
   minHeight: '100vh',
-  background: '#0f172a',
-  padding: '24px',
-  fontFamily: 'Arial, sans-serif',
+  background: 'var(--bg-primary)',
+  padding: '0',
+  fontFamily: 'Inter, sans-serif',
 };
 
 const containerStyle = {
@@ -245,7 +245,8 @@ const statsGrid = {
 };
 
 const cardStyle = {
-  background: '#1e293b',
+  background: 'rgba(10,22,40,0.8)',
+  backdropFilter: 'blur(20px)',
   borderRadius: '16px',
   padding: '20px',
 };
@@ -258,8 +259,9 @@ const mainGrid = {
 };
 
 const sectionCard = {
-  background: '#1e293b',
-  border: '1px solid #334155',
+  background: 'rgba(10,22,40,0.8)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(139,92,246,0.2)',
   borderRadius: '16px',
   padding: '20px',
   marginBottom: '24px',

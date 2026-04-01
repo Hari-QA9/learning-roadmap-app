@@ -19,17 +19,17 @@ function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   const links = [
-    { path: '/dashboard',      label: 'Dashboard',      icon: '⚡' },
-    { path: '/roadmaps',       label: 'Roadmaps',        icon: '🗺️' },
-    { path: '/templates',      label: 'Templates',       icon: '📋' },
-    { path: '/study-planner',  label: 'Study Planner',   icon: '📅' },
-    { path: '/career-advisor', label: 'Career',          icon: '🎯' },
-    { path: '/ai-generator',   label: 'AI Generator',    icon: '🤖' },
-    { path: '/quiz',           label: 'Quiz',            icon: '🧠' },
-    { path: '/resume',         label: 'Resume',          icon: '📄' },
-    { path: '/chat',           label: 'Chat',            icon: '💬' },
-    { path: '/feedback',       label: 'Feedback',        icon: '⭐' },
-  ];
+  { path: '/dashboard', label: 'Dashboard', icon: '🏠' },
+  { path: '/roadmaps', label: 'Roadmaps', icon: '🗺️' },
+  { path: '/templates', label: 'Templates', icon: '📚' },
+  { path: '/study-planner', label: 'Study Planner', icon: '📅' },
+  { path: '/career-advisor', label: 'Career', icon: '💼' },
+  { path: '/ai-generator', label: 'AI Generator', icon: '🤖' },
+  { path: '/quiz', label: 'Quiz', icon: '❓' },
+  { path: '/resume-builder', label: 'Resume', icon: '📄' },
+  { path: '/chat', label: 'Chat', icon: '💬' },
+  { path: '/feedback', label: 'Feedback', icon: '📝' },
+];
 
   return (
     <>

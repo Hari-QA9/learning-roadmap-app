@@ -138,7 +138,8 @@ function Quiz() {
               value={topic}
               onChange={function(e) { setTopic(e.target.value); }}
               onKeyPress={function(e) { if (e.key === 'Enter') { generateQuiz(); } }}
-              style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '2px solid #e2e8f0', fontSize: '15px', marginBottom: '16px', boxSizing: 'border-box', outline: 'none' }}
+              style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '2px solid #e2e8f0', fontSize: '15px', marginBottom: '16px', boxSizing: 'border-box', outline: 'none', background: '#ffffff',
+  color: '#1e293b' }}
             />
             <button
               onClick={generateQuiz}

@@ -92,7 +92,8 @@ function AIGenerator() {
                 value={topic}
                 onChange={function(e) { setTopic(e.target.value); }}
                 onKeyPress={function(e) { if (e.key === 'Enter') { handleGenerate(); } }}
-                style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '2px solid #e2e8f0', fontSize: '15px', boxSizing: 'border-box', outline: 'none' }}
+                style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '2px solid #e2e8f0', fontSize: '15px', boxSizing: 'border-box', outline: 'none', background: '#ffffff',
+    color: '#1e293b' }}
               />
             </div>
 
@@ -103,7 +104,9 @@ function AIGenerator() {
               <select
                 value={duration}
                 onChange={function(e) { setDuration(e.target.value); }}
-                style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '2px solid #e2e8f0', fontSize: '15px', boxSizing: 'border-box', outline: 'none', background: 'white', cursor: 'pointer' }}>
+                style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '2px solid #e2e8f0', fontSize: '15px', boxSizing: 'border-box', outline: 'none',  background: '#ffffff',
+    color: '#1e293b',
+    cursor: 'pointer' }}>
                 <option value="1 week">1 Week</option>
                 <option value="2 weeks">2 Weeks</option>
                 <option value="4 weeks">1 Month</option>

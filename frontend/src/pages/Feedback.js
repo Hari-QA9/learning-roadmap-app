@@ -93,7 +93,8 @@ function Feedback() {
           placeholder="e.g. Feature request, Bug report"
           value={subject}
           onChange={function(e) { setSubject(e.target.value); }}
-          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '14px', marginBottom: '16px', boxSizing: 'border-box' }}
+          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '14px', marginBottom: '16px', boxSizing: 'border-box', background: '#ffffff',
+  color: '#1e293b' }}
         />
 
         <p style={{ margin: '0 0 6px', fontWeight: 'bold', color: '#475569', fontSize: '14px' }}>
@@ -104,7 +105,8 @@ function Feedback() {
           value={message}
           onChange={function(e) { setMessage(e.target.value); }}
           rows={5}
-          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '14px', marginBottom: '16px', boxSizing: 'border-box', resize: 'vertical' }}
+          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '14px', marginBottom: '16px', boxSizing: 'border-box', resize: 'vertical', background: '#ffffff',
+  color: '#1e293b' }}
         />
 
         <button

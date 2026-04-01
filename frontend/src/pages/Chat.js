@@ -156,7 +156,8 @@ function Chat() {
           placeholder="Ask anything about learning... (Enter to send)"
           rows={2}
           disabled={loading}
-          style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '2px solid #e2e8f0', fontSize: '14px', resize: 'none', outline: 'none', fontFamily: 'Segoe UI, sans-serif' }}
+          style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '2px solid #e2e8f0', fontSize: '14px', resize: 'none', outline: 'none', fontFamily: 'Segoe UI, sans-serif', background: '#ffffff',
+    color: '#1e293b' }}
         />
         <button
           onClick={sendMessage}
