@@ -110,31 +110,45 @@ router.get('/my-performance', auth, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Overall stats
-    const [overall] = await db.promise().query(
-      `SELECT
+    const [overallRows] = await db.promise().query(
+      `
+      SELECT 
         COUNT(*) as total_attempts,
         SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as total_correct,
         COUNT(DISTINCT quiz_id) as unique_questions
-       FROM quiz_results WHERE user_id = ?`, [userId]
+      FROM quiz_results
+      WHERE user_id = ?
+      `,
+      [userId]
     );
 
-    // Get quizzes grouped by topic (using question as topic identifier)
+    const overall = overallRows[0] || {
+      total_attempts: 0,
+      total_correct: 0,
+      unique_questions: 0,
+    };
+
     const [quizSessions] = await db.promise().query(
-      `SELECT
+      `
+      SELECT 
         qr.quiz_id,
         q.question,
+        q.option_a,
+        q.option_b,
+        q.option_c,
+        q.option_d,
         q.correct_answer,
         qr.selected_answer,
         qr.is_correct,
         qr.answered_at
-       FROM quiz_results qr
-       JOIN quizzes q ON qr.quiz_id = q.id
-       WHERE qr.user_id = ?
-       ORDER BY qr.answered_at DESC`, [userId]
+      FROM quiz_results qr
+      JOIN quizzes q ON qr.quiz_id = q.id
+      WHERE qr.user_id = ?
+      ORDER BY qr.answered_at DESC
+      `,
+      [userId]
     );
 
-    // Get AI improvement suggestions
     const total = parseInt(overall.total_attempts) || 0;
     const correct = parseInt(overall.total_correct) || 0;
     const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -145,21 +159,21 @@ router.get('/my-performance', auth, async (req, res) => {
         'Review the basic concepts of the topics you are studying',
         'Try reading documentation before taking quizzes',
         'Practice with smaller topics first',
-        'Use the AI Chat to ask questions about topics you find difficult'
+        'Use the AI Chat to ask questions about topics you find difficult',
       ];
     } else if (accuracy < 80) {
       suggestions = [
         'You are doing well! Focus on the questions you got wrong',
         'Try generating roadmaps for topics where you score below 70%',
         'Review your incorrect answers and study those areas more',
-        'Take quizzes more frequently to improve retention'
+        'Take quizzes more frequently to improve retention',
       ];
     } else {
       suggestions = [
         'Excellent performance! Try more advanced topics',
         'Challenge yourself with harder subjects',
         'Share your knowledge by creating roadmaps for others',
-        'You are ready to move to the next level!'
+        'You are ready to move to the next level!',
       ];
     }
 
@@ -168,18 +182,16 @@ router.get('/my-performance', auth, async (req, res) => {
         totalAttempts: total,
         totalCorrect: correct,
         accuracy: accuracy,
-        uniqueQuestions: parseInt(overall.unique_questions) || 0
+        uniqueQuestions: parseInt(overall.unique_questions) || 0,
       },
       quizHistory: quizSessions,
-      suggestions: suggestions
+      suggestions: suggestions,
     });
-
   } catch (err) {
     console.error('Performance error:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
-
 // GET quiz by roadmap
 router.get('/:roadmapId', auth, async (req, res) => {
   try {

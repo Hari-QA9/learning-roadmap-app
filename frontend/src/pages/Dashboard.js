@@ -52,7 +52,7 @@ function Dashboard() {
     { label: 'Templates', icon: '📋', path: '/templates', color: '#10b981' },
     { label: 'Study Planner', icon: '📅', path: '/study-planner', color: '#f59e0b' },
     { label: 'Career Advisor', icon: '🎯', path: '/career-advisor', color: '#ec4899' },
-    { label: 'Resume Builder', icon: '📄', path: '/resume', color: '#a78bfa' },
+    { label: 'Resume Builder', icon: '📄', path: '/resume-builder', color: '#a78bfa' },
     { label: 'Take Quiz', icon: '🧠', path: '/quiz', color: '#34d399' },
     { label: 'Chat AI', icon: '💬', path: '/chat', color: '#60a5fa' },
   ];

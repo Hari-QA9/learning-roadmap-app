@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
@@ -21,6 +22,9 @@ const quizRoutes = require('./routes/quiz');
 const badgesRoutes = require('./routes/badges');
 const feedbackRoutes = require('./routes/feedback');
 const commentsRoutes = require('./routes/comments');
+const resumeRoutes = require('./routes/resume');
+const templateRoutes = require('./routes/templates');
+const evaluationRoutes = require('./routes/evaluation');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/roadmaps', roadmapRoutes);
@@ -36,21 +40,13 @@ app.use('/api/quiz', quizRoutes);
 app.use('/api/badges', badgesRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/comments', commentsRoutes);
+app.use('/api/resume', resumeRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/evaluation', evaluationRoutes);
 
 app.get('/', (req, res) => res.send('Learning Roadmap API Running'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  const resumeRoutes = require('./routes/resume');
-app.use('/api/resume', resumeRoutes);
-
-const templateRoutes = require('./routes/templates');
-app.use('/api/templates', templateRoutes);
-
-const evaluationRoutes = require('./routes/evaluation');
-app.use('/api/evaluation', evaluationRoutes);
-
-
-
 });

@@ -21,8 +21,8 @@ router.get('/dashboard', verifyToken, (req, res) => {
 
   Promise.all([
     runQuery(`SELECT COUNT(*) as count FROM roadmaps WHERE user_id = ?`, [userId]),
-   runQuery(`SELECT COUNT(*) as count FROM tasks WHERE user_id = ? AND status = 'completed'`, [userId]),
-runQuery(`SELECT COUNT(*) as count FROM tasks WHERE user_id = ? AND status = 'pending'`, [userId]),
+    runQuery(`SELECT COUNT(*) as count FROM tasks WHERE user_id = ? AND status = 'done'`, [userId]),
+    runQuery(`SELECT COUNT(*) as count FROM tasks WHERE user_id = ? AND status = 'pending'`, [userId]),
     runQuery(`SELECT COUNT(*) as count FROM user_badges WHERE user_id = ?`, [userId]),
     runQuery(`SELECT COUNT(*) as count FROM quiz_attempts WHERE user_id = ?`, [userId]),
   ])
@@ -36,7 +36,7 @@ runQuery(`SELECT COUNT(*) as count FROM tasks WHERE user_id = ? AND status = 'pe
         streak: 0,
       });
     })
-    .catch(err => {
+    .catch((err) => {
       console.error('Stats error:', err);
       res.status(500).json({ message: 'Failed to fetch stats' });
     });
@@ -50,11 +50,11 @@ router.get('/quiz-performance', verifyToken, (req, res) => {
   const userId = req.user.id;
 
   const overallSql = `
-    SELECT 
-      COUNT(*) as totalAttempts,
-      COALESCE(SUM(score), 0) as totalCorrect,
-      COALESCE(SUM(total), 0) as totalQuestions
-    FROM quiz_attempts WHERE user_id = ?
+    SELECT COUNT(*) as totalAttempts,
+           COALESCE(SUM(score), 0) as totalCorrect,
+           COALESCE(SUM(total), 0) as totalQuestions
+    FROM quiz_attempts
+    WHERE user_id = ?
   `;
 
   const historySql = `
@@ -70,9 +70,10 @@ router.get('/quiz-performance', verifyToken, (req, res) => {
     if (err) return res.status(500).json({ message: 'Error fetching stats' });
 
     const overall = overallRows[0];
-    const accuracy = overall.totalQuestions > 0
-      ? Math.round((overall.totalCorrect / overall.totalQuestions) * 100)
-      : 0;
+    const accuracy =
+      overall.totalQuestions > 0
+        ? Math.round((overall.totalCorrect / overall.totalQuestions) * 100)
+        : 0;
 
     db.query(historySql, [userId], (err2, historyRows) => {
       if (err2) return res.status(500).json({ message: 'Error fetching history' });
@@ -80,7 +81,7 @@ router.get('/quiz-performance', verifyToken, (req, res) => {
       const suggestions = [];
       if (accuracy < 50) suggestions.push('Review your module materials before taking quizzes');
       if (accuracy < 70) suggestions.push('Practice with smaller topics first');
-      if (overall.totalAttempts < 5) suggestions.push('Take more quizzes to improve your score');
+      if ((overall.totalAttempts || 0) < 5) suggestions.push('Take more quizzes to improve your score');
       suggestions.push('Use the AI Chat to ask questions about difficult topics');
 
       res.json({

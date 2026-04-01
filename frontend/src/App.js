@@ -1,5 +1,6 @@
 import React, { useState, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -21,8 +22,6 @@ import ModuleEvaluation from './pages/ModuleEvaluation';
 import RoadmapEvaluation from './pages/RoadmapEvaluation';
 import Certificate from './pages/Certificate';
 
-
-// ── THEME CONTEXT ──────────────────────────────
 export const ThemeContext = createContext();
 
 export function useTheme() {
@@ -31,7 +30,7 @@ export function useTheme() {
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('token');
-  if (!token) return <Navigate to="/login" />;
+  if (!token) return <Navigate to="/login" replace />;
   return children;
 }
 
@@ -40,39 +39,176 @@ function App() {
 
   return (
     <ThemeContext.Provider value={{ darkMode, setDarkMode }}>
-      <div style={{
-        background: darkMode ? '#0f172a' : '#f1f5f9',
-        minHeight: '100vh',
-        transition: 'background 0.3s ease',
-      }}>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-            <Route path="/roadmaps" element={<PrivateRoute><Roadmaps /></PrivateRoute>} />
-            <Route path="/roadmap/:id" element={<PrivateRoute><RoadmapDetail /></PrivateRoute>} />
-            <Route path="/ai-generator" element={<PrivateRoute><AIGenerator /></PrivateRoute>} />
-            <Route path="/chat" element={<PrivateRoute><Chat /></PrivateRoute>} />
-            <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-            <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
-            <Route path="/quiz" element={<PrivateRoute><Quiz /></PrivateRoute>} />
-            <Route path="/quiz-performance" element={<PrivateRoute><QuizPerformance /></PrivateRoute>} />
-            <Route path="/feedback" element={<PrivateRoute><Feedback /></PrivateRoute>} />
-            <Route path="/resume" element={<PrivateRoute><ResumeBuilder /></PrivateRoute>} />
-            <Route path="/templates" element={<PrivateRoute><Templates /></PrivateRoute>} />
-            <Route path="/career-advisor" element={<PrivateRoute><CareerAdvisor /></PrivateRoute>} />
-            <Route path="/study-planner" element={<PrivateRoute><StudyPlanner /></PrivateRoute>} />
-            <Route path="*" element={<Navigate to="/" />} />
-            <Route path="/module-evaluation" element={<PrivateRoute><ModuleEvaluation /></PrivateRoute>} />
-<Route path="/roadmap-evaluation" element={<PrivateRoute><RoadmapEvaluation /></PrivateRoute>} />
-<Route path="/certificates" element={<PrivateRoute><Certificate /></PrivateRoute>} />
-<Route path="*" element={<Navigate to="/" />} />   {/* must be LAST */}
+      <Router>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
 
-          </Routes>
-        </Router>
-      </div>
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/roadmaps"
+            element={
+              <PrivateRoute>
+                <Roadmaps />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/roadmaps/:id"
+            element={
+              <PrivateRoute>
+                <RoadmapDetail />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/ai-generator"
+            element={
+              <PrivateRoute>
+                <AIGenerator />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/notifications"
+            element={
+              <PrivateRoute>
+                <Notifications />
+              </PrivateRoute>
+            }
+          />
+          <Route
+  path="/quiz"
+  element={
+    <PrivateRoute>
+      <Quiz />
+    </PrivateRoute>
+  }
+/>
+
+          <Route
+            path="/quiz/:moduleId"
+            element={
+              <PrivateRoute>
+                <Quiz />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/quiz-performance"
+            element={
+              <PrivateRoute>
+                <QuizPerformance />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/feedback"
+            element={
+              <PrivateRoute>
+                <Feedback />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/chat"
+            element={
+              <PrivateRoute>
+                <Chat />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/resume-builder"
+            element={
+              <PrivateRoute>
+                <ResumeBuilder />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/templates"
+            element={
+              <PrivateRoute>
+                <Templates />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/career-advisor"
+            element={
+              <PrivateRoute>
+                <CareerAdvisor />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/study-planner"
+            element={
+              <PrivateRoute>
+                <StudyPlanner />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/module-evaluation/:moduleId"
+            element={
+              <PrivateRoute>
+                <ModuleEvaluation />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/roadmap-evaluation/:roadmapId"
+            element={
+              <PrivateRoute>
+                <RoadmapEvaluation />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/certificate/:roadmapId"
+            element={
+              <PrivateRoute>
+                <Certificate />
+              </PrivateRoute>
+            }
+          />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
     </ThemeContext.Provider>
   );
 }

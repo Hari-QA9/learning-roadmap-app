@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom'; // ✅ Fix 1: added useParams
 
 function Quiz() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { moduleId } = useParams(); // ✅ Fix 2: now works because useParams is imported
   const token = localStorage.getItem('token');
   const params = new URLSearchParams(location.search);
   const roadmapId = params.get('roadmap') || null;
@@ -16,6 +17,7 @@ function Quiz() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
+  const quizMode = moduleId ? 'module' : 'general';
 
   function generateQuiz() {
     if (!topic.trim()) {
@@ -48,45 +50,57 @@ function Quiz() {
     });
   }
 
-    function submitQuiz() {
-    if (Object.keys(answers).length < questions.length) {
-      alert('Please answer all questions!');
-      return;
-    }
-    var score = 0;
-    var details = questions.map(function(q, i) {
-      var isCorrect = answers[i] === q.correct_answer;
-      if (isCorrect) score++;
-      return {
-        question: q.question,
-        selected: answers[i],
-        correct: q.correct_answer,
-        isCorrect: isCorrect,
-        quiz_id: q.id
-      };
-    });
+  async function submitQuiz() {
+  if (Object.keys(answers).length < questions.length) {
+    alert('Please answer all questions!');
+    return;
+  }
 
-    // Save each answer to database
-    details.forEach(function(detail) {
-      if (detail.quiz_id) {
-        axios.post(
+  let score = 0;
+
+  const details = questions.map(function (q, i) {
+    const isCorrect = answers[i] === q.correct_answer;
+    if (isCorrect) score++;
+
+    return {
+      question: q.question,
+      selected: answers[i],
+      correct: q.correct_answer,
+      isCorrect: isCorrect,
+      quiz_id: q.id,
+    };
+  });
+
+  try {
+    await Promise.all(
+      details.map(function (detail) {
+        if (!detail.quiz_id) return Promise.resolve();
+
+        return axios.post(
           'http://localhost:5000/api/quiz/submit',
           {
             quiz_id: detail.quiz_id,
             selected_answer: detail.selected,
-            correct_answer: detail.correct
+            correct_answer: detail.correct,
           },
-          { headers: { Authorization: 'Bearer ' + token } }
-        ).catch(function(err) {
-          console.log('Submit error:', err);
-        });
-      }
+          {
+            headers: { Authorization: 'Bearer ' + token },
+          }
+        );
+      })
+    );
+
+    setResults({
+      score: score,
+      total: questions.length,
+      details: details,
     });
-
-    setResults({ score: score, total: questions.length, details: details });
     setStarted(false);
+  } catch (err) {
+    console.log('Submit error:', err);
+    alert('Failed to save quiz results properly.');
   }
-
+}
 
   function retakeQuiz() {
     setResults(null);

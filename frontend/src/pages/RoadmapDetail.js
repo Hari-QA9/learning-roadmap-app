@@ -3,492 +3,767 @@ import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 
 function RoadmapDetail() {
-  const [roadmap, setRoadmap] = useState(null);
-  const [modules, setModules] = useState([]);
-  const [tasks, setTasks] = useState({});
-  const [resources, setResources] = useState([]);
-  const [newModule, setNewModule] = useState('');
-  const [newTask, setNewTask] = useState({});
-  const [newTaskDueDate, setNewTaskDueDate] = useState({});
-  const [newTaskPriority, setNewTaskPriority] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('modules');
-  const [evalStatus, setEvalStatus] = useState({});
   const { id } = useParams();
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
 
-  useEffect(function () {
-    fetchRoadmap();
-    fetchModules();
-    fetchResources();
-  }, []);
+  const [roadmap, setRoadmap] = useState(null);
+  const [modules, setModules] = useState([]);
+  const [tasks, setTasks] = useState({});
+  const [resources, setResources] = useState([]);
+  const [evalStatus, setEvalStatus] = useState({});
+  const [activeTab, setActiveTab] = useState('modules');
+  const [loading, setLoading] = useState(true);
 
-  function fetchRoadmap() {
-    axios.get('http://localhost:5000/api/roadmaps/' + id, { headers: { Authorization: 'Bearer ' + token } })
-      .then(function (res) { setRoadmap(res.data); setLoading(false); })
-      .catch(function (err) { console.log(err); setLoading(false); });
-  }
+  const [newModule, setNewModule] = useState('');
+  const [newTask, setNewTask] = useState({});
+  const [newTaskDueDate, setNewTaskDueDate] = useState({});
+  const [newTaskPriority, setNewTaskPriority] = useState({});
 
-  function fetchModules() {
-    axios.get('http://localhost:5000/api/modules/' + id, { headers: { Authorization: 'Bearer ' + token } })
-      .then(function (res) {
-        setModules(res.data);
-        res.data.forEach(function (m) {
-          fetchTasks(m.id);
-          fetchEvalStatus(m.id);
-        });
-      })
-      .catch(function (err) { console.log(err); });
-  }
+  const authHeaders = {
+    headers: { Authorization: `Bearer ${token}` },
+  };
 
-  function fetchEvalStatus(moduleId) {
-    axios.get('http://localhost:5000/api/evaluation/module-status/' + moduleId, {
-      headers: { Authorization: 'Bearer ' + token }
-    })
-      .then(function (res) {
-        setEvalStatus(function (prev) {
-          var u = Object.assign({}, prev);
-          u[moduleId] = res.data.passed;
-          return u;
-        });
-      })
-      .catch(function () {});
-  }
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    fetchAll();
+  }, [id]);
 
-  function fetchResources() {
-    axios.get('http://localhost:5000/api/resources/' + id, { headers: { Authorization: 'Bearer ' + token } })
-      .then(function (res) { setResources(res.data); })
-      .catch(function (err) { console.log(err); });
-  }
+  const fetchAll = async () => {
+    setLoading(true);
+    await Promise.all([fetchRoadmap(), fetchModules(), fetchResources()]);
+    setLoading(false);
+  };
 
-  function fetchTasks(moduleId) {
-    axios.get('http://localhost:5000/api/tasks/' + moduleId, { headers: { Authorization: 'Bearer ' + token } })
-      .then(function (res) {
-        setTasks(function (prev) {
-          var u = Object.assign({}, prev);
-          u[moduleId] = res.data;
-          return u;
-        });
-      })
-      .catch(function (err) { console.log(err); });
-  }
+  const fetchRoadmap = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/roadmaps/${id}`, authHeaders);
+      setRoadmap(res.data);
+    } catch (err) {
+      console.error('Error fetching roadmap:', err);
+    }
+  };
 
-  function addModule() {
+  const fetchModules = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/modules/${id}`, authHeaders);
+      const moduleList = res.data || [];
+      setModules(moduleList);
+
+      for (const mod of moduleList) {
+        fetchTasks(mod.id);
+        fetchEvalStatus(mod.id);
+      }
+    } catch (err) {
+      console.error('Error fetching modules:', err);
+    }
+  };
+
+  const fetchTasks = async (moduleId) => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/tasks/${moduleId}`, authHeaders);
+      setTasks((prev) => ({
+        ...prev,
+        [moduleId]: res.data || [],
+      }));
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+    }
+  };
+
+  const fetchResources = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/resources/${id}`, authHeaders);
+      setResources(res.data || []);
+    } catch (err) {
+      console.error('Error fetching resources:', err);
+    }
+  };
+
+  const fetchEvalStatus = async (moduleId) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/evaluation/module-status/${moduleId}`,
+        authHeaders
+      );
+      setEvalStatus((prev) => ({
+        ...prev,
+        [moduleId]: res.data?.passed === true,
+      }));
+    } catch (err) {
+      setEvalStatus((prev) => ({
+        ...prev,
+        [moduleId]: false,
+      }));
+    }
+  };
+
+  const addModule = async () => {
     if (!newModule.trim()) return;
-    axios.post('http://localhost:5000/api/modules', { roadmap_id: id, title: newModule, description: '' }, { headers: { Authorization: 'Bearer ' + token } })
-      .then(function () { setNewModule(''); fetchModules(); })
-      .catch(function (err) { console.log(err); });
-  }
 
-  function deleteModule(moduleId) {
+    try {
+      await axios.post(
+        'http://localhost:5000/api/modules',
+        {
+          roadmap_id: id,
+          title: newModule,
+          description: '',
+          order_index: modules.length,
+        },
+        authHeaders
+      );
+      setNewModule('');
+      fetchModules();
+    } catch (err) {
+      console.error('Error adding module:', err);
+    }
+  };
+
+  const deleteModule = async (moduleId) => {
     if (!window.confirm('Delete this module?')) return;
-    axios.delete('http://localhost:5000/api/modules/' + moduleId, { headers: { Authorization: 'Bearer ' + token } })
-      .then(function () { fetchModules(); })
-      .catch(function (err) { console.log(err); });
-  }
 
-  function addTask(moduleId) {
-    var t = newTask[moduleId];
-    if (!t || !t.trim()) return;
-    var dueDate = newTaskDueDate[moduleId] || null;
-    var priority = newTaskPriority[moduleId] || 'medium';
-    axios.post('http://localhost:5000/api/tasks', {
-      module_id: moduleId, title: t, description: '',
-      due_date: dueDate, priority: priority,
-    }, { headers: { Authorization: 'Bearer ' + token } })
-      .then(function () {
-        setNewTask(function (prev) { var u = Object.assign({}, prev); u[moduleId] = ''; return u; });
-        setNewTaskDueDate(function (prev) { var u = Object.assign({}, prev); u[moduleId] = ''; return u; });
-        setNewTaskPriority(function (prev) { var u = Object.assign({}, prev); u[moduleId] = 'medium'; return u; });
-        fetchTasks(moduleId);
-      })
-      .catch(function (err) { console.log(err); });
-  }
+    try {
+      await axios.delete(`http://localhost:5000/api/modules/${moduleId}`, authHeaders);
+      fetchModules();
+    } catch (err) {
+      console.error('Error deleting module:', err);
+    }
+  };
 
-  function updateTaskStatus(task, moduleId) {
-    var next = task.status === 'pending' ? 'in_progress' : task.status === 'in_progress' ? 'done' : 'pending';
-    axios.put('http://localhost:5000/api/tasks/' + task.id, {
-      title: task.title, description: task.description || '',
-      status: next, due_date: task.due_date || null, priority: task.priority || 'medium',
-    }, { headers: { Authorization: 'Bearer ' + token } })
-      .then(function () { fetchTasks(moduleId); })
-      .catch(function (err) { console.log(err); });
-  }
+  const addTask = async (moduleId) => {
+    const title = newTask[moduleId]?.trim();
+    if (!title) return;
 
-  function deleteTask(taskId, moduleId) {
+    try {
+      await axios.post(
+        'http://localhost:5000/api/tasks',
+        {
+          module_id: moduleId,
+          roadmap_id: id,
+          title,
+          description: '',
+          due_date: newTaskDueDate[moduleId] || null,
+          priority: newTaskPriority[moduleId] || 'medium',
+        },
+        authHeaders
+      );
+
+      setNewTask((prev) => ({ ...prev, [moduleId]: '' }));
+      setNewTaskDueDate((prev) => ({ ...prev, [moduleId]: '' }));
+      setNewTaskPriority((prev) => ({ ...prev, [moduleId]: 'medium' }));
+      fetchTasks(moduleId);
+    } catch (err) {
+      console.error('Error adding task:', err);
+    }
+  };
+
+  const updateTaskStatus = async (task, moduleId) => {
+    const nextStatus =
+      task.status === 'pending'
+        ? 'in_progress'
+        : task.status === 'in_progress'
+        ? 'done'
+        : 'pending';
+
+    try {
+      await axios.put(
+        `http://localhost:5000/api/tasks/${task.id}`,
+        {
+          title: task.title,
+          description: task.description || '',
+          status: nextStatus,
+          due_date: task.due_date || null,
+          priority: task.priority || 'medium',
+        },
+        authHeaders
+      );
+      fetchTasks(moduleId);
+    } catch (err) {
+      console.error('Error updating task:', err);
+    }
+  };
+
+  const deleteTask = async (taskId, moduleId) => {
     if (!window.confirm('Delete this task?')) return;
-    axios.delete('http://localhost:5000/api/tasks/' + taskId, { headers: { Authorization: 'Bearer ' + token } })
-      .then(function () { fetchTasks(moduleId); })
-      .catch(function (err) { console.log(err); });
-  }
 
-  function isModuleUnlocked(modIndex) {
+    try {
+      await axios.delete(`http://localhost:5000/api/tasks/${taskId}`, authHeaders);
+      fetchTasks(moduleId);
+    } catch (err) {
+      console.error('Error deleting task:', err);
+    }
+  };
+
+  const isModuleUnlocked = (modIndex) => {
     if (modIndex === 0) return true;
-    var prevModule = modules[modIndex - 1];
-    return evalStatus[prevModule.id] === true;
-  }
+    const prevModule = modules[modIndex - 1];
+    return evalStatus[prevModule?.id] === true;
+  };
 
-  function allModulesComplete() {
-    return modules.every(function (mod) {
-      var mt = tasks[mod.id] || [];
-      var allDone = mt.length > 0 && mt.every(function (t) { return t.status === 'done'; });
+  const allModulesComplete = () => {
+    return modules.every((mod) => {
+      const moduleTasks = tasks[mod.id] || [];
+      const allDone = moduleTasks.length > 0 && moduleTasks.every((t) => t.status === 'done');
       return allDone && evalStatus[mod.id] === true;
     });
-  }
+  };
 
-  function getStatusColor(s) { return s === 'done' ? '#22c55e' : s === 'in_progress' ? '#f59e0b' : '#94a3b8'; }
-  function getStatusLabel(s) { return s === 'done' ? 'Done' : s === 'in_progress' ? 'In Progress' : 'Pending'; }
-  function getTypeColor(t) { return t === 'video' ? '#ef4444' : t === 'course' ? '#8b5cf6' : t === 'documentation' ? '#3b82f6' : '#22c55e'; }
-  function getPriorityColor(p) { return p === 'high' ? '#ef4444' : p === 'medium' ? '#f59e0b' : '#64748b'; }
-  function getPriorityBg(p) { return p === 'high' ? 'rgba(239,68,68,0.1)' : p === 'medium' ? 'rgba(245,158,11,0.1)' : 'rgba(100,116,139,0.1)'; }
-  function getPriorityIcon(p) { return p === 'high' ? '🔴' : p === 'medium' ? '🟡' : '🟢'; }
-  function isDueOverdue(due_date) { if (!due_date) return false; return new Date(due_date) < new Date(); }
+  const getStatusColor = (status) => {
+    if (status === 'done') return '#22c55e';
+    if (status === 'in_progress') return '#f59e0b';
+    return '#94a3b8';
+  };
+
+  const getStatusLabel = (status) => {
+    if (status === 'done') return 'Done';
+    if (status === 'in_progress') return 'In Progress';
+    return 'Pending';
+  };
+
+  const getPriorityColor = (priority) => {
+    if (priority === 'high') return '#ef4444';
+    if (priority === 'medium') return '#f59e0b';
+    return '#64748b';
+  };
+
+  const getPriorityBg = (priority) => {
+    if (priority === 'high') return 'rgba(239,68,68,0.1)';
+    if (priority === 'medium') return 'rgba(245,158,11,0.1)';
+    return 'rgba(100,116,139,0.1)';
+  };
+
+  const getPriorityIcon = (priority) => {
+    if (priority === 'high') return '🔴';
+    if (priority === 'medium') return '🟡';
+    return '🟢';
+  };
+
+  const isDueOverdue = (dueDate) => {
+    if (!dueDate) return false;
+    return new Date(dueDate) < new Date();
+  };
 
   if (loading) {
     return (
-      <div style={{ padding: '60px', textAlign: 'center', color: '#64748b', fontFamily: 'Segoe UI, sans-serif' }}>
+      <div style={{ minHeight: '100vh', padding: '40px', color: '#fff', background: '#0f172a' }}>
         Loading roadmap...
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9', padding: '24px', fontFamily: 'Segoe UI, sans-serif' }}>
-
-      {/* HEADER */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', flexWrap: 'wrap' }}>
-        <button onClick={function () { navigate('/dashboard'); }} style={{ padding: '8px 16px', background: '#64748b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-          Back
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#0f172a',
+        color: '#fff',
+        padding: '24px',
+        fontFamily: 'Arial, sans-serif',
+      }}
+    >
+      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <button
+          onClick={() => navigate('/roadmaps')}
+          style={{
+            marginBottom: '20px',
+            background: '#1e293b',
+            color: '#fff',
+            border: '1px solid #334155',
+            padding: '10px 16px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+          }}
+        >
+          ← Back
         </button>
-        <div style={{ flex: 1 }}>
-          <h1 style={{ margin: 0, fontSize: '22px', color: '#1e293b' }}>{roadmap ? roadmap.title : 'Roadmap'}</h1>
-          {roadmap && roadmap.goal && <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '14px' }}>Goal: {roadmap.goal}</p>}
-          {roadmap && roadmap.duration && <p style={{ margin: '2px 0 0', color: '#06b6d4', fontSize: '13px' }}>Duration: {roadmap.duration}</p>}
-        </div>
-        <button onClick={function () { navigate('/quiz?roadmap=' + id); }} style={{ padding: '8px 16px', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-          Take Quiz
-        </button>
 
-        {allModulesComplete() && (
-          <button
-            onClick={function () {
-              var moduleTitles = modules.map(function (m) { return m.title; }).join('|');
-              navigate('/roadmap-evaluation?roadmapId=' + id + '&title=' + encodeURIComponent(roadmap?.title || '') + '&modules=' + encodeURIComponent(moduleTitles));
-            }}
-            style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #b8860b, #d4a017)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
-          >
-            🎓 Final Evaluation
-          </button>
-        )}
-      </div>
+        <div
+          style={{
+            background: '#1e293b',
+            borderRadius: '16px',
+            padding: '24px',
+            marginBottom: '24px',
+            border: '1px solid #334155',
+          }}
+        >
+          <h1 style={{ margin: 0, marginBottom: '10px', color: '#f8fafc' }}>
+            {roadmap?.title || 'Roadmap'}
+          </h1>
 
-      {/* PROGRESS OVERVIEW */}
-      {modules.length > 0 && (
-        <div style={{ background: 'white', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-          <p style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: '600', color: '#64748b' }}>COURSE PROGRESS</p>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {modules.map(function (mod, i) {
-              var mt = tasks[mod.id] || [];
-              var allTasksDone = mt.length > 0 && mt.every(function (t) { return t.status === 'done'; });
-              var evalPassed = evalStatus[mod.id] === true;
-              return (
-                <div key={mod.id} style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600',
-                  background: evalPassed ? 'rgba(34,197,94,0.1)' : allTasksDone ? 'rgba(245,158,11,0.1)' : 'rgba(100,116,139,0.1)',
-                  color: evalPassed ? '#22c55e' : allTasksDone ? '#f59e0b' : '#94a3b8',
-                  border: '1px solid ' + (evalPassed ? 'rgba(34,197,94,0.3)' : allTasksDone ? 'rgba(245,158,11,0.3)' : 'rgba(100,116,139,0.3)'),
-                }}>
-                  {evalPassed ? '✅' : allTasksDone ? '⏳' : isModuleUnlocked(i) ? '🔓' : '🔒'}
-                  {' Module ' + (i + 1)}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* TABS */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: 'white', padding: '6px', borderRadius: '10px', width: 'fit-content' }}>
-        <button onClick={function () { setActiveTab('modules'); }} style={{ padding: '10px 24px', background: activeTab === 'modules' ? '#3b82f6' : 'transparent', color: activeTab === 'modules' ? 'white' : '#64748b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-          Modules and Tasks
-        </button>
-        <button onClick={function () { setActiveTab('resources'); }} style={{ padding: '10px 24px', background: activeTab === 'resources' ? '#3b82f6' : 'transparent', color: activeTab === 'resources' ? 'white' : '#64748b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-          Free Resources ({resources.length})
-        </button>
-      </div>
-
-      {/* MODULES TAB */}
-      {activeTab === 'modules' && (
-        <div>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
-            <input
-              type="text" placeholder="Add new module..." value={newModule}
-              onChange={function (e) { setNewModule(e.target.value); }}
-              onKeyPress={function (e) { if (e.key === 'Enter') { addModule(); } }}
-              style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '2px solid #e2e8f0', fontSize: '14px', outline: 'none' }}
-            />
-            <button onClick={addModule} style={{ padding: '10px 20px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Add Module
-            </button>
-          </div>
-
-          {modules.length === 0 && (
-            <div style={{ background: 'white', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#64748b' }}>
-              No modules yet. Add your first module above!
-            </div>
+          {roadmap?.goal && (
+            <p style={{ margin: '8px 0', color: '#cbd5e1' }}>
+              <strong>Goal:</strong> {roadmap.goal}
+            </p>
           )}
 
-          {modules.map(function (mod, modIndex) {
-            var mt = tasks[mod.id] || [];
-            var done = mt.filter(function (t) { return t.status === 'done'; }).length;
-            var prog = mt.length > 0 ? Math.round((done / mt.length) * 100) : 0;
-            var unlocked = isModuleUnlocked(modIndex);
-            var allTasksDone = mt.length > 0 && mt.every(function (t) { return t.status === 'done'; });
-            var evalPassed = evalStatus[mod.id] === true;
+          {roadmap?.duration && (
+            <p style={{ margin: '8px 0', color: '#cbd5e1' }}>
+              <strong>Duration:</strong> {roadmap.duration}
+            </p>
+          )}
 
-            return (
-              <div key={mod.id} style={{
-                background: 'white',
-                borderRadius: '12px',
-                padding: '20px',
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '18px' }}>
+            <button
+              onClick={() => navigate('/roadmaps')}
+              style={actionBtn('#3b82f6')}
+            >
+              View All Roadmaps
+            </button>
+
+            <button
+              onClick={() => navigate('/roadmaps')}
+              style={actionBtn('#22c55e')}
+            >
+              Take Quiz
+            </button>
+
+            {allModulesComplete() && (
+              <button
+                onClick={() => navigate(`/roadmap-evaluation/${id}`)}
+                style={actionBtn('#8b5cf6')}
+              >
+                🎓 Final Evaluation
+              </button>
+            )}
+          </div>
+        </div>
+
+        {modules.length > 0 && (
+          <div
+            style={{
+              background: '#1e293b',
+              borderRadius: '16px',
+              padding: '20px',
+              marginBottom: '24px',
+              border: '1px solid #334155',
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>Course Progress</h3>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {modules.map((mod, i) => {
+                const moduleTasks = tasks[mod.id] || [];
+                const allTasksDone =
+                  moduleTasks.length > 0 && moduleTasks.every((t) => t.status === 'done');
+                const passed = evalStatus[mod.id] === true;
+
+                return (
+                  <div
+                    key={mod.id}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '999px',
+                      background: '#0f172a',
+                      border: '1px solid #334155',
+                      fontSize: '14px',
+                    }}
+                  >
+                    {passed ? '✅' : allTasksDone ? '⏳' : isModuleUnlocked(i) ? '🔓' : '🔒'} Module{' '}
+                    {i + 1}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+          <button
+            onClick={() => setActiveTab('modules')}
+            style={tabBtn(activeTab === 'modules')}
+          >
+            Modules and Tasks
+          </button>
+          <button
+            onClick={() => setActiveTab('resources')}
+            style={tabBtn(activeTab === 'resources')}
+          >
+            Free Resources ({resources.length})
+          </button>
+        </div>
+
+        {activeTab === 'modules' && (
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
                 marginBottom: '20px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                opacity: unlocked ? 1 : 0.6,
-                position: 'relative',
-                border: evalPassed ? '2px solid #22c55e' : allTasksDone ? '2px solid #f59e0b' : '1px solid #e2e8f0',
-              }}>
+                flexWrap: 'wrap',
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Add new module..."
+                value={newModule}
+                onChange={(e) => setNewModule(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addModule()}
+                style={inputStyle}
+              />
+              <button onClick={addModule} style={actionBtn('#8b5cf6')}>
+                Add Module
+              </button>
+            </div>
 
-                {!unlocked && (
-                  <div style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(241,245,249,0.85)',
-                    borderRadius: '12px',
-                    display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center',
-                    zIndex: 10,
-                  }}>
-                    <div style={{ fontSize: '36px', marginBottom: '8px' }}>🔒</div>
-                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: '#64748b' }}>
-                      Module Locked
-                    </p>
-                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
-                      Pass Module {modIndex} evaluation to unlock
-                    </p>
-                  </div>
-                )}
+            {modules.length === 0 && (
+              <div style={cardStyle}>
+                <p style={{ margin: 0, color: '#cbd5e1' }}>
+                  No modules yet. Add your first module above.
+                </p>
+              </div>
+            )}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '18px' }}>
-                      {evalPassed ? '✅' : allTasksDone ? '⏳' : unlocked ? '🔓' : '🔒'}
-                    </span>
-                    <h3 style={{ margin: 0, fontSize: '16px', color: '#1e293b' }}>
-                      Module {modIndex + 1}: {mod.title}
-                    </h3>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>{done}/{mt.length} done</span>
-                    {evalPassed && (
-                      <span style={{ fontSize: '11px', background: 'rgba(34,197,94,0.1)', color: '#22c55e', padding: '2px 8px', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.3)', fontWeight: '600' }}>
-                        Evaluation Passed ✓
-                      </span>
-                    )}
-                    <button onClick={function () { deleteModule(mod.id); }} style={{ padding: '4px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
+            {modules.map((mod, modIndex) => {
+              const moduleTasks = tasks[mod.id] || [];
+              const doneCount = moduleTasks.filter((t) => t.status === 'done').length;
+              const unlocked = isModuleUnlocked(modIndex);
+              const allTasksDone =
+                moduleTasks.length > 0 && moduleTasks.every((t) => t.status === 'done');
+              const passed = evalStatus[mod.id] === true;
+
+              return (
+                <div key={mod.id} style={cardStyle}>
+                  {!unlocked && (
+                    <div
+                      style={{
+                        marginBottom: '16px',
+                        padding: '12px',
+                        background: 'rgba(239,68,68,0.12)',
+                        border: '1px solid rgba(239,68,68,0.3)',
+                        borderRadius: '10px',
+                        color: '#fecaca',
+                      }}
+                    >
+                      🔒 Module Locked — Pass Module {modIndex} evaluation to unlock this module.
+                    </div>
+                  )}
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <div>
+                      <h3 style={{ margin: 0, marginBottom: '8px', color: '#fff' }}>
+                        {passed ? '✅' : allTasksDone ? '⏳' : unlocked ? '🔓' : '🔒'} Module{' '}
+                        {modIndex + 1}: {mod.title}
+                      </h3>
+                      <p style={{ margin: 0, color: '#cbd5e1' }}>
+                        {doneCount}/{moduleTasks.length} tasks done
+                        {passed ? ' • Evaluation Passed ✓' : ''}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => deleteModule(mod.id)}
+                      style={{
+                        background: '#ef4444',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                      }}
+                    >
                       Delete
                     </button>
                   </div>
-                </div>
 
-                <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginBottom: '16px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: prog + '%', background: prog === 100 ? '#22c55e' : '#3b82f6', borderRadius: '3px' }} />
-                </div>
+                  {moduleTasks.length === 0 && (
+                    <p style={{ color: '#94a3b8' }}>No tasks yet.</p>
+                  )}
 
-                {mt.length === 0 && <p style={{ color: '#94a3b8', fontSize: '13px', margin: '0 0 12px' }}>No tasks yet.</p>}
+                  {moduleTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      style={{
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '12px',
+                        padding: '14px',
+                        marginBottom: '12px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          gap: '12px',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: '600', color: '#f8fafc' }}>{task.title}</div>
+                          <div style={{ marginTop: '8px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <span
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: '999px',
+                                background: getStatusColor(task.status),
+                                color: '#fff',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                              }}
+                            >
+                              {getStatusLabel(task.status)}
+                            </span>
 
-                {mt.map(function (task) {
-                  return (
-                    <div key={task.id} style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '8px', marginBottom: '8px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '14px', color: task.status === 'done' ? '#94a3b8' : '#1e293b', textDecoration: task.status === 'done' ? 'line-through' : 'none', flex: 1 }}>
-                          {task.title}
-                        </span>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button onClick={function () { updateTaskStatus(task, mod.id); }} style={{ padding: '4px 10px', background: getStatusColor(task.status), color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
-                            {getStatusLabel(task.status)}
-                          </button>
-                          <button onClick={function () { deleteTask(task.id, mod.id); }} style={{ padding: '4px 8px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
-                            X
+                            {task.due_date && (
+                              <span style={{ color: isDueOverdue(task.due_date) ? '#fca5a5' : '#cbd5e1' }}>
+                                📅 {new Date(task.due_date).toLocaleDateString()}
+                                {isDueOverdue(task.due_date) ? ' (Overdue)' : ''}
+                              </span>
+                            )}
+
+                            {task.priority && (
+                              <span
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '999px',
+                                  color: getPriorityColor(task.priority),
+                                  background: getPriorityBg(task.priority),
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                }}
+                              >
+                                {getPriorityIcon(task.priority)} {task.priority}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                          {unlocked && (
+                            <button
+                              onClick={() => updateTaskStatus(task, mod.id)}
+                              style={actionBtn('#f59e0b')}
+                            >
+                              Change Status
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => deleteTask(task.id, mod.id)}
+                            style={actionBtn('#ef4444')}
+                          >
+                            Delete
                           </button>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
-                        {task.due_date && (
-                          <span style={{
-                            fontSize: '11px', padding: '2px 8px', borderRadius: '8px',
-                            background: isDueOverdue(task.due_date) ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
-                            color: isDueOverdue(task.due_date) ? '#ef4444' : '#10b981',
-                            border: isDueOverdue(task.due_date) ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(16,185,129,0.3)',
-                          }}>
-                            📅 {new Date(task.due_date).toLocaleDateString()}
-                            {isDueOverdue(task.due_date) ? ' (Overdue)' : ''}
-                          </span>
-                        )}
-                        {task.priority && (
-                          <span style={{
-                            fontSize: '11px', padding: '2px 8px', borderRadius: '8px',
-                            background: getPriorityBg(task.priority),
-                            color: getPriorityColor(task.priority),
-                            border: '1px solid ' + getPriorityColor(task.priority) + '44',
-                          }}>
-                            {getPriorityIcon(task.priority)} {task.priority}
-                          </span>
-                        )}
+                    </div>
+                  ))}
+
+                  {unlocked && (
+                    <div
+                      style={{
+                        marginTop: '16px',
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        borderRadius: '12px',
+                        padding: '16px',
+                      }}
+                    >
+                      <h4 style={{ marginTop: 0 }}>Add Task</h4>
+
+                      <div style={{ display: 'grid', gap: '12px' }}>
+                        <input
+                          type="text"
+                          placeholder="Add new task..."
+                          value={newTask[mod.id] || ''}
+                          onChange={(e) =>
+                            setNewTask((prev) => ({
+                              ...prev,
+                              [mod.id]: e.target.value,
+                            }))
+                          }
+                          onKeyDown={(e) => e.key === 'Enter' && addTask(mod.id)}
+                          style={inputStyle}
+                        />
+
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                          <input
+                            type="date"
+                            value={newTaskDueDate[mod.id] || ''}
+                            onChange={(e) =>
+                              setNewTaskDueDate((prev) => ({
+                                ...prev,
+                                [mod.id]: e.target.value,
+                              }))
+                            }
+                            style={inputStyle}
+                          />
+
+                          <select
+                            value={newTaskPriority[mod.id] || 'medium'}
+                            onChange={(e) =>
+                              setNewTaskPriority((prev) => ({
+                                ...prev,
+                                [mod.id]: e.target.value,
+                              }))
+                            }
+                            style={inputStyle}
+                          >
+                            <option value="low">🟢 Low</option>
+                            <option value="medium">🟡 Medium</option>
+                            <option value="high">🔴 High</option>
+                          </select>
+
+                          <button onClick={() => addTask(mod.id)} style={actionBtn('#22c55e')}>
+                            Add Task
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
+                  )}
 
-                {unlocked && (
-                  <div style={{ marginTop: '14px', background: '#f1f5f9', borderRadius: '8px', padding: '12px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                      <input
-                        type="text" placeholder="Add new task..."
-                        value={newTask[mod.id] || ''}
-                        onChange={function (e) { var val = e.target.value; setNewTask(function (prev) { var u = Object.assign({}, prev); u[mod.id] = val; return u; }); }}
-                        onKeyPress={function (e) { if (e.key === 'Enter') { addTask(mod.id); } }}
-                        style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none' }}
-                      />
-                      <button onClick={function () { addTask(mod.id); }} style={{ padding: '8px 16px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-                        Add
+                  {unlocked && allTasksDone && !passed && (
+                    <div style={{ marginTop: '16px' }}>
+                      <button
+                        onClick={() => navigate(`/module-evaluation/${mod.id}`)}
+                        style={actionBtn('#8b5cf6')}
+                      >
+                        📝 Take Module Evaluation
                       </button>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                        <label style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>Due Date</label>
-                        <input type="date" value={newTaskDueDate[mod.id] || ''}
-                          onChange={function (e) { var val = e.target.value; setNewTaskDueDate(function (prev) { var u = Object.assign({}, prev); u[mod.id] = val; return u; }); }}
-                          style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none', background: 'white' }}
-                        />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
-                        <label style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>Priority</label>
-                        <select value={newTaskPriority[mod.id] || 'medium'}
-                          onChange={function (e) { var val = e.target.value; setNewTaskPriority(function (prev) { var u = Object.assign({}, prev); u[mod.id] = val; return u; }); }}
-                          style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', outline: 'none', background: 'white' }}
-                        >
-                          <option value="low">🟢 Low</option>
-                          <option value="medium">🟡 Medium</option>
-                          <option value="high">🔴 High</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {unlocked && allTasksDone && !evalPassed && (
-                  <button
-                    onClick={function () {
-                      var taskTitles = mt.map(function (t) { return t.title; }).join('|');
-                      navigate('/module-evaluation?moduleId=' + mod.id + '&roadmapId=' + id + '&title=' + encodeURIComponent(mod.title) + '&tasks=' + encodeURIComponent(taskTitles));
-                    }}
-                    style={{
-                      marginTop: '14px', width: '100%', padding: '12px',
-                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                      border: 'none', color: '#fff', borderRadius: '8px',
-                      cursor: 'pointer', fontSize: '14px', fontWeight: '700',
-                    }}
-                  >
-                    📝 Take Module Evaluation to Unlock Next Module
-                  </button>
-                )}
-
-                {evalPassed && (
-                  <div style={{ marginTop: '14px', padding: '10px 14px', background: 'rgba(34,197,94,0.1)', borderRadius: '8px', border: '1px solid rgba(34,197,94,0.3)', textAlign: 'center' }}>
-                    <span style={{ fontSize: '13px', color: '#22c55e', fontWeight: '600' }}>
-                      ✅ Module evaluation passed! Next module is unlocked.
-                    </span>
-                  </div>
-                )}
-
-              </div>
-            );
-          })}
-
-          {allModulesComplete() && (
-            <div style={{ background: 'linear-gradient(135deg, #1e293b, #334155)', borderRadius: '12px', padding: '28px', textAlign: 'center', border: '2px solid #b8860b', marginTop: '8px' }}>
-              <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎓</div>
-              <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: '800', color: '#f1f5f9' }}>
-                All Modules Complete!
-              </h3>
-              <p style={{ margin: '0 0 20px 0', fontSize: '14px', color: '#94a3b8' }}>
-                You have completed all modules and passed all evaluations. Take the final evaluation to earn your certificate!
-              </p>
-              <button
-                onClick={function () {
-                  var moduleTitles = modules.map(function (m) { return m.title; }).join('|');
-                  navigate('/roadmap-evaluation?roadmapId=' + id + '&title=' + encodeURIComponent(roadmap?.title || '') + '&modules=' + encodeURIComponent(moduleTitles));
-                }}
-                style={{
-                  padding: '14px 32px',
-                  background: 'linear-gradient(135deg, #b8860b, #d4a017)',
-                  border: 'none', color: '#fff', borderRadius: '10px',
-                  cursor: 'pointer', fontSize: '16px', fontWeight: '700',
-                  boxShadow: '0 4px 20px rgba(184,134,11,0.4)',
-                }}
-              >
-                🏆 Take Final Evaluation & Earn Certificate
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'resources' && (
-        <div>
-          <h3 style={{ margin: '0 0 16px', color: '#1e293b', fontSize: '18px' }}>
-            Free Learning Resources ({resources.length})
-          </h3>
-          {resources.length === 0 && (
-            <div style={{ background: 'white', borderRadius: '12px', padding: '40px', textAlign: 'center', color: '#64748b' }}>
-              No resources yet. Generate a roadmap with AI to get free resources!
-            </div>
-          )}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-            {resources.map(function (resource, i) {
-              return (
-                <div key={i} style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                    <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b', flex: 1, lineHeight: '1.4' }}>
-                      {resource.title}
-                    </h4>
-                    <span style={{ background: getTypeColor(resource.type), color: 'white', padding: '3px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', marginLeft: '8px', whiteSpace: 'nowrap' }}>
-                      {resource.type || 'article'}
-                    </span>
-                  </div>
-                  <span style={{ display: 'inline-block', background: '#f0fdf4', color: '#22c55e', padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', marginBottom: '12px', border: '1px solid #86efac' }}>
-                    FREE
-                  </span>
-                  {resource.url && (
-                    <a
-                      href={resource.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ display: 'block', padding: '8px 16px', background: '#3b82f6', color: 'white', borderRadius: '8px', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold', textAlign: 'center' }}
+                  {passed && (
+                    <div
+                      style={{
+                        marginTop: '16px',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        background: 'rgba(34,197,94,0.12)',
+                        border: '1px solid rgba(34,197,94,0.3)',
+                        color: '#bbf7d0',
+                      }}
                     >
-                      Open Resource
-                    </a>
+                      ✅ Module evaluation passed! Next module is unlocked.
+                    </div>
                   )}
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
 
+            {allModulesComplete() && (
+              <div
+                style={{
+                  ...cardStyle,
+                  textAlign: 'center',
+                  background: 'linear-gradient(135deg, #1e293b, #312e81)',
+                }}
+              >
+                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎓</div>
+                <h2>All Modules Complete!</h2>
+                <p style={{ color: '#cbd5e1' }}>
+                  You have completed all modules and passed all evaluations. Take the final
+                  evaluation to earn your certificate.
+                </p>
+                <button
+                  onClick={() => navigate(`/roadmap-evaluation/${id}`)}
+                  style={actionBtn('#22c55e')}
+                >
+                  🏆 Take Final Evaluation & Earn Certificate
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'resources' && (
+          <div style={cardStyle}>
+            <h3 style={{ marginTop: 0 }}>Free Learning Resources ({resources.length})</h3>
+
+            {resources.length === 0 && (
+              <p style={{ color: '#cbd5e1' }}>
+                No resources yet. Generate a roadmap with AI to get free resources.
+              </p>
+            )}
+
+            {resources.map((resource, index) => (
+              <div
+                key={resource.id || index}
+                style={{
+                  background: '#0f172a',
+                  border: '1px solid #334155',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  marginBottom: '12px',
+                }}
+              >
+                <h4 style={{ margin: 0, marginBottom: '8px' }}>{resource.title}</h4>
+                <p style={{ margin: '6px 0', color: '#cbd5e1' }}>
+                  Type: {resource.type || 'article'}
+                </p>
+                <p style={{ margin: '6px 0', color: '#22c55e', fontWeight: '600' }}>FREE</p>
+
+                {resource.url && (
+                  <a
+                    href={resource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#60a5fa', textDecoration: 'none', fontWeight: '600' }}
+                  >
+                    Open Resource
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
+
+const actionBtn = (bg) => ({
+  background: bg,
+  color: '#fff',
+  border: 'none',
+  padding: '10px 16px',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontWeight: '600',
+});
+
+const tabBtn = (active) => ({
+  background: active ? '#8b5cf6' : '#1e293b',
+  color: '#fff',
+  border: '1px solid #334155',
+  padding: '10px 16px',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontWeight: '600',
+});
+
+const inputStyle = {
+  flex: 1,
+  minWidth: '220px',
+  padding: '10px 12px',
+  borderRadius: '8px',
+  border: '1px solid #475569',
+  background: '#fff',
+  color: '#111827',
+  outline: 'none',
+  fontSize: '14px',
+  cursor: 'text',
+};
+
+const cardStyle = {
+  background: '#1e293b',
+  borderRadius: '16px',
+  padding: '20px',
+  marginBottom: '20px',
+  border: '1px solid #334155',
+};
 
 export default RoadmapDetail;

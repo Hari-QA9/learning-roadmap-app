@@ -14,7 +14,7 @@ function QuizPerformance() {
   }, []);
 
   function fetchPerformance() {
-    axios.get('http://localhost:5000/api/stats/quiz-performance', {
+    axios.get('http://localhost:5000/api/quiz/my-performance', {
       headers: { Authorization: 'Bearer ' + token }
     }).then(function(res) {
       setPerformance(res.data);
