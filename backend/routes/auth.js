@@ -140,7 +140,11 @@ router.post('/forgot-password', async (req, res) => {
 
   try {
     const [users] = await q().query('SELECT id, name, email FROM users WHERE LOWER(email) = ?', [email]);
-    if (!users.length) return res.json(generic);
+    if (!users.length) {
+      // Logged only on the server — the user always sees the same message.
+      console.log(`[auth] Password reset requested for ${email}, but no account uses that email. Nothing was sent.`);
+      return res.json(generic);
+    }
     const user = users[0];
 
     const token = crypto.randomBytes(32).toString('hex');
@@ -149,15 +153,19 @@ router.post('/forgot-password', async (req, res) => {
     await q().query('INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES (?, ?, ?)', [user.id, sha256(token), expires]);
 
     const link = `${APP_URL}/reset-password?token=${token}`;
-    await sendMail({
+    const result = await sendMail({
       to: user.email,
       subject: 'Reset your LearnMap password',
       text: `Hi ${user.name || ''},\n\nSomeone (hopefully you) asked to reset your LearnMap password.\nOpen this link within 30 minutes to choose a new one:\n\n${link}\n\nIf you didn't ask for this, you can ignore this email.`,
       html: `<p>Hi ${String(user.name || '').replace(/</g, '&lt;')},</p><p>Someone (hopefully you) asked to reset your LearnMap password.</p><p><a href="${link}">Choose a new password</a> — this link expires in 30 minutes.</p><p>If you didn't ask for this, you can ignore this email.</p>`,
     });
+    if (result.delivered) console.log(`[auth] Password reset email sent to ${user.email}.`);
     res.json(generic);
   } catch (err) {
-    console.error('Forgot password error:', err.message);
+    console.error('[auth] Could not send the password reset email:', err.message);
+    if (/Invalid login|535|auth/i.test(err.message)) {
+      console.error('[auth] Check SMTP_USER and SMTP_PASS in backend/.env (for Gmail, SMTP_PASS must be an App Password).');
+    }
     res.json(generic);
   }
 });

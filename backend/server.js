@@ -51,4 +51,5 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   // Add any new columns the app needs (only adds; never removes data).
   require('./lib/migrate')().catch((e) => console.warn('[migrate] skipped:', e.message));
+  require('./lib/mailer').verifyMail();
 });

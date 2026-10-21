@@ -29,4 +29,17 @@ async function sendMail({ to, subject, text, html }) {
   return { delivered: true };
 }
 
-module.exports = { sendMail, emailConfigured: () => !!process.env.SMTP_HOST };
+// Check the SMTP settings once at startup so problems show up immediately.
+async function verifyMail() {
+  const t = getTransport();
+  if (!t) { console.log('[mail] SMTP not configured — password reset links will be printed here.'); return; }
+  try {
+    await t.verify();
+    console.log(`[mail] Ready to send email as ${process.env.SMTP_USER}.`);
+  } catch (err) {
+    console.error(`[mail] Email settings didn't work: ${err.message}`);
+    console.error('[mail] Check SMTP_* in backend/.env (for Gmail, use an App Password with 2-Step Verification on).');
+  }
+}
+
+module.exports = { sendMail, verifyMail, emailConfigured: () => !!process.env.SMTP_HOST };
