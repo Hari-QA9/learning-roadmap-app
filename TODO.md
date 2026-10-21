@@ -28,9 +28,27 @@ Work we decided to hold for later, so nothing gets lost. Tick items off (`[x]`) 
 ## Job board
 
 ### Turn on when ready (code is already built — just add keys to `backend/.env`)
-- [ ] 🟠 **Adzuna** (free): get `ADZUNA_APP_ID` / `ADZUNA_APP_KEY` at developer.adzuna.com.
-- [ ] 🟠 **USAJobs** (free): get `USAJOBS_API_KEY` at developer.usajobs.gov.
-- [ ] 🟠 **JSearch** (paid): adds LinkedIn / Indeed / Glassdoor listings through Google for Jobs. Subscribe on RapidAPI and set `JSEARCH_API_KEY` once there are users and a budget.
+Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste keys in chat or in committed files.
+
+- [ ] 🟠 **Adzuna** (free, ~5 minutes)
+  1. Go to developer.adzuna.com → **Register** → confirm your email.
+  2. Log in → open the dashboard / API access details → copy the **Application ID** and **Application Key**.
+  3. In `backend/.env` set `ADZUNA_APP_ID=…`, `ADZUNA_APP_KEY=…`, `ADZUNA_COUNTRY=us`.
+  - Free limit is ~250 searches/day; the app uses ~24/day.
+
+- [ ] 🟠 **USAJobs** (free, key arrives by email)
+  1. Go to developer.usajobs.gov/apirequest → fill in name, email and a short app description → accept the terms → submit.
+  2. Wait for the email with your API key.
+  3. In `backend/.env` set `USAJOBS_API_KEY=…` and `USAJOBS_EMAIL=…` (the **same** email you signed up with).
+
+- [ ] 🟠 **JSearch** (LinkedIn / Indeed / Glassdoor via Google for Jobs; free trial plan, paid for launch)
+  1. Sign up at rapidapi.com → search **"JSearch"** (by OpenWeb Ninja).
+  2. **Pricing** → choose the free **Basic** plan → **Subscribe** (no card needed).
+  3. **Endpoints** tab → copy the `X-RapidAPI-Key` value from the code example.
+  4. In `backend/.env` set `JSEARCH_API_KEY=…`.
+  5. While on the free plan, also set `JOB_QUERIES=qa automation engineer,software engineer` and `JOB_REFRESH_HOURS=24` (keeps it to ~60 requests/month). Remove both when moving to a paid plan at launch.
+
+- [ ] After adding any key: save `.env`, restart the backend (Ctrl+C, then `npm start`), and check the terminal for `[jobs] Refreshed: … adzuna: N, usajobs: N, jsearch: N`. If you see `error: HTTP 401`, the key was pasted wrong (look for extra spaces).
 
 ### Improvements
 - [ ] 🟠 Grow the company-board list from ~55 to a few hundred companies (Greenhouse, Lever, Ashby), and let members suggest companies.
