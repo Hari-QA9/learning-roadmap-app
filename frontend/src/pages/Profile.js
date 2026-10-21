@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api, { errorMessage } from '../lib/api';
+import api, { errorMessage, updateUser } from '../lib/api';
+import { PasswordField, StrengthMeter } from '../components/PasswordField';
 import { useToast } from '../components/Toast';
 import { useTheme } from '../lib/theme';
 import {
@@ -30,6 +31,10 @@ function Profile() {
   const [form, setForm] = useState({ name: '', bio: '', profile_picture: '' });
   const [saving, setSaving] = useState(false);
   const [showBadgeInfo, setShowBadgeInfo] = useState(false);
+  const [pw, setPw] = useState({ current: '', password: '', confirm: '' });
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState('');
 
   useEffect(() => {
     Promise.allSettled([api.get('/profile'), api.get('/badges'), api.get('/evaluation/certificates')]).then(([p, b, c]) => {
@@ -51,10 +56,7 @@ function Profile() {
     try {
       await api.put('/profile', { ...form, name: form.name.trim() });
       setData((d) => ({ ...d, user: { ...d.user, ...form, name: form.name.trim() } }));
-      try {
-        const u = JSON.parse(localStorage.getItem('user')) || {};
-        localStorage.setItem('user', JSON.stringify({ ...u, name: form.name.trim() }));
-      } catch {}
+      updateUser({ name: form.name.trim() });
       setEditing(false);
       toast.success('Profile updated');
     } catch (err) {
@@ -63,6 +65,24 @@ function Profile() {
       setSaving(false);
     }
   };
+
+  const changePassword = async (e) => {
+    e.preventDefault();
+    if (pw.password.length < 8 || pw.password !== pw.confirm) return;
+    setPwSaving(true);
+    setPwError('');
+    try {
+      await api.post('/auth/change-password', { currentPassword: pw.current, newPassword: pw.password });
+      toast.success('Password changed');
+      setPw({ current: '', password: '', confirm: '' });
+      setPwOpen(false);
+    } catch (err) {
+      setPwError(errorMessage(err, 'Could not change password'));
+    } finally {
+      setPwSaving(false);
+    }
+  };
+  const pwChange = (e) => setPw({ ...pw, [e.target.name === 'password' ? 'password' : e.target.name]: e.target.value });
 
   if (loading) return <Loading />;
   const user = data?.user || {};
@@ -128,6 +148,24 @@ function Profile() {
         </div>
 
         <div className="stack-lg">
+          <Card title="Security" description="Change the password you use to log in.">
+            {!pwOpen ? (
+              <Button icon="key" onClick={() => setPwOpen(true)}>Change password</Button>
+            ) : (
+              <form onSubmit={changePassword} className="fade-in">
+                {pwError && <div className="alert alert-danger mb-2">{pwError}</div>}
+                <PasswordField label="Current password" name="current" value={pw.current} onChange={pwChange} autoFocus />
+                <PasswordField label="New password" value={pw.password} onChange={pwChange} autoComplete="new-password" />
+                <StrengthMeter password={pw.password} />
+                <PasswordField label="Confirm new password" name="confirm" value={pw.confirm} onChange={pwChange} autoComplete="new-password" error={pw.confirm && pw.confirm !== pw.password ? 'Passwords don’t match.' : ''} />
+                <div className="row mt-3" style={{ justifyContent: 'flex-end' }}>
+                  <Button onClick={() => { setPwOpen(false); setPwError(''); setPw({ current: '', password: '', confirm: '' }); }}>Cancel</Button>
+                  <Button type="submit" variant="primary" loading={pwSaving} disabled={!pw.current || pw.password.length < 8 || pw.password !== pw.confirm}>Update</Button>
+                </div>
+              </form>
+            )}
+          </Card>
+
           <Card title="Appearance">
             <Segmented value={theme} onChange={setTheme} options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
           </Card>
