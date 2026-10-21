@@ -2,16 +2,27 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Make AI quiz output safe to render: 4 string options and a valid index.
+function normalizeQuestions(list) {
+  return (Array.isArray(list) ? list : [])
+    .map((q) => {
+      const options = Array.isArray(q.options) ? q.options.map(String).slice(0, 4) : [];
+      let correct = Number.isInteger(q.correct) ? q.correct : parseInt(q.correct, 10);
+      if (typeof q.correct === 'string' && /^[A-D]$/i.test(q.correct)) correct = 'ABCD'.indexOf(q.correct.toUpperCase());
+      return { question: String(q.question || ''), options, correct };
+    })
+    .filter((q) => q.question && q.options.length >= 2 && q.correct >= 0 && q.correct < q.options.length);
+}
+const { generateJSON, sendAIError } = require('../lib/gemini');
+
 
 // Generate module evaluation quiz
 router.post('/module-quiz', verifyToken, async (req, res) => {
-  const { moduleTitle, tasks } = req.body;
+  const { moduleTitle } = req.body;
+  const tasks = Array.isArray(req.body.tasks) ? req.body.tasks : [];
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const prompt = `
 Generate a 5-question multiple choice quiz to evaluate understanding of: "${moduleTitle}"
 Topics covered: ${tasks.join(', ')}
@@ -29,24 +40,19 @@ Respond ONLY in this exact JSON format:
 "correct" is the index (0-3) of the correct option.
 Generate exactly 5 questions. Only respond with valid JSON.`;
 
-    const result = await model.generateContent(prompt);
-    let text = result.response.text();
-    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(jsonMatch[0]);
-    res.json(parsed);
+    const parsed = await generateJSON(prompt);
+    res.json({ questions: normalizeQuestions(parsed.questions || parsed) });
   } catch (err) {
-    console.error('Module quiz error:', err.message);
-    res.status(500).json({ error: err.message });
+    sendAIError(res, err, 'Could not generate the assessment. Please try again.');
   }
 });
 
 // Generate final roadmap evaluation quiz
 router.post('/roadmap-quiz', verifyToken, async (req, res) => {
-  const { roadmapTitle, modules } = req.body;
+  const { roadmapTitle } = req.body;
+  const modules = Array.isArray(req.body.modules) ? req.body.modules : [];
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const prompt = `
 Generate a 10-question multiple choice final evaluation quiz for the course: "${roadmapTitle}"
 Modules covered: ${modules.join(', ')}
@@ -64,15 +70,10 @@ Respond ONLY in this exact JSON format:
 "correct" is the index (0-3) of the correct option.
 Generate exactly 10 questions covering all modules. Only respond with valid JSON.`;
 
-    const result = await model.generateContent(prompt);
-    let text = result.response.text();
-    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(jsonMatch[0]);
-    res.json(parsed);
+    const parsed = await generateJSON(prompt);
+    res.json({ questions: normalizeQuestions(parsed.questions || parsed) });
   } catch (err) {
-    console.error('Roadmap quiz error:', err.message);
-    res.status(500).json({ error: err.message });
+    sendAIError(res, err, 'Could not generate the final assessment. Please try again.');
   }
 });
 

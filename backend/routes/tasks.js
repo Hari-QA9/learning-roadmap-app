@@ -23,10 +23,9 @@ router.post('/', auth, async (req, res) => {
 
   try {
     const [result] = await db.promise().query(
-      'INSERT INTO tasks (user_id, roadmap_id, module_id, title, description, status, due_date, priority) VALUES (?, ?, ?, ?, ?, "pending", ?, ?)',
+      "INSERT INTO tasks (user_id, module_id, title, description, status, due_date, priority) VALUES (?, ?, ?, ?, 'pending', ?, ?)",
       [
         userId,
-        roadmap_id || null,
         module_id,
         title,
         description || '',
