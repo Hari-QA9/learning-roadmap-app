@@ -11,17 +11,16 @@ function printCertificate(cert) {
   if (!w) return false;
   const date = new Date(cert.issued_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Certificate — ${esc(cert.roadmap_title)}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-  <style>
+    <style>
     @page { size: landscape; margin: 0; }
-    body { margin: 0; font-family: Inter, sans-serif; background: #fff; color: #1a1a19; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #fff; color: #1a1a19; }
     .cert { width: 1000px; height: 680px; margin: 30px auto; box-sizing: border-box; padding: 64px 80px; border: 1px solid #d4d3ce; position: relative; display: flex; flex-direction: column; }
     .cert::before { content: ''; position: absolute; inset: 14px; border: 1px solid #e6e5e1; pointer-events: none; }
-    .brand { font-family: Fraunces, serif; font-size: 20px; }
+    .brand { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.02em; font-size: 20px; }
     .eyebrow { margin-top: 56px; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: #8f8e88; }
-    .name { font-family: Fraunces, serif; font-size: 56px; font-weight: 400; margin: 18px 0 6px; letter-spacing: -0.02em; }
+    .name { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.02em; font-size: 56px; font-weight: 400; margin: 18px 0 6px; letter-spacing: -0.02em; }
     .text { font-size: 16px; color: #5d5c57; line-height: 1.7; max-width: 640px; }
-    .course { font-family: Fraunces, serif; font-size: 28px; color: #33409e; margin: 8px 0 0; }
+    .course { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.02em; font-size: 28px; color: #0071e3; margin: 8px 0 0; }
     .foot { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; font-size: 13px; color: #5d5c57; }
     .foot b { display: block; color: #1a1a19; font-weight: 500; margin-bottom: 2px; }
   </style></head><body>

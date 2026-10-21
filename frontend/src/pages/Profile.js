@@ -94,7 +94,7 @@ function Profile() {
     <>
       <PageHeader title="Profile" />
 
-      <div className="split">
+      <div className="split stagger">
         <div className="stack-lg">
           <Card>
             {!editing ? (

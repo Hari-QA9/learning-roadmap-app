@@ -38,12 +38,12 @@ function Blocks({ text, accent }) {
 function Preview({ r, template, certs }) {
   const skills = r.skills.split(',').map((s) => s.trim()).filter(Boolean);
   const contact = [r.email, r.phone, r.location, r.linkedin, r.github].filter(Boolean);
-  const accent = template === 'modern' ? '#33409e' : '#1a1a19';
+  const accent = template === 'modern' ? '#0071e3' : '#1d1d1f';
   const serif = template === 'classic';
   const H = ({ children }) => (
     <div style={{
       fontSize: 10.5, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: template === 'modern' ? accent : '#1a1a19',
-      borderBottom: template === 'minimal' ? 'none' : `1px solid ${template === 'modern' ? '#dfe2f5' : '#d4d3ce'}`, paddingBottom: 4, margin: '18px 0 8px',
+      borderBottom: template === 'minimal' ? 'none' : `1px solid ${template === 'modern' ? '#d6e6fa' : '#d4d3ce'}`, paddingBottom: 4, margin: '18px 0 8px',
     }}>{children}</div>
   );
   return (
@@ -52,11 +52,11 @@ function Preview({ r, template, certs }) {
       style={{
         background: '#fff', color: '#2b2b29', width: '100%', aspectRatio: '1 / 1.414',
         padding: '40px 44px', fontSize: 11.5, lineHeight: 1.55, boxShadow: 'var(--shadow)', borderRadius: 4,
-        fontFamily: serif ? "Georgia, 'Times New Roman', serif" : "Inter, -apple-system, 'Segoe UI', sans-serif",
+        fontFamily: serif ? "Georgia, 'Times New Roman', serif" : "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
       }}
     >
       <div style={{ textAlign: template === 'classic' ? 'center' : 'left' }}>
-        <div style={{ fontFamily: template === 'minimal' ? 'inherit' : "Fraunces, Georgia, serif", fontSize: 26, fontWeight: template === 'minimal' ? 600 : 500, color: '#1a1a19', letterSpacing: '-0.01em', lineHeight: 1.15 }}>
+        <div style={{ fontFamily: 'inherit', fontSize: 26, fontWeight: template === 'classic' ? 500 : 700, color: '#1d1d1f', letterSpacing: template === 'classic' ? '0' : '-0.025em', lineHeight: 1.15 }}>
           {r.name || 'Your Name'}
         </div>
         {r.goal && <div style={{ color: accent, marginTop: 3, fontSize: 12.5 }}>{r.goal}</div>}
@@ -68,7 +68,7 @@ function Preview({ r, template, certs }) {
           <H>Skills</H>
           {template === 'modern' ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-              {skills.map((s, i) => <span key={`${s}-${i}`} style={{ background: '#eef0fa', color: accent, padding: '2px 8px', borderRadius: 4, fontSize: 10.5 }}>{s}</span>)}
+              {skills.map((s, i) => <span key={`${s}-${i}`} style={{ background: '#e8f1fc', color: accent, padding: '2px 8px', borderRadius: 4, fontSize: 10.5 }}>{s}</span>)}
             </div>
           ) : <div>{skills.join(' · ')}</div>}
         </>

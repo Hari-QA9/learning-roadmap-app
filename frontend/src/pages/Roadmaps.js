@@ -132,7 +132,7 @@ function Roadmaps() {
       ) : visible.length === 0 ? (
         <Card><EmptyState icon="search" title="No matches" description="Try a different search or filter." /></Card>
       ) : (
-        <div className="grid-auto">
+        <div className="grid-auto stagger">
           {visible.map((rm) => {
             const p = pct(rm);
             return (
