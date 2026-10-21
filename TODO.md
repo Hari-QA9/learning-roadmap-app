@@ -66,6 +66,17 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Resume builder
+- [ ] 🟠 Upload a PDF or Word resume directly (today: copy its text and use **Import**).
+- [ ] 🟠 Download as Word (.docx) — some application portals ask for it. PDF and plain text work today.
+- [ ] 🟢 More templates (keep them single-column and real text so ATS can read them).
+- [ ] 🟢 Drag-and-drop to reorder sections and entries (today: up/down arrows).
+- [ ] 🟢 On phones, a "Score / Preview" tab at the top (today the score and preview are below the editor).
+- [ ] 🟢 Cover-letter builder that reuses the resume and the job (the job page's application kit already writes one).
+- [ ] 🟢 Show when a tailored version is older than the main resume, with an option to pull in new changes.
+
+---
+
 ## Quality
 - [ ] 🟠 Move the end-to-end browser tests into the repo and run them on every pull request (GitHub Actions).
 - [ ] 🟢 Lighthouse pass for speed and accessibility on the main pages.
@@ -78,3 +89,4 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Login security: remember me, lockout, password reset emails (PR #3, #5)
 - [x] AI job board: matching, fit analysis, application kit, gap roadmaps, tracker (PR #6)
 - [x] More job sources: Ashby, ~55 company boards, Adzuna / USAJobs / JSearch ready to switch on (PR #7)
+- [x] Resume builder v2: structured sections, live recruiter/ATS score, AI bullet rewrites, import, tailor-to-job versions, text-based PDF (PR #8)

@@ -8,6 +8,7 @@ const { extractSkills, normaliseSkills, matchJob } = require('../lib/skills');
 const { refreshJobs, stripHtml } = require('../lib/jobSources');
 const { generateRoadmap } = require('../lib/roadmapAI');
 const { insertTask } = require('../lib/tasks');
+const { resumeToText } = require('../lib/resumeText');
 
 const q = () => db.promise();
 const aiLimit = rateLimit({ max: 30, name: 'job requests' });
@@ -22,7 +23,7 @@ async function loadProfile(userId) {
   if (!skills.length) {
     // Fall back to the skills in the member's saved resume.
     const [r] = await q().query('SELECT resume_data FROM user_resumes WHERE user_id = ? LIMIT 1', [userId]).catch(() => [[]]);
-    const resume = r[0] ? parse(r[0].resume_data, {}) : {};
+    const resume = r[0] ? resumeToText(r[0].resume_data) : {};
     skills = normaliseSkills(resume.skills || '');
     fromResume = skills.length > 0;
   }
@@ -239,7 +240,7 @@ router.get('/:id', auth, async (req, res) => {
 async function memberContext(userId) {
   const profile = await loadProfile(userId);
   const [r] = await q().query('SELECT resume_data FROM user_resumes WHERE user_id = ? LIMIT 1', [userId]).catch(() => [[]]);
-  const resume = r[0] ? parse(r[0].resume_data, {}) : {};
+  const resume = r[0] ? resumeToText(r[0].resume_data) : {};
   const [u] = await q().query('SELECT name FROM users WHERE id = ?', [userId]);
   return { profile, resume, name: (u[0] && u[0].name) || resume.name || '' };
 }
@@ -249,9 +250,12 @@ const memberText = ({ profile, resume, name }) => `Name: ${name}
 Target roles: ${profile.target_roles.join(', ') || 'not set'}
 Level: ${profile.level || 'not set'}
 Skills: ${profile.skills.join(', ') || resume.skills || 'not set'}
+Resume headline: ${resume.headline || 'not provided'}
 Resume summary: ${resume.summary || 'not provided'}
 Experience: ${String(resume.experience || 'not provided').slice(0, 2500)}
-Education: ${String(resume.education || 'not provided').slice(0, 800)}`;
+Projects: ${String(resume.projects || 'none').slice(0, 1500)}
+Education: ${String(resume.education || 'not provided').slice(0, 800)}
+Certifications: ${String(resume.certifications || 'none').slice(0, 400)}`;
 
 // POST /jobs/:id/analyze — AI fit analysis (agent 1)
 router.post('/:id/analyze', auth, aiLimit, async (req, res) => {

@@ -266,7 +266,12 @@ function JobDetail() {
           <Card
             title="Application kit"
             description="A tailored cover letter, resume bullets, ATS keywords and answers to common questions"
-            actions={kit && <Button size="sm" variant="ghost" icon="refresh" loading={busy === 'prepare'} onClick={() => run('prepare')}>Rewrite</Button>}
+            actions={
+              <div className="row" style={{ gap: 4 }}>
+                <Button size="sm" variant="ghost" icon="file" onClick={() => navigate(`/resume-builder?job=${job.id}`)}>Tailor my resume</Button>
+                {kit && <Button size="sm" variant="ghost" icon="refresh" loading={busy === 'prepare'} onClick={() => run('prepare')}>Rewrite</Button>}
+              </div>
+            }
           >
             {busy === 'prepare' && !kit ? <Loading label="Writing your application…" />
               : kit ? <Kit kit={kit} />
