@@ -42,7 +42,7 @@ function shapeJob(row, profile, extra = {}) {
   const m = matchJob({ title: row.title, skills }, profile);
   return {
     id: row.id, source: row.source, title: row.title, company: row.company, location: row.location,
-    remote: !!Number(row.remote), url: row.url, salary: row.salary, job_type: row.job_type, posted_at: row.posted_at,
+    remote: !!Number(row.remote), url: row.url, publisher: row.publisher || null, salary: row.salary, job_type: row.job_type, posted_at: row.posted_at,
     custom: !!row.user_id, skills, match: m.score, have: m.have, missing: m.missing,
     status: row.app_status || null, application_id: row.app_id || null,
     ...extra,
@@ -99,7 +99,7 @@ router.get('/', auth, async (req, res) => {
     if (req.query.saved === '1') where.push('a.id IS NOT NULL');
 
     const [rows] = await q().query(
-      `SELECT j.id, j.source, j.user_id, j.title, j.company, j.location, j.remote, j.url, j.salary, j.job_type, j.skills, j.posted_at,
+      `SELECT j.id, j.source, j.user_id, j.title, j.company, j.location, j.remote, j.url, j.salary, j.job_type, j.skills, j.posted_at, j.publisher,
               a.status AS app_status, a.id AS app_id
        FROM jobs j
        LEFT JOIN job_applications a ON a.job_id = j.id AND a.user_id = ?

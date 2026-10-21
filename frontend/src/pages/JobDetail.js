@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api, { errorMessage } from '../lib/api';
 import { useToast } from '../components/Toast';
 import JobPrefsModal from '../components/JobPrefsModal';
-import { SOURCE_LABEL, STATUS, matchTone } from '../components/JobRow';
+import { STATUS, matchTone, sourceName } from '../components/JobRow';
 import {
   PageHeader, Button, Card, Badge, Icon, Ring, Tabs, EmptyState, Loading, SkeletonRows, Select, timeAgo,
 } from '../components/ui';
@@ -208,7 +208,7 @@ function JobDetail() {
     <>
       <PageHeader
         back="/jobs"
-        eyebrow={[job.company, SOURCE_LABEL[job.source] && `via ${SOURCE_LABEL[job.source]}`].filter(Boolean).join(' · ')}
+        eyebrow={[job.company, job.source !== 'custom' && `via ${sourceName(job)}`].filter(Boolean).join(' · ')}
         title={job.title}
         description={[job.location, job.remote && !/remote/i.test(job.location || '') ? 'Remote' : null, job.job_type, job.salary, job.posted_at && `Posted ${timeAgo(job.posted_at)}`].filter(Boolean).join(' · ')}
         actions={
@@ -220,7 +220,7 @@ function JobDetail() {
             ) : (
               <Button icon="star" onClick={() => setStatus('saved')}>Save</Button>
             )}
-            {job.url && <Button variant="primary" iconRight="arrowUpRight" onClick={applyNow}>Apply on company site</Button>}
+            {job.url && <Button variant="primary" iconRight="arrowUpRight" onClick={applyNow}>{job.publisher ? `Apply on ${job.publisher}` : 'Apply on company site'}</Button>}
           </>
         }
       />
@@ -273,7 +273,7 @@ function JobDetail() {
                 : <div className="agent-cta"><p className="small">Written from your own resume — nothing invented. You review it and apply yourself.</p><Button variant="primary" icon="wand" onClick={() => run('prepare')}>Prepare my application</Button></div>}
           </Card>
 
-          <Card title="Job description" description={job.url ? 'Full posting on the employer’s site' : undefined} actions={job.url && <a className="btn btn-ghost btn-sm" href={job.url} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} />Open</a>}>
+          <Card title="Job description" description={job.source === 'adzuna' ? 'Preview — open the full posting for every requirement' : job.url ? 'Full posting on the employer’s site' : undefined} actions={job.url && <a className="btn btn-ghost btn-sm" href={job.url} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} />Open</a>}>
             <Description text={job.description} />
           </Card>
         </div>

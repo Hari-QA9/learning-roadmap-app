@@ -231,7 +231,9 @@ Edit the README.md to contribute content, formatting, or references.
 Use clear commit messages such as Added target users section or Refined EPIC features.
 ## Job board
 
-LearnMap pulls real job postings from free public APIs (Remotive, Arbeitnow, The Muse, and company boards on Greenhouse and Lever) every few hours. No API keys are needed.
+LearnMap pulls real job postings every few hours from free public APIs (Remotive, Arbeitnow, The Muse) and about 55 company career boards on Greenhouse, Lever and Ashby. No API keys are needed. Adding free keys turns on Adzuna and USAJobs, and an optional paid JSearch key adds LinkedIn, Indeed and Glassdoor listings through Google for Jobs.
+
+Postponed work is tracked in [TODO.md](TODO.md).
 
 - **Matching:** each member sets target roles and skills (or they are read from their resume). Every job shows a match score, the skills you have, and the skills to learn.
 - **AI fit analysis:** an honest verdict, must-have gaps with how to close each one, and talking points.

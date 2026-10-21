@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Badge, Icon, timeAgo } from './ui';
 
 export const SOURCE_LABEL = {
-  remotive: 'Remotive', arbeitnow: 'Arbeitnow', themuse: 'The Muse', greenhouse: 'Greenhouse', lever: 'Lever', custom: 'Added by you',
+  remotive: 'Remotive', arbeitnow: 'Arbeitnow', themuse: 'The Muse', greenhouse: 'Greenhouse', lever: 'Lever', ashby: 'Ashby',
+  adzuna: 'Adzuna', usajobs: 'USAJobs', jsearch: 'Google Jobs', custom: 'Added by you',
 };
 
 export const STATUS = {
@@ -13,6 +14,9 @@ export const STATUS = {
   offer: { label: 'Offer', tone: 'success' },
   rejected: { label: 'Closed', tone: 'danger' },
 };
+
+/** Where a job came from, e.g. "via LinkedIn" for a listing found through Google Jobs. */
+export const sourceName = (job) => job.publisher || SOURCE_LABEL[job.source] || job.source;
 
 export function matchTone(score) {
   if (score == null) return undefined;
@@ -48,6 +52,7 @@ export default function JobRow({ job }) {
           {(job.have || []).slice(0, 3).map((s) => <span key={`h-${s}`} className="skill have"><Icon name="check" size={11} />{s}</span>)}
           {missing.map((s) => <span key={`m-${s}`} className="skill gap">{s}</span>)}
           {job.posted_at && <span className="tiny subtle">{timeAgo(job.posted_at)}</span>}
+          {job.publisher && <span className="tiny subtle">via {job.publisher}</span>}
         </div>
       </div>
       <Icon name="chevronRight" size={16} style={{ color: 'var(--text-3)', flex: 'none' }} />

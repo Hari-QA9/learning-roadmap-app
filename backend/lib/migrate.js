@@ -14,6 +14,7 @@ const COLUMNS = [
   ['job_applications', 'notes', 'TEXT NULL'],
   ['job_applications', 'materials', 'MEDIUMTEXT NULL'],
   ['job_applications', 'updated_at', 'TIMESTAMP NULL'],
+  ['jobs', 'publisher', 'VARCHAR(80) NULL'],
 ];
 
 const TABLES = [
