@@ -2,33 +2,29 @@
 //   1. plan  — the whole roadmap: outcomes, modules with hours, capstone
 //   2. depth — each module in detail (in parallel): objectives, concrete tasks,
 //              steps, "done when", resources, a mini-project, interview questions
-// Resource links are built as search URLs so they always open something real
-// (AI models often invent exact article URLs that 404).
+// Resources: the AI picks from a hand-picked library of real, free resources
+// (resourceLibrary.js) and may name exact pages, which are checked before use.
+// Anything it can't link directly becomes a clearly-labelled search.
 const { generateJSON } = require('./gemini');
+const { relevantResources } = require('./resourceLibrary');
+const { resolveResources } = require('./resources');
 
 const TASK_TYPES = ['learn', 'practice', 'build', 'review'];
 
-const enc = encodeURIComponent;
-function linkFor(r = {}) {
-  const query = String(r.query || r.title || '').trim();
-  const site = String(r.site || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
-  const kind = String(r.type || '').toLowerCase();
-  if (kind === 'video' || site.includes('youtube')) return `https://www.youtube.com/results?search_query=${enc(query)}`;
-  if (site) return `https://www.google.com/search?q=${enc(`site:${site} ${query}`)}`;
-  return `https://www.google.com/search?q=${enc(query)}`;
+const { searchLink } = require('./resources');
+const linkFor = (r) => searchLink(r).url;
+
+/** The library entries that fit this learner, as a compact list for the prompt. */
+function libraryFor(p, extra = '') {
+  const picks = relevantResources(`${p.topic} ${p.goal || ''} ${p.background || ''} ${extra}`, 28);
+  return picks.map((r) => `- ${r.id}: ${r.title} (${r.type}) — ${r.tags.slice(0, 5).join(', ')}`).join('\n');
 }
 
-function cleanResources(list) {
-  return (Array.isArray(list) ? list : [])
-    .filter((r) => r && (r.title || r.query))
-    .slice(0, 4)
-    .map((r) => ({
-      title: String(r.title || r.query).slice(0, 160),
-      type: ['video', 'docs', 'article', 'course', 'practice'].includes(String(r.type).toLowerCase()) ? String(r.type).toLowerCase() : 'article',
-      source: r.site ? String(r.site).replace(/^https?:\/\//, '').replace(/\/.*$/, '') : undefined,
-      url: linkFor(r),
-    }));
-}
+const RESOURCE_RULES = `Resources:
+- First choose from the VERIFIED LIBRARY below by its id ("libraryId") whenever one fits — these are real, free pages.
+- If something more specific would help (an official docs page, a free textbook chapter, a well-known guide), you may give its exact "url", but only if you are confident it exists. It will be checked; broken links are replaced with a search.
+- For videos, give a precise "query" (topic + a respected channel name).
+- Prefer free resources. Match the field: lab protocols for lab skills, official exam sites for exams, textbooks for theory, practice sites for skills.`;
 
 const arr = (x, n = 12) => (Array.isArray(x) ? x.filter(Boolean).map(String).slice(0, n) : []);
 const num = (x, d) => { const v = Math.round(Number(x)); return Number.isFinite(v) && v > 0 ? v : d; };
@@ -45,7 +41,8 @@ function profileText(p) {
 }
 
 async function planRoadmap(p) {
-  const data = await generateJSON(`You are a senior engineer and expert curriculum designer. Design a personalised, practical learning roadmap.
+  const library = libraryFor(p);
+  const data = await generateJSON(`You are an expert curriculum designer and an experienced practitioner in the learner's field (science, healthcare, business, engineering, technology, education, the arts…). Design a personalised, practical learning roadmap.
 
 ${profileText(p)}
 
@@ -54,7 +51,12 @@ Rules:
 - Order modules so each builds on the previous one. Skip what the learner already knows.
 - Aim modules at the learner's goal (e.g. job-ready skills and portfolio work if the goal is a job).
 - 4 to 7 modules. Each module has a clear outcome, not just a topic name.
-- Include one capstone project that proves the goal has been met and is portfolio-worthy.
+- Include one capstone project that proves the goal has been met and is portfolio-worthy. Make it fit the field: e.g. a research poster or lab report for science, a case study or care plan for healthcare, a financial model for finance, a campaign for marketing, an app for software.
+
+${RESOURCE_RULES}
+
+VERIFIED LIBRARY (id: title):
+${library}
 
 Return JSON:
 {
@@ -65,7 +67,7 @@ Return JSON:
   "prerequisites": ["only things truly needed before starting"],
   "modules": [ { "title": "string", "summary": "1-2 sentences", "outcome": "what the learner can do after it", "est_hours": number, "week": "e.g. Week 1-2" } ],
   "capstone": { "title": "string", "brief": "2-3 sentences", "features": ["must-have feature", "..."], "stretch": ["optional extra", "..."], "showcase": "how to present it (README, demo, etc.)" },
-  "resources": [ { "title": "best overall resource", "type": "video|docs|course|article|practice", "site": "domain e.g. developer.mozilla.org", "query": "search words to find it" } ]
+  "resources": [ { "libraryId": "id from the library, if one fits", "title": "string", "type": "video|docs|course|article|practice|book|tool", "url": "exact page (optional)", "site": "domain", "query": "search words", "why": "one short line on why it helps" } ]
 }`);
 
   const modules = (Array.isArray(data.modules) ? data.modules : []).slice(0, 8).map((m, i) => ({
@@ -91,13 +93,14 @@ Return JSON:
       stretch: arr(data.capstone.stretch, 6),
       showcase: String(data.capstone.showcase || ''),
     } : null,
-    resources: cleanResources(data.resources),
+    resources: await resolveResources(data.resources, 5),
   };
 }
 
 async function detailModule(p, plan, mod, index) {
   const others = plan.modules.map((m, i) => `${i + 1}. ${m.title}${i === index ? '  ← THIS MODULE' : ''}`).join('\n');
-  const data = await generateJSON(`You are a senior engineer mentoring a learner. Write module ${index + 1} of their roadmap in depth.
+  const library = libraryFor(p, `${mod.title} ${mod.summary}`);
+  const data = await generateJSON(`You are an experienced practitioner and mentor in the learner's field. Write module ${index + 1} of their roadmap in depth.
 
 ${profileText(p)}
 
@@ -111,11 +114,15 @@ Time budget: about ${mod.est_hours} hours.
 
 Rules:
 - 4 to 7 tasks that fit the time budget. Mix types: "learn" (study a concept), "practice" (exercises), "build" (make something), "review" (consolidate / self-test).
-- Every task must be concrete and specific to this topic — name the exact concepts, commands, APIs or exercises. No vague tasks like "learn the basics".
+- Every task must be concrete and specific to this topic — name the exact concepts, techniques, tools, procedures or exercises (lab methods, clinical skills, formulas, software, commands…). No vague tasks like "learn the basics".
 - "instructions": 2-3 sentences telling the learner exactly what to do and why it matters.
 - "steps": 3-5 short, actionable steps.
 - "done_when": 1-3 checkable criteria so the learner knows they're finished.
-- Resources: 1-3 per task, preferring free, well-known sources (official docs, freeCodeCamp, MDN, W3Schools, GeeksforGeeks, Real Python, YouTube channels, Exercism, LeetCode, Kaggle…). Give the site domain and good search words, not a URL.
+- 1-3 resources per task.
+${RESOURCE_RULES}
+
+VERIFIED LIBRARY (id: title):
+${library}
 - Finish with a small module project that applies everything in this module.
 
 Return JSON:
@@ -129,21 +136,23 @@ Return JSON:
     "instructions": "string",
     "steps": ["string"],
     "done_when": ["string"],
-    "resources": [ { "title": "what it is", "type": "video|docs|article|course|practice", "site": "domain", "query": "search words" } ]
+    "resources": [ { "libraryId": "id if one fits", "title": "what it is", "type": "video|docs|article|course|practice|book|tool", "url": "exact page (optional)", "site": "domain", "query": "search words" } ]
   } ],
   "project": { "title": "string", "brief": "2 sentences", "requirements": ["string"], "stretch": ["string"] },
-  "interview_questions": ["realistic interview question on this module", "3-5 items"],
+  "interview_questions": ["realistic interview or exam question on this module", "3-5 items"],
   "common_mistakes": ["mistake learners make here", "2-4 items"]
 }`);
 
-  const tasks = (Array.isArray(data.tasks) ? data.tasks : []).slice(0, 8).map((t, j) => ({
+  const rawTasks = (Array.isArray(data.tasks) ? data.tasks : []).slice(0, 8);
+  const resolved = await Promise.all(rawTasks.map((t) => resolveResources(t.resources, 3)));
+  const tasks = rawTasks.map((t, j) => ({
     title: String(t.title || `Task ${j + 1}`).slice(0, 250),
     type: TASK_TYPES.includes(String(t.type).toLowerCase()) ? String(t.type).toLowerCase() : 'learn',
     est_minutes: num(t.est_minutes, 45),
     instructions: String(t.instructions || ''),
     steps: arr(t.steps, 8),
     done_when: arr(t.done_when, 4),
-    resources: cleanResources(t.resources),
+    resources: resolved[j],
   }));
 
   return {
@@ -190,4 +199,4 @@ async function generateRoadmap(p, onProgress = () => {}) {
   return { plan, details };
 }
 
-module.exports = { generateRoadmap, linkFor, cleanResources };
+module.exports = { generateRoadmap, linkFor };

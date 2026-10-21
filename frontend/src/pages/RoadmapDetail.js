@@ -112,6 +112,7 @@ function RoadmapDetail() {
 
   const [showResource, setShowResource] = useState(false);
   const [resourceForm, setResourceForm] = useState({ title: '', url: '', type: 'article' });
+  const [suggested, setSuggested] = useState([]);
   const [savingResource, setSavingResource] = useState(false);
 
   const [confirm, setConfirm] = useState(null); // { kind, item }
@@ -143,6 +144,7 @@ function RoadmapDetail() {
       api.get(`/roadmaps/${id}`).then((r) => alive && setRoadmap(r.data)),
       loadModules(),
       api.get(`/resources/${id}`).then((r) => alive && setResources(r.data || [])).catch(() => {}),
+      api.get(`/resources/suggest/${id}`).then((r) => alive && setSuggested(r.data || [])).catch(() => {}),
     ])
       .catch((e) => { if (e.response?.status === 404) setNotFound(true); else toast.error(errorMessage(e, 'Could not load roadmap')); })
       .finally(() => alive && setLoading(false));
@@ -540,6 +542,7 @@ function RoadmapDetail() {
       )}
 
       {tab === 'resources' && (
+        <div className="stack-lg">
         <Card
           title="Learning resources"
           description="Articles, videos and courses for this roadmap"
@@ -557,7 +560,7 @@ function RoadmapDetail() {
                     <div style={{ fontWeight: 500 }} className="truncate">{r.title}</div>
                     <div className="tiny subtle truncate">{r.url ? r.url.replace(/^https?:\/\//, '') : 'No link'}</div>
                   </div>
-                  <Badge>{r.type || 'article'}</Badge>
+                  {/google\.com\/search|youtube\.com\/results/.test(r.url || '') ? <Badge>Search</Badge> : <Badge>{r.type || 'article'}</Badge>}
                   {r.is_free ? <Badge tone="success">Free</Badge> : null}
                   {r.url && (
                     <a className="btn btn-ghost btn-sm" href={r.url} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} /> Open</a>
@@ -568,8 +571,33 @@ function RoadmapDetail() {
             </div>
           )}
         </Card>
+        {suggested.length > 0 && (
+          <Card title="Recommended free resources" description="Hand-picked, reputable sources that fit this roadmap" pad={false}>
+            <div className="list">
+              {suggested.map((r) => (
+                <div key={r.id} className="list-row">
+                  <div className="list-icon"><Icon name={r.type === 'video' ? 'video' : r.type === 'course' ? 'grad' : r.type === 'practice' ? 'target' : 'book'} size={15} /></div>
+                  <div className="grow" style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 500 }} className="truncate">{r.title}</div>
+                    <div className="tiny subtle truncate">{r.source} · {r.type}</div>
+                  </div>
+                  <a className="btn btn-ghost btn-sm" href={r.url} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} /> Open</a>
+                  <Button size="sm" icon="plus" onClick={async () => {
+                    try {
+                      await api.post('/resources', { roadmap_id: id, title: r.title, url: r.url, type: r.type, is_free: true });
+                      const x = await api.get(`/resources/${id}`, { noCache: true });
+                      setResources(x.data || []);
+                      setSuggested((list) => list.filter((y) => y.id !== r.id));
+                      toast.success('Added to this roadmap');
+                    } catch (e) { toast.error(errorMessage(e, 'Could not add')); }
+                  }}>Add</Button>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+        </div>
       )}
-
       {/* Modals */}
       <Modal
         open={showModule}
@@ -578,7 +606,7 @@ function RoadmapDetail() {
         footer={<><Button onClick={() => setShowModule(false)}>Cancel</Button><Button variant="primary" type="submit" form="add-module" loading={savingModule} disabled={!moduleForm.title.trim()}>Add module</Button></>}
       >
         <form id="add-module" onSubmit={addModule}>
-          <Field label="Module title"><Input autoFocus value={moduleForm.title} onChange={(e) => setModuleForm({ ...moduleForm, title: e.target.value })} placeholder="e.g. JavaScript fundamentals" /></Field>
+          <Field label="Module title"><Input autoFocus value={moduleForm.title} onChange={(e) => setModuleForm({ ...moduleForm, title: e.target.value })} placeholder="e.g. Fundamentals" /></Field>
           <Field label="Description" optional><Textarea rows={3} value={moduleForm.description} onChange={(e) => setModuleForm({ ...moduleForm, description: e.target.value })} /></Field>
         </form>
       </Modal>
@@ -590,7 +618,7 @@ function RoadmapDetail() {
         footer={<><Button onClick={() => setShowResource(false)}>Cancel</Button><Button variant="primary" type="submit" form="add-resource" loading={savingResource} disabled={!resourceForm.title.trim()}>Add resource</Button></>}
       >
         <form id="add-resource" onSubmit={addResource}>
-          <Field label="Title"><Input autoFocus value={resourceForm.title} onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })} placeholder="MDN — JavaScript guide" /></Field>
+          <Field label="Title"><Input autoFocus value={resourceForm.title} onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })} placeholder="e.g. Khan Academy — Cell biology" /></Field>
           <Field label="Link"><Input type="url" value={resourceForm.url} onChange={(e) => setResourceForm({ ...resourceForm, url: e.target.value })} placeholder="https://" /></Field>
           <Field label="Type">
             <Select value={resourceForm.type} onChange={(e) => setResourceForm({ ...resourceForm, type: e.target.value })}>

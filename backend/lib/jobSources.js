@@ -29,12 +29,42 @@ const DEFAULT_GREENHOUSE = [
   'cloudflare', 'datadog', 'instacart', 'lyft', 'pinterest', 'reddit', 'twilio', 'mongodb', 'elastic', 'okta',
   'affirm', 'asana', 'brex', 'chime', 'gusto', 'roblox', 'samsara', 'squarespace', 'toast', 'vercel',
   'webflow', 'grammarly', 'airtable', 'flexport', 'nuro', 'scaleai', 'anduril', 'betterment', 'oscar',
+  // Biotech, health and science
+  'ginkgobioworks', '10xgenomics', 'recursionpharmaceuticals', 'tempus', 'benchling', 'insitro', 'grail', 'zocdoc', 'hims',
 ];
 const DEFAULT_LEVER = ['palantir', 'spotify', 'plaid', 'mistral', 'zoox', 'whoop', 'attentive'];
-const DEFAULT_ASHBY = ['ramp', 'notion', 'openai', 'linear', 'vanta', 'replit', 'supabase', 'posthog', 'retool', 'deel'];
+const DEFAULT_ASHBY = ['ramp', 'notion', 'openai', 'linear', 'vanta', 'replit', 'supabase', 'posthog', 'retool', 'deel', 'abridge'];
 
-// Search terms for the keyword-based sources (Adzuna, USAJobs, JSearch).
-const DEFAULT_QUERIES = ['software engineer', 'qa automation engineer', 'data analyst', 'data engineer', 'frontend developer', 'devops engineer'];
+// Search terms for the keyword-based sources (Adzuna, USAJobs, JSearch): the roles members actually want,
+// topped up with a broad mix across fields so the board isn't only tech.
+const DEFAULT_QUERIES = [
+  'software engineer', 'data analyst', 'research associate', 'lab technician', 'registered nurse', 'accountant',
+  'financial analyst', 'marketing coordinator', 'mechanical engineer', 'civil engineer', 'teacher', 'project coordinator',
+];
+// The Muse job categories (all fields).
+const DEFAULT_MUSE = [
+  'Software Engineering', 'Data and Analytics', 'IT', 'Science and Engineering', 'Healthcare', 'Accounting and Finance',
+  'Marketing', 'Design and UX', 'Education', 'Project Management', 'Sales', 'Business Operations', 'Human Resources and Recruitment',
+];
+
+/** Members' most-wanted target roles first, then the defaults (or JOB_QUERIES). */
+async function searchTerms(max) {
+  const counts = new Map();
+  try {
+    const [rows] = await q().query('SELECT target_roles FROM career_profiles WHERE target_roles IS NOT NULL');
+    for (const r of rows) {
+      let roles = [];
+      try { roles = JSON.parse(r.target_roles) || []; } catch { /* ignore */ }
+      for (const role of roles) {
+        const k = String(role).trim().toLowerCase().replace(/\s+/g, ' ');
+        if (k.length >= 3 && k.length <= 60) counts.set(k, (counts.get(k) || 0) + 1);
+      }
+    }
+  } catch { /* table may not exist yet */ }
+  const fromMembers = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k);
+  const base = list('JOB_QUERIES', DEFAULT_QUERIES).map((x) => x.toLowerCase());
+  return [...new Set([...fromMembers, ...base])].slice(0, max);
+}
 
 function stripHtml(html) {
   if (!html) return '';
@@ -114,8 +144,9 @@ async function fromArbeitnow() {
 
 async function fromTheMuse() {
   const out = [];
-  for (const page of [0, 1]) {
-    const data = await getJSON(`https://www.themuse.com/api/public/jobs?page=${page}&category=Software%20Engineering&category=Data%20and%20Analytics&category=IT`);
+  const cats = list('MUSE_CATEGORIES', DEFAULT_MUSE).map((c) => `category=${encodeURIComponent(c)}`).join('&');
+  for (const page of [0, 1, 2, 3, 4]) {
+    const data = await getJSON(`https://www.themuse.com/api/public/jobs?page=${page}&${cats}`);
     for (const j of data.results || []) {
       const loc = (j.locations || []).map((l) => l.name).join(' · ');
       out.push({
@@ -193,7 +224,7 @@ async function fromAdzuna() {
   const key = env('ADZUNA_APP_KEY');
   if (!id || !key) return null; // not configured
   const country = env('ADZUNA_COUNTRY', 'us');
-  const { out, skipped } = await eachLimited(list('JOB_QUERIES', DEFAULT_QUERIES), 2, async (what) => {
+  const { out, skipped } = await eachLimited(await searchTerms(Number(env('ADZUNA_MAX_QUERIES', '12')) || 12), 2, async (what) => {
     const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/1?app_id=${encodeURIComponent(id)}&app_key=${encodeURIComponent(key)}`
       + `&results_per_page=50&max_days_old=30&what=${encodeURIComponent(what)}&content-type=application/json`;
     const data = await getJSON(url);
@@ -215,7 +246,7 @@ async function fromUSAJobs() {
   const key = env('USAJOBS_API_KEY');
   const email = env('USAJOBS_EMAIL');
   if (!key || !email) return null; // not configured
-  const keywords = list('USAJOBS_KEYWORDS', ['software', 'information technology', 'data']);
+  const keywords = env('USAJOBS_KEYWORDS') ? list('USAJOBS_KEYWORDS', []) : await searchTerms(Number(env('USAJOBS_MAX_QUERIES', '8')) || 8);
   const { out } = await eachLimited(keywords, 2, async (kw) => {
     const data = await getJSON(`https://data.usajobs.gov/api/search?Keyword=${encodeURIComponent(kw)}&ResultsPerPage=100&DatePosted=30`, {
       headers: { Host: 'data.usajobs.gov', 'User-Agent': email, 'Authorization-Key': key },
@@ -246,7 +277,7 @@ async function fromJSearch() {
   if (!key) return null; // not configured
   const host = env('JSEARCH_HOST', 'jsearch.p.rapidapi.com');
   const where = env('JSEARCH_LOCATION', 'United States');
-  const { out, skipped } = await eachLimited(list('JOB_QUERIES', DEFAULT_QUERIES), 2, async (query) => {
+  const { out, skipped } = await eachLimited(await searchTerms(Number(env('JSEARCH_MAX_QUERIES', '4')) || 4), 2, async (query) => {
     const url = `https://${host}/search?query=${encodeURIComponent(`${query} in ${where}`)}&page=1&num_pages=1&date_posted=week`;
     const data = await getJSON(url, { headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': host } });
     return (data.data || []).map((j) => {

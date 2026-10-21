@@ -136,7 +136,7 @@ router.post('/explain-task/:taskId', auth, aiLimit, async (req, res) => {
     try { level = JSON.parse(t.roadmap_details || '{}').profile?.level || level; } catch (e) { /* ignore */ }
 
     const explanation = (await getModel({
-      system: 'You are a patient senior engineer teaching one concept at a time. Use clear headings, short paragraphs, bullet lists and small code blocks where useful. Be concrete and accurate.',
+      system: 'You are a patient expert tutor in whatever subject the learner is studying (science, health, business, engineering, technology, the arts…). Teach one concept at a time with clear headings, short paragraphs, bullet lists and real-world examples from that field. Use code blocks only when the topic involves code. Be concrete and accurate.',
     }).generateContent(`Teach me this task from my learning roadmap.
 
 Roadmap: ${t.roadmap_title}

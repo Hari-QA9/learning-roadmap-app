@@ -12,6 +12,7 @@ function Templates() {
   const [importing, setImporting] = useState(null);
   const [preview, setPreview] = useState(null);
   const [query, setQuery] = useState('');
+  const [cat, setCat] = useState('All');
 
   useEffect(() => {
     api.get('/templates')
@@ -34,9 +35,11 @@ function Templates() {
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return templates;
-    return templates.filter((t) => `${t.title} ${t.description} ${t.modules.map((m) => m.title).join(' ')}`.toLowerCase().includes(q));
-  }, [templates, query]);
+    return templates
+      .filter((t) => cat === 'All' || t.category === cat)
+      .filter((t) => !q || `${t.title} ${t.description} ${t.category} ${t.modules.map((m) => m.title).join(' ')}`.toLowerCase().includes(q));
+  }, [templates, query, cat]);
+  const cats = useMemo(() => ['All', ...new Set(templates.map((t) => t.category).filter(Boolean))], [templates]);
 
   const taskCount = (t) => t.modules.reduce((n, m) => n + m.tasks.length, 0);
 
@@ -48,9 +51,16 @@ function Templates() {
         actions={<Button icon="wand" onClick={() => navigate('/ai-generator')}>Need something else? Use AI</Button>}
       />
 
-      <div className="input-group mb-3" style={{ maxWidth: 320 }}>
-        <Icon name="search" size={15} />
-        <Input placeholder="Search templates" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="row row-wrap mb-3" style={{ gap: 10 }}>
+        <div className="input-group" style={{ maxWidth: 320, flex: '1 1 220px' }}>
+          <Icon name="search" size={15} />
+          <Input placeholder="Search templates" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <div className="chip-row">
+          {cats.map((c) => (
+            <button key={c} type="button" className={`filter-chip ${cat === c ? 'active' : ''}`} onClick={() => setCat(c)}>{c}</button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
@@ -66,7 +76,10 @@ function Templates() {
               <div className="card-pad grow stack" style={{ gap: 12 }}>
                 <div className="row-between" style={{ alignItems: 'flex-start' }}>
                   <div className="list-icon"><Icon name="layers" size={15} /></div>
-                  <Badge><Icon name="clock" size={11} /> {t.duration}</Badge>
+                  <div className="row" style={{ gap: 6 }}>
+                    {t.category && <Badge>{t.category}</Badge>}
+                    <Badge><Icon name="clock" size={11} /> {t.duration}</Badge>
+                  </div>
                 </div>
                 <div>
                   <h3>{t.title}</h3>

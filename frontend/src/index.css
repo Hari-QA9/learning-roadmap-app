@@ -835,3 +835,19 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 20px 0; }
   html.print-resume .rp h2 { break-after: avoid; }
   html.print-resume * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+.filter-chip { font: inherit; font-size: 12.5px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); cursor: pointer; transition: background 150ms, color 150ms, border-color 150ms; }
+.filter-chip:hover { color: var(--text); border-color: var(--border-strong, var(--text-3)); }
+.filter-chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+.add-section { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 14px 16px; border: 1px dashed var(--border); border-radius: var(--radius); }
+.add-section .filter-chip { display: inline-flex; align-items: center; gap: 4px; }
+.pub-row { display: flex; gap: 6px; align-items: flex-start; }
+.rp-pubs { padding-left: 17px; }
+.rp-pubs li { margin: 2px 0; }
+
+.res-link { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); padding: 4px 0; }
+.res-link:hover .truncate:first-child { color: var(--accent-text); }
+.res-tag { font-size: 10.5px; padding: 2px 7px; border-radius: 999px; background: var(--surface-3, var(--surface-2)); color: var(--text-2); white-space: nowrap; }
+.res-tag.free { background: var(--success-soft); color: var(--success); }
+@media (max-width: 620px) { .res-source { display: none; } }

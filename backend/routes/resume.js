@@ -163,7 +163,7 @@ router.post('/improve-bullet', auth, aiLimit, async (req, res) => {
   const { bullet, role, company, targetRole, keywords, current } = req.body || {};
   if (!String(bullet || '').trim()) return res.status(400).json({ message: 'Write the bullet first, then ask AI to improve it.' });
   try {
-    const data = await generateJSON(`You are an expert resume writer. Improve this resume bullet.
+    const data = await generateJSON(`You are an expert resume writer for every field (science, healthcare, business, engineering, tech, education). Improve this resume bullet.
 
 Bullet: "${String(bullet).slice(0, 600)}"
 Role: ${role || 'not given'}${company ? ` at ${company}` : ''} (${current ? 'current role — use present tense' : 'past role — use past tense'})
@@ -197,7 +197,11 @@ Return JSON:
   "experience": [ { "title": "", "company": "", "location": "", "start": "Mon YYYY", "end": "Mon YYYY or empty", "current": false, "bullets": [""] } ],
   "projects": [ { "name": "", "tech": "comma separated", "link": "", "start": "", "end": "", "bullets": [""] } ],
   "education": [ { "degree": "", "school": "", "location": "", "start": "", "end": "", "details": "GPA, coursework, honors" } ],
-  "certifications": [ { "name": "", "issuer": "", "date": "", "link": "" } ]
+  "certifications": [ { "name": "", "issuer": "", "date": "", "link": "" } ],
+  "research": [ { "title": "position", "company": "lab / institution", "location": "", "start": "", "end": "", "current": false, "bullets": [""] } ],
+  "publications": [ { "citation": "full citation for a paper, poster or talk", "link": "", "year": "" } ],
+  "volunteer": [ { "title": "role", "company": "organization", "location": "", "start": "", "end": "", "current": false, "bullets": [""] } ],
+  "awards": [ { "name": "", "issuer": "", "date": "" } ]
 }`);
     res.json({ resume: data });
   } catch (err) {
@@ -221,10 +225,11 @@ router.post('/tailor', auth, aiLimit, async (req, res) => {
 
     // Give the model stable ids so its edits can be applied to the right bullet.
     const exp = (resume.experience || []).map((e, i) => `E${i} ${e.title} at ${e.company}${e.current ? ' (current)' : ''}\n${(e.bullets || []).map((b, k) => `  E${i}.${k}: ${b}`).join('\n')}`).join('\n');
+    const rsc = (resume.research || []).map((e, i) => `R${i} ${e.title} at ${e.company}${e.current ? ' (current)' : ''}\n${(e.bullets || []).map((b, k) => `  R${i}.${k}: ${b}`).join('\n')}`).join('\n');
     const prj = (resume.projects || []).map((p, i) => `P${i} ${p.name} (${p.tech})\n${(p.bullets || []).map((b, k) => `  P${i}.${k}: ${b}`).join('\n')}`).join('\n');
     const skills = (resume.skills || []).map((g) => `${g.group ? `${g.group}: ` : ''}${g.items}`).join('\n');
 
-    const data = await generateJSON(`You are a senior technical recruiter and ATS expert. Tailor this candidate's resume to the job, honestly.
+    const data = await generateJSON(`You are a senior recruiter who hires for this job's field, and an ATS expert. Tailor this candidate's resume to the job, honestly.
 
 JOB: ${jobTitle || 'Not given'}${company ? ` at ${company}` : ''}
 ${String(jobDescription).slice(0, 7000)}
@@ -236,6 +241,8 @@ Skills:
 ${skills}
 Experience (ids in front):
 ${exp || 'none'}
+Research (ids in front):
+${rsc || 'none'}
 Projects (ids in front):
 ${prj || 'none'}
 
@@ -250,7 +257,7 @@ Return JSON:
   "keywords_present": ["important job keywords the resume already has"],
   "skills_to_add": [ { "skill": "keyword", "why": "where the resume shows it" } ],
   "gaps": [ { "skill": "required keyword the candidate doesn't show", "advice": "one sentence: learn it, or mention related experience" } ],
-  "bullet_edits": [ { "id": "E0.1 or P1.0", "improved": "rewritten bullet", "why": "short reason" } ],
+  "bullet_edits": [ { "id": "E0.1, R0.2 or P1.0", "improved": "rewritten bullet", "why": "short reason" } ],
   "headline": "best target title for this job, based on the candidate's real experience"
 }`);
     res.json({ ...data, job: { title: jobTitle || '', company: company || '' } });
@@ -265,7 +272,7 @@ router.post('/score', auth, aiLimit, async (req, res) => {
   const context = body.resume ? resumeForPrompt(body.resume)
     : `Name: ${body.name}\nTarget role: ${body.goal}\nSummary: ${body.summary}\nSkills: ${body.skills}\nExperience: ${body.experience}\nEducation: ${body.education}`;
   try {
-    const data = await generateJSON(`You are a senior US tech recruiter giving a frank 6-second-scan review of this resume.
+    const data = await generateJSON(`You are a senior US recruiter in this candidate's field giving a frank 6-second-scan review of this resume.
 
 ${context}
 

@@ -18,6 +18,16 @@ export const TEMPLATES = [
 const clean = (arr) => (arr || []).map((b) => String(b).trim()).filter(Boolean);
 const linkText = (u) => String(u || '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
 
+function Entry({ e }) {
+  return (
+    <div className="rp-entry">
+      <div className="rp-row"><span className="rp-title">{e.title}{e.company && <span className="rp-org">{e.title ? ', ' : ''}{e.company}</span>}</span><span className="rp-date">{dateRange(e)}</span></div>
+      {e.location && <div className="rp-sub">{e.location}</div>}
+      {clean(e.bullets).length > 0 && <ul>{clean(e.bullets).map((b, i) => <li key={i}>{b}</li>)}</ul>}
+    </div>
+  );
+}
+
 /** The resume itself — real text in a single column, so ATS can read every word. */
 export function ResumeDocument({ r, certs = [] }) {
   const c = r.contact;
@@ -33,13 +43,7 @@ export function ResumeDocument({ r, certs = [] }) {
         ))}
       </div>
     ),
-    experience: r.experience.length > 0 && r.experience.map((e) => (
-      <div className="rp-entry" key={e.id}>
-        <div className="rp-row"><span className="rp-title">{e.title}{e.company && <span className="rp-org">{e.title ? ', ' : ''}{e.company}</span>}</span><span className="rp-date">{dateRange(e)}</span></div>
-        {e.location && <div className="rp-sub">{e.location}</div>}
-        {clean(e.bullets).length > 0 && <ul>{clean(e.bullets).map((b, i) => <li key={i}>{b}</li>)}</ul>}
-      </div>
-    )),
+    experience: r.experience.length > 0 && r.experience.map((e) => <Entry key={e.id} e={e} />),
     projects: r.projects.length > 0 && r.projects.map((p) => (
       <div className="rp-entry" key={p.id}>
         <div className="rp-row">
@@ -50,6 +54,14 @@ export function ResumeDocument({ r, certs = [] }) {
         {clean(p.bullets).length > 0 && <ul>{clean(p.bullets).map((b, i) => <li key={i}>{b}</li>)}</ul>}
       </div>
     )),
+    research: r.research?.length > 0 && r.research.map((e) => <Entry key={e.id} e={e} />),
+    volunteer: r.volunteer?.length > 0 && r.volunteer.map((e) => <Entry key={e.id} e={e} />),
+    publications: r.publications?.some((x) => x.citation.trim()) && (
+      <ul className="rp-pubs">{r.publications.filter((x) => x.citation.trim()).map((x) => <li key={x.id}>{x.citation.trim()}{x.link ? ` ${linkText(x.link)}` : ''}</li>)}</ul>
+    ),
+    awards: r.awards?.length > 0 && (
+      <div>{r.awards.map((x) => <div className="rp-row" key={x.id}><span>{x.name}{x.issuer && <span className="rp-org"> — {x.issuer}</span>}</span><span className="rp-date">{x.date}</span></div>)}</div>
+    ),
     education: r.education.length > 0 && r.education.map((e) => (
       <div className="rp-entry" key={e.id}>
         <div className="rp-row"><span className="rp-title">{e.degree}{e.school && <span className="rp-org">{e.degree ? ', ' : ''}{e.school}</span>}</span><span className="rp-date">{dateRange(e)}</span></div>
@@ -67,7 +79,10 @@ export function ResumeDocument({ r, certs = [] }) {
       </div>
     ),
   };
-  const titles = { summary: 'Summary', skills: 'Skills', experience: 'Experience', projects: 'Projects', education: 'Education', certifications: 'Certifications' };
+  const titles = {
+    summary: 'Summary', skills: 'Skills', experience: 'Experience', projects: 'Projects', education: 'Education', certifications: 'Certifications',
+    research: 'Research Experience', publications: 'Publications & Presentations', volunteer: 'Volunteer & Leadership', awards: 'Awards & Honors',
+  };
 
   return (
     <div className={`rp rp-${r.template}`}>

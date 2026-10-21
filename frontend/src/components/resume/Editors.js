@@ -36,7 +36,7 @@ export function ContactEditor({ value, onChange }) {
   return (
     <div className="form-grid">
       <Field label="Full name"><Input value={value.name} onChange={set('name')} placeholder="Sai Cherukumalla" /></Field>
-      <Field label="Target job title" hint="Shown under your name — match the job you apply for."><Input value={value.headline} onChange={set('headline')} placeholder="QA Automation Engineer" /></Field>
+      <Field label="Target job title" hint="Shown under your name — match the job you apply for."><Input value={value.headline} onChange={set('headline')} placeholder="e.g. Research Associate" /></Field>
       <Field label="Email"><Input type="email" value={value.email} onChange={set('email')} placeholder="you@gmail.com" /></Field>
       <Field label="Phone"><Input value={value.phone} onChange={set('phone')} placeholder="(201) 555-0123" /></Field>
       <Field label="Location" hint="City and state is enough — no street address."><Input value={value.location} onChange={set('location')} placeholder="Jersey City, NJ" /></Field>
@@ -64,7 +64,7 @@ export function SummaryEditor({ value, onChange, resume, jobTitle }) {
   };
   return (
     <div className="stack-sm">
-      <Textarea rows={4} value={value} onChange={(e) => onChange(e.target.value)} placeholder="QA Automation Engineer with hands-on experience building Selenium and Java test frameworks…" />
+      <Textarea rows={4} value={value} onChange={(e) => onChange(e.target.value)} placeholder="Biology graduate with hands-on experience in cell culture, qPCR and Western blotting…" />
       <div className="row-between">
         <span className={`tiny ${n && (n < 30 || n > 90) ? 'text-warning' : 'subtle'}`}>{n} words · aim for 30–90</span>
         <Button size="sm" icon="sparkles" loading={busy} onClick={write}>{value ? 'Rewrite with AI' : 'Write with AI'}</Button>
@@ -82,7 +82,7 @@ export function SkillsEditor({ value, onChange, onSync, syncing }) {
       {value.map((g, i) => (
         <div key={g.id} className="skill-group-row">
           <Input value={g.group} onChange={(e) => update(i, { group: e.target.value })} placeholder="Group (optional)" aria-label="Skill group" />
-          <Input value={g.items} onChange={(e) => update(i, { items: e.target.value })} placeholder="Java, Python, SQL" aria-label="Skills" />
+          <Input value={g.items} onChange={(e) => update(i, { items: e.target.value })} placeholder="e.g. PCR, cell culture, ELISA" aria-label="Skills" />
           <Button size="sm" variant="ghost" icon="trash" aria-label="Remove group" disabled={value.length === 1} onClick={() => onChange(value.filter((_, k) => k !== i))} />
         </div>
       ))}
@@ -133,7 +133,7 @@ function Bullets({ bullets, onChange, context }) {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') { e.preventDefault(); const a = [...bullets]; a.splice(i + 1, 0, ''); onChange(a); }
                 }}
-                placeholder="Automated 300+ regression tests with Selenium and Java, cutting release testing from 3 days to 4 hours"
+                placeholder="e.g. Ran 120+ qPCR assays per week, cutting turnaround from 5 days to 2"
                 aria-label={`Bullet ${i + 1}`}
               />
               {hints.length > 0 && <div className="bullet-hints">{hints.map((h) => <span key={h}>{h}</span>)}</div>}
@@ -166,12 +166,18 @@ function Bullets({ bullets, onChange, context }) {
 /* ---------- Experience / projects / education / certifications ---------- */
 const FIELDS = {
   experience: [['title', 'Job title', 'Test Engineer'], ['company', 'Company', 'Accenture'], ['location', 'Location', 'Hyderabad, India'], ['start', 'Start', 'Jan 2021'], ['end', 'End', 'Dec 2022']],
-  projects: [['name', 'Project name', 'E2E test framework for an e-commerce site'], ['tech', 'Tools used', 'Playwright, TypeScript, GitHub Actions'], ['link', 'Link', 'github.com/you/project'], ['start', 'Start', '2025'], ['end', 'End', '2026']],
+  research: [['title', 'Position', 'Undergraduate Researcher'], ['company', 'Lab / institution', 'Smith Lab, Boston University'], ['location', 'Location', 'Boston, MA'], ['start', 'Start', 'Sep 2023'], ['end', 'End', 'May 2025']],
+  volunteer: [['title', 'Role', 'Volunteer Tutor / Club Treasurer'], ['company', 'Organization', 'Red Cross / Biology Club'], ['location', 'Location', ''], ['start', 'Start', '2024'], ['end', 'End', '']],
+  awards: [['name', 'Award', "Dean's List / Research Scholarship"], ['issuer', 'From', 'Long Island University'], ['date', 'Date', '2025']],
+  projects: [['name', 'Project name', 'Capstone: antibiotic resistance in soil bacteria'], ['tech', 'Tools used', 'Playwright, TypeScript, GitHub Actions'], ['link', 'Link', 'github.com/you/project'], ['start', 'Start', '2025'], ['end', 'End', '2026']],
   education: [['degree', 'Degree', 'MS Computer Science'], ['school', 'School', 'Long Island University'], ['location', 'Location', 'Brooklyn, NY'], ['start', 'Start', '2025'], ['end', 'Graduation', 'Dec 2026']],
   certifications: [['name', 'Certificate', 'ISTQB Foundation Level'], ['issuer', 'Issued by', 'ISTQB'], ['date', 'Date', '2025'], ['link', 'Link', '']],
 };
 const heading = (kind, e) => ({
   experience: [e.title, e.company].filter(Boolean).join(' · '),
+  research: [e.title, e.company].filter(Boolean).join(' · '),
+  volunteer: [e.title, e.company].filter(Boolean).join(' · '),
+  awards: [e.name, e.issuer].filter(Boolean).join(' · '),
   projects: e.name,
   education: [e.degree, e.school].filter(Boolean).join(' · '),
   certifications: [e.name, e.issuer].filter(Boolean).join(' · '),
@@ -181,7 +187,7 @@ export function EntriesEditor({ kind, value, onChange, context = {} }) {
   const [open, setOpen] = useState(() => (value[0] ? value[0].id : null));
   const update = (i, patch) => onChange(value.map((e, k) => (k === i ? { ...e, ...patch } : e)));
   const add = () => { const e = emptyEntry(kind); onChange([...value, e]); setOpen(e.id); };
-  const noun = { experience: 'role', projects: 'project', education: 'school', certifications: 'certificate' }[kind];
+  const noun = { experience: 'role', research: 'position', volunteer: 'role', projects: 'project', education: 'school', certifications: 'certificate', awards: 'award' }[kind];
 
   return (
     <div className="stack-sm">
@@ -198,7 +204,7 @@ export function EntriesEditor({ kind, value, onChange, context = {} }) {
               <Icon name="chevronRight" size={14} style={{ transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 200ms', color: 'var(--text-3)' }} />
               <div className="grow" style={{ minWidth: 0 }}>
                 <div className="truncate" style={{ fontWeight: 500 }}>{heading(kind, e) || `New ${noun}`}</div>
-                {kind !== 'certifications' && <div className="tiny subtle">{dateRange(e) || 'Add dates'}</div>}
+                {!['certifications', 'awards'].includes(kind) && <div className="tiny subtle">{dateRange(e) || 'Add dates'}</div>}
               </div>
               <div className="row" style={{ gap: 0 }} onClick={(ev) => ev.stopPropagation()}>
                 <MoveButtons index={i} count={value.length} onMove={(a, b) => onChange(move(value, a, b))} label={noun} />
@@ -219,15 +225,15 @@ export function EntriesEditor({ kind, value, onChange, context = {} }) {
                     </Field>
                   ))}
                 </div>
-                {kind === 'experience' && (
-                  <label className="checkbox mt-2"><input type="checkbox" checked={!!e.current} onChange={(ev) => update(i, { current: ev.target.checked, end: ev.target.checked ? '' : e.end })} /> I currently work here</label>
+                {['experience', 'research', 'volunteer'].includes(kind) && (
+                  <label className="checkbox mt-2"><input type="checkbox" checked={!!e.current} onChange={(ev) => update(i, { current: ev.target.checked, end: ev.target.checked ? '' : e.end })} /> I'm currently in this role</label>
                 )}
                 {kind === 'education' && (
                   <Field label="Details" optional className="mt-2" hint="GPA (if 3.5+), honors, relevant coursework.">
                     <Input value={e.details || ''} onChange={(ev) => update(i, { details: ev.target.value })} placeholder="GPA 3.8 · Coursework: Software Testing, Data Structures, Cloud Computing" />
                   </Field>
                 )}
-                {(kind === 'experience' || kind === 'projects') && (
+                {['experience', 'research', 'volunteer', 'projects'].includes(kind) && (
                   <div className="mt-3">
                     <Bullets
                       bullets={e.bullets && e.bullets.length ? e.bullets : ['']}
@@ -242,6 +248,29 @@ export function EntriesEditor({ kind, value, onChange, context = {} }) {
         );
       })}
       <Button size="sm" variant="ghost" icon="plus" onClick={add}>Add {noun}</Button>
+    </div>
+  );
+}
+
+/* ---------- Publications, posters and talks ---------- */
+export function PublicationsEditor({ value, onChange }) {
+  const update = (i, patch) => onChange(value.map((x, k) => (k === i ? { ...x, ...patch } : x)));
+  return (
+    <div className="stack-sm">
+      <p className="tiny subtle">Papers, posters, conference talks and class research presentations. Use one citation style (e.g. APA) and bold nothing — ATS reads plain text.</p>
+      {value.map((x, i) => (
+        <div key={x.id} className="pub-row">
+          <div className="grow stack-sm" style={{ minWidth: 0 }}>
+            <Textarea rows={2} value={x.citation} onChange={(ev) => update(i, { citation: ev.target.value })} placeholder="Lee A, Smith J. Heat stress signaling in yeast. Poster presented at: LIU Research Day; April 2025; Brooklyn, NY." aria-label={`Citation ${i + 1}`} />
+            <Input value={x.link} onChange={(ev) => update(i, { link: ev.target.value })} placeholder="DOI or link (optional)" aria-label={`Link ${i + 1}`} />
+          </div>
+          <div className="bullet-actions">
+            <MoveButtons index={i} count={value.length} onMove={(a, b) => onChange(move(value, a, b))} label="item" />
+            <Button size="sm" variant="ghost" icon="trash" onClick={() => onChange(value.filter((_, k) => k !== i))} aria-label="Delete item" />
+          </div>
+        </div>
+      ))}
+      <Button size="sm" variant="ghost" icon="plus" onClick={() => onChange([...value, emptyEntry('publications')])}>Add publication or presentation</Button>
     </div>
   );
 }

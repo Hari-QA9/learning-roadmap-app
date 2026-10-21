@@ -72,7 +72,7 @@ function Quiz() {
           <form onSubmit={generate}>
             {error && <div className="mb-2"><Alert tone="danger" onClose={() => setError('')}>{error}</Alert></div>}
             <Field label="Topic">
-              <Input autoFocus value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Java OOP concepts" disabled={loading} style={{ height: 44, fontSize: 15 }} />
+              <Input autoFocus value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Cell biology, accounting basics, Java OOP" disabled={loading} style={{ height: 44, fontSize: 15 }} />
             </Field>
             <div className="row row-wrap mt-2" style={{ gap: 6 }}>
               {TOPICS.map((t) => <button key={t} type="button" className="badge" style={{ cursor: 'pointer', height: 26 }} onClick={() => setTopic(t)} disabled={loading}>{t}</button>)}

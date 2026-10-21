@@ -10,6 +10,7 @@ function resumeToText(raw) {
     return {
       name: r.name || '', headline: r.goal || '', summary: r.summary || '', skills: r.skills || '',
       experience: r.experience || '', projects: '', education: r.education || '', certifications: '',
+      research: '', volunteer: '', publications: '', awards: '',
     };
   }
   const c = r.contact || {};
@@ -22,6 +23,10 @@ function resumeToText(raw) {
     projects: (r.projects || []).map((p) => [`${[p.name, p.tech].filter(Boolean).join(' — ')} | ${range(p)}`, ...bullets(p).map((b) => `- ${b}`)].join('\n')).join('\n\n'),
     education: (r.education || []).map((e) => `${[e.degree, e.school].filter(Boolean).join(', ')} | ${range(e)}${e.details ? `\n${e.details}` : ''}`).join('\n'),
     certifications: (r.certifications || []).map((x) => [x.name, x.issuer, x.date].filter(Boolean).join(' | ')).join('\n'),
+    research: (r.research || []).map((e) => [`${[e.title, e.company].filter(Boolean).join(', ')} | ${range(e)}`, ...bullets(e).map((b) => `- ${b}`)].join('\n')).join('\n\n'),
+    volunteer: (r.volunteer || []).map((e) => [`${[e.title, e.company].filter(Boolean).join(', ')} | ${range(e)}`, ...bullets(e).map((b) => `- ${b}`)].join('\n')).join('\n\n'),
+    publications: (r.publications || []).map((x) => x.citation).filter(Boolean).join('\n'),
+    awards: (r.awards || []).map((x) => [x.name, x.issuer, x.date].filter(Boolean).join(' | ')).join('\n'),
   };
 }
 
@@ -34,8 +39,16 @@ Summary: ${t.summary || 'not provided'}
 Skills: ${t.skills || 'not provided'}
 Experience:
 ${t.experience || 'not provided'}
+Research:
+${t.research || 'none'}
 Projects:
 ${t.projects || 'none'}
+Publications & presentations:
+${t.publications || 'none'}
+Volunteer & leadership:
+${t.volunteer || 'none'}
+Awards:
+${t.awards || 'none'}
 Education:
 ${t.education || 'not provided'}
 Certifications:
