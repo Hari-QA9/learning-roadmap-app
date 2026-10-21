@@ -4,8 +4,19 @@ import api, { errorMessage } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { useTheme } from '../lib/theme';
 import {
-  PageHeader, Button, Card, Field, Input, Textarea, Avatar, Stat, Loading, Icon, EmptyState, Segmented, Badge, timeAgo, formatDate,
+  PageHeader, Button, Card, Field, Input, Textarea, Avatar, Stat, Loading, Icon, EmptyState, Segmented, Badge, Modal, timeAgo, formatDate,
 } from '../components/ui';
+
+const BADGE_INFO = [
+  { name: 'First Roadmap', how: 'Create your first learning roadmap (manually or with AI).' },
+  { name: 'Task Master', how: 'Complete 10 tasks across any of your roadmaps.' },
+  { name: 'AI Explorer', how: 'Generate a roadmap using the AI generator.' },
+  { name: 'Streak Starter', how: 'Log in and stay active for 3 days in a row.' },
+  { name: 'Quiz Champion', how: 'Score 100% on any quiz.' },
+  { name: 'Resource Hunter', how: 'Bookmark 5 resources from your roadmaps.' },
+  { name: 'Social Learner', how: 'Share a roadmap with someone.' },
+  { name: 'Feedback Hero', how: 'Submit feedback through the Feedback page.' },
+];
 
 function Profile() {
   const navigate = useNavigate();
@@ -18,6 +29,7 @@ function Profile() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', bio: '', profile_picture: '' });
   const [saving, setSaving] = useState(false);
+  const [showBadgeInfo, setShowBadgeInfo] = useState(false);
 
   useEffect(() => {
     Promise.allSettled([api.get('/profile'), api.get('/badges'), api.get('/evaluation/certificates')]).then(([p, b, c]) => {
@@ -120,7 +132,7 @@ function Profile() {
             <Segmented value={theme} onChange={setTheme} options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
           </Card>
 
-          <Card title="Badges" description={`${earned.length} of ${badges.length} earned`}>
+          <Card title="Badges" description={`${earned.length} of ${badges.length} earned`} actions={<Button variant="ghost" size="sm" icon="info" onClick={() => setShowBadgeInfo(true)}>How to earn</Button>}>
             {badges.length === 0 ? (
               <p className="small subtle">Badges will appear as you learn.</p>
             ) : (
@@ -155,6 +167,29 @@ function Profile() {
           </Card>
         </div>
       </div>
+
+      <Modal
+        open={showBadgeInfo}
+        onClose={() => setShowBadgeInfo(false)}
+        title="How to earn badges"
+        description="Badges are awarded automatically when you hit the milestone."
+        footer={<Button onClick={() => setShowBadgeInfo(false)}>Got it</Button>}
+      >
+        <div className="stack-sm">
+          {BADGE_INFO.map((b) => {
+            const got = earned.some((e) => e.name === b.name);
+            return (
+              <div key={b.name} className="card-muted row" style={{ padding: 12, alignItems: 'flex-start' }}>
+                <Icon name={got ? 'award' : 'lock'} size={16} className={got ? 'text-accent' : 'subtle'} style={{ marginTop: 2 }} />
+                <div className="grow">
+                  <div style={{ fontWeight: 500, color: 'var(--text)' }}>{b.name} {got && <Badge tone="success">Earned</Badge>}</div>
+                  <div className="small muted">{b.how}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Modal>
     </>
   );
 }

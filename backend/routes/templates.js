@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
+const { insertTask } = require('../lib/tasks');
 
 const TEMPLATES = [
   {
@@ -120,10 +121,7 @@ router.post('/import/:id', verifyToken, async (req, res) => {
         [roadmapId, mod.title, m, m]
       );
       for (let t = 0; t < mod.tasks.length; t++) {
-        await q.query(
-          "INSERT INTO tasks (user_id, module_id, title, status, position) VALUES (?, ?, ?, 'pending', ?)",
-          [userId, modResult.insertId, mod.tasks[t], t]
-        );
+        await insertTask({ userId, roadmapId, moduleId: modResult.insertId, title: mod.tasks[t], position: t });
       }
     }
 

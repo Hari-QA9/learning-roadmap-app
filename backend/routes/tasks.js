@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { insertTask } = require('../lib/tasks');
 
 // GET tasks by module
 router.get('/:moduleId', auth, async (req, res) => {
@@ -22,17 +23,15 @@ router.post('/', auth, async (req, res) => {
   const userId = req.user.id;
 
   try {
-    const [result] = await db.promise().query(
-      "INSERT INTO tasks (user_id, module_id, title, description, status, due_date, priority) VALUES (?, ?, ?, ?, 'pending', ?, ?)",
-      [
-        userId,
-        module_id,
-        title,
-        description || '',
-        due_date || null,
-        priority || 'medium',
-      ]
-    );
+    let rid = roadmap_id || null;
+    if (!rid) {
+      const [m] = await db.promise().query('SELECT roadmap_id FROM modules WHERE id = ?', [module_id]);
+      rid = m[0] ? m[0].roadmap_id : null;
+    }
+    const result = await insertTask({
+      userId, roadmapId: rid, moduleId: module_id, title,
+      description: description || '', dueDate: due_date || null, priority: priority || 'medium',
+    });
     res.json({ id: result.insertId, message: 'Task created', taskId: result.insertId });
   } catch (err) {
     console.log(err);

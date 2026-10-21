@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { generateJSON, getModel, sendAIError } = require('../lib/gemini');
+const { insertTask } = require('../lib/tasks');
 
 const q = () => db.promise();
 const soft = (p) => p.catch((e) => console.log('[ai] skipped:', e.message));
@@ -49,10 +50,7 @@ Return JSON with exactly this shape:
       const tasks = Array.isArray(mod.tasks) ? mod.tasks : [];
       for (let j = 0; j < tasks.length; j++) {
         const t = typeof tasks[j] === 'string' ? { title: tasks[j] } : tasks[j] || {};
-        await q().query(
-          "INSERT INTO tasks (user_id, module_id, title, description, status, position) VALUES (?, ?, ?, ?, 'pending', ?)",
-          [req.user.id, m.insertId, t.title || `Task ${j + 1}`, t.description || '', j]
-        );
+        await insertTask({ userId: req.user.id, roadmapId, moduleId: m.insertId, title: t.title || `Task ${j + 1}`, description: t.description || '', position: j });
       }
     }
 
