@@ -1,13 +1,16 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 import { ThemeProvider } from './lib/theme';
+import { isLoggedIn } from './lib/api';
 import { ToastProvider } from './components/Toast';
 import AppShell from './components/AppShell';
 
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Roadmaps from './pages/Roadmaps';
 import RoadmapDetail from './pages/RoadmapDetail';
@@ -27,14 +30,14 @@ import RoadmapEvaluation from './pages/RoadmapEvaluation';
 import Certificate from './pages/Certificate';
 
 function PrivateRoute({ children }) {
-  const token = localStorage.getItem('token');
-  if (!token) return <Navigate to="/login" replace />;
+  const location = useLocation();
+  // Remember where the user was going so login can send them back there.
+  if (!isLoggedIn()) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   return children;
 }
 
 function PublicOnly({ children }) {
-  const token = localStorage.getItem('token');
-  if (token) return <Navigate to="/dashboard" replace />;
+  if (isLoggedIn()) return <Navigate to="/dashboard" replace />;
   return children;
 }
 
@@ -47,6 +50,8 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
             <Route path="/signup" element={<PublicOnly><Signup /></PublicOnly>} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route element={<PrivateRoute><AppShell /></PrivateRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />

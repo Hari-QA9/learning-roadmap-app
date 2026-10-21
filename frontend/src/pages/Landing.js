@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Icon } from '../components/ui';
 import { useTheme } from '../lib/theme';
+import { isLoggedIn } from '../lib/api';
 
 const FEATURES = [
   { icon: 'wand', title: 'AI roadmap generator', desc: 'Describe a topic and get a structured roadmap with modules and tasks in seconds.' },
@@ -21,7 +22,7 @@ const STEPS = [
 function Landing() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const loggedIn = !!localStorage.getItem('token');
+  const loggedIn = isLoggedIn();
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
