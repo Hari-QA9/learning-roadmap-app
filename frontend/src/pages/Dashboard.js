@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import JobRow from '../components/JobRow';
 import api, { getUser } from '../lib/api';
 import {
   PageHeader, Stat, Card, Button, Progress, EmptyState, SkeletonRows, Icon, Badge, timeAgo,
@@ -26,6 +27,7 @@ function Dashboard() {
   const [roadmaps, setRoadmaps] = useState([]);
   const [quiz, setQuiz] = useState({ overall: null, history: [] });
   const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -40,6 +42,9 @@ function Dashboard() {
       if (q.status === 'fulfilled') setQuiz({ overall: q.value.data?.overall, history: (q.value.data?.quizHistory || []).slice(0, 5) });
       setLoading(false);
     });
+    api.get('/jobs/recommended', { params: { limit: 4 } })
+      .then((r) => alive && setJobs(r.data))
+      .catch(() => alive && setJobs({ jobs: [] }));
     return () => { alive = false; };
   }, []);
 
@@ -109,6 +114,23 @@ function Dashboard() {
         </Card>
 
         <div className="stack-lg">
+          <Card
+            title="Jobs for you"
+            description="Best matches for your skills"
+            pad={false}
+            actions={<Button variant="ghost" size="sm" iconRight="arrowRight" onClick={() => navigate('/jobs')}>Job board</Button>}
+          >
+            {!jobs ? (
+              <SkeletonRows rows={2} />
+            ) : jobs.needsProfile ? (
+              <EmptyState icon="briefcase" title="Get matched to real jobs" description="Add your target role and skills to see roles you fit — and what to learn for the rest." action={<Button size="sm" variant="primary" onClick={() => navigate('/jobs')}>Set up</Button>} />
+            ) : jobs.jobs.length === 0 ? (
+              <EmptyState icon="briefcase" title="No new matches yet" description="New roles arrive every few hours." action={<Button size="sm" onClick={() => navigate('/jobs?view=all')}>Browse all jobs</Button>} />
+            ) : (
+              <div className="list">{jobs.jobs.map((j) => <JobRow key={j.id} job={j} />)}</div>
+            )}
+          </Card>
+
           <Card title="Shortcuts" pad={false}>
             <div className="list">
               {SHORTCUTS.map((s) => (
