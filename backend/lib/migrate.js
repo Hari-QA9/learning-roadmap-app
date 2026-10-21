@@ -18,6 +18,24 @@ const COLUMNS = [
 ];
 
 const TABLES = [
+  `CREATE TABLE IF NOT EXISTS user_resumes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    resume_data MEDIUMTEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id)
+  )`,
+  // Tailored copies of a member's resume (e.g. one per job they apply to)
+  `CREATE TABLE IF NOT EXISTS resume_versions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    job_id INT NULL,
+    data MEDIUMTEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
   // Exists in older databases; created here for fresh (e.g. production) databases.
   `CREATE TABLE IF NOT EXISTS job_applications (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -77,6 +95,12 @@ const TABLES = [
   )`,
 ];
 
+// Safe, repeatable changes to existing columns (MySQL). Errors are ignored.
+const CHANGES = [
+  // Structured resumes can be larger than TEXT's 64 KB.
+  'ALTER TABLE user_resumes MODIFY resume_data MEDIUMTEXT NOT NULL',
+];
+
 async function migrate() {
   const q = db.promise();
   for (const sql of TABLES) {
@@ -90,6 +114,9 @@ async function migrate() {
       // Already there — that's the normal case after the first run.
       if (!/duplicate column/i.test(err.message)) console.warn(`[migrate] ${table}.${column}: ${err.message}`);
     }
+  }
+  for (const sql of CHANGES) {
+    try { await q.query(sql); } catch { /* not supported or already done */ }
   }
 }
 

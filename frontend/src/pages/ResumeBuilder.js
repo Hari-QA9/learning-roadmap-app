@@ -1,380 +1,471 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import api, { errorMessage } from '../lib/api';
 import { useToast } from '../components/Toast';
 import {
-  PageHeader, Button, Card, Field, Input, Textarea, Tabs, Segmented, Loading, Badge, Icon, Modal, Ring, Alert, Spinner,
+  PageHeader, Button, Card, Field, Textarea, Select, Segmented, Loading, Icon, Modal, Badge, Ring, Dropdown, Spinner, ConfirmDialog, Input,
 } from '../components/ui';
+import ResumePaper, { PrintableResume, PAPER, TEMPLATES, MARGIN_X, MARGIN_Y } from '../components/resume/ResumePaper';
+import { ContactEditor, SummaryEditor, SkillsEditor, EntriesEditor } from '../components/resume/Editors';
+import HealthPanel from '../components/resume/HealthPanel';
+import TailorModal from '../components/resume/TailorModal';
+import {
+  upgradeResume, analyzeResume, toPlainText, skillList, uid, SECTION_LABELS,
+} from '../lib/resume';
 
-const EMPTY = { name: '', email: '', phone: '', location: '', linkedin: '', github: '', goal: '', summary: '', skills: '', experience: '', education: '' };
-const TEMPLATES = [{ value: 'modern', label: 'Modern' }, { value: 'classic', label: 'Classic' }, { value: 'minimal', label: 'Minimal' }];
-
-/* ---------- Turn free text into resume blocks ---------- */
-function Blocks({ text, accent }) {
-  if (!text?.trim()) return null;
-  const lines = text.split('\n');
-  const out = [];
-  let bullets = [];
-  const flush = () => { if (bullets.length) { out.push(<ul key={out.length} style={{ margin: '2px 0 8px', paddingLeft: 16 }}>{bullets}</ul>); bullets = []; } };
-  lines.forEach((raw, i) => {
-    const line = raw.trim();
-    if (!line) { flush(); return; }
-    const b = line.match(/^[-•*]\s*(.*)/);
-    if (b) bullets.push(<li key={i} style={{ margin: '2px 0' }}>{b[1]}</li>);
-    else {
-      flush();
-      const [title, ...rest] = line.split('|').map((s) => s.trim());
-      out.push(
-        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: out.length ? 8 : 0 }}>
-          <strong style={{ color: accent || '#1a1a19', fontWeight: 600 }}>{title}</strong>
-          {rest.length > 0 && <span style={{ color: '#6b6a65', whiteSpace: 'nowrap' }}>{rest.join(' · ')}</span>}
-        </div>
-      );
-    }
-  });
-  flush();
-  return <div>{out}</div>;
-}
-
-function Preview({ r, template, certs }) {
-  const skills = r.skills.split(',').map((s) => s.trim()).filter(Boolean);
-  const contact = [r.email, r.phone, r.location, r.linkedin, r.github].filter(Boolean);
-  const accent = template === 'modern' ? '#0071e3' : '#1d1d1f';
-  const serif = template === 'classic';
-  const H = ({ children }) => (
-    <div style={{
-      fontSize: 10.5, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase', color: template === 'modern' ? accent : '#1a1a19',
-      borderBottom: template === 'minimal' ? 'none' : `1px solid ${template === 'modern' ? '#d6e6fa' : '#d4d3ce'}`, paddingBottom: 4, margin: '18px 0 8px',
-    }}>{children}</div>
-  );
-  return (
-    <div
-      id="resume-preview"
-      style={{
-        background: '#fff', color: '#2b2b29', width: '100%', aspectRatio: '1 / 1.414',
-        padding: '40px 44px', fontSize: 11.5, lineHeight: 1.55, boxShadow: 'var(--shadow)', borderRadius: 4,
-        fontFamily: serif ? "Georgia, 'Times New Roman', serif" : "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
-      }}
-    >
-      <div style={{ textAlign: template === 'classic' ? 'center' : 'left' }}>
-        <div style={{ fontFamily: 'inherit', fontSize: 26, fontWeight: template === 'classic' ? 500 : 700, color: '#1d1d1f', letterSpacing: template === 'classic' ? '0' : '-0.025em', lineHeight: 1.15 }}>
-          {r.name || 'Your Name'}
-        </div>
-        {r.goal && <div style={{ color: accent, marginTop: 3, fontSize: 12.5 }}>{r.goal}</div>}
-        {contact.length > 0 && <div style={{ color: '#6b6a65', marginTop: 6, fontSize: 10.5 }}>{contact.join('  ·  ')}</div>}
-      </div>
-      {r.summary && (<><H>Summary</H><div>{r.summary}</div></>)}
-      {skills.length > 0 && (
-        <>
-          <H>Skills</H>
-          {template === 'modern' ? (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-              {skills.map((s, i) => <span key={`${s}-${i}`} style={{ background: '#e8f1fc', color: accent, padding: '2px 8px', borderRadius: 4, fontSize: 10.5 }}>{s}</span>)}
-            </div>
-          ) : <div>{skills.join(' · ')}</div>}
-        </>
-      )}
-      {r.experience && (<><H>Experience</H><Blocks text={r.experience} /></>)}
-      {r.education && (<><H>Education</H><Blocks text={r.education} /></>)}
-      {certs.length > 0 && (
-        <>
-          <H>Certifications</H>
-          {certs.map((c) => (
-            <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>{c.roadmap_title} — LearnMap</span>
-              <span style={{ color: '#6b6a65' }}>{new Date(c.issued_at).getFullYear()}</span>
-            </div>
-          ))}
-        </>
-      )}
-    </div>
-  );
-}
+const withIds = (list = []) => list.map((x) => ({ ...x, id: x.id || uid(), ...(Array.isArray(x.bullets) ? { bullets: x.bullets.length ? x.bullets : [''] } : {}) }));
 
 function ResumeBuilder() {
   const toast = useToast();
-  const [r, setR] = useState(EMPTY);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('details');
-  const [template, setTemplate] = useState(() => { try { return localStorage.getItem('learnmap.resumeTemplate') || 'modern'; } catch { return 'modern'; } });
+  const [params, setParams] = useSearchParams();
+  const [r, setR] = useState(null);
+  const [target, setTarget] = useState({ kind: 'main' }); // or { kind: 'version', id, name, job_id }
+  const [versions, setVersions] = useState([]);
+  const [certs, setCerts] = useState([]);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
-  const [writing, setWriting] = useState(false);
-  const [certs, setCerts] = useState([]);
-  const [includeCerts, setIncludeCerts] = useState(true);
-  const [review, setReview] = useState(null); // { kind: 'score'|'ats', data }
-  const [reviewing, setReviewing] = useState(null);
-  const [atsOpen, setAtsOpen] = useState(false);
-  const [jd, setJd] = useState('');
-  const [exporting, setExporting] = useState(false);
-  const firstLoad = useRef(true);
+  const [pages, setPages] = useState(1);
+  const [job, setJob] = useState(null); // { id, title, company, skills } for live keyword checks
+  const [tailorOpen, setTailorOpen] = useState(false);
+  const [tailorJobId, setTailorJobId] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [review, setReview] = useState(null);
+  const [reviewing, setReviewing] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [toDelete, setToDelete] = useState(null);
+  const [renaming, setRenaming] = useState(null);
+  const tailorJobRef = useRef(null);
+  const skipSave = useRef(true);
+
+  /* ---------- Load ---------- */
+  const loadVersions = useCallback(() => api.get('/resume/versions', { noCache: true }).then((x) => setVersions(x.data || [])).catch(() => {}), []);
 
   useEffect(() => {
-    Promise.allSettled([api.get('/resume'), api.get('/resume/saved'), api.get('/evaluation/certificates')]).then(([p, s, c]) => {
-      const base = { ...EMPTY };
-      if (p.status === 'fulfilled') { base.name = p.value.data?.user?.name || ''; base.email = p.value.data?.user?.email || ''; }
-      if (s.status === 'fulfilled' && s.value.data?.resume) {
-        const saved = s.value.data.resume;
-        Object.keys(EMPTY).forEach((k) => { if (saved[k]) base[k] = saved[k]; });
-        if (saved.template) setTemplate(saved.template);
-        if (typeof saved.includeCerts === 'boolean') setIncludeCerts(saved.includeCerts);
+    Promise.allSettled([api.get('/resume'), api.get('/resume/saved', { noCache: true }), api.get('/evaluation/certificates')]).then(([p, s, c]) => {
+      const saved = s.status === 'fulfilled' ? s.value.data?.resume : null;
+      const res = upgradeResume(saved);
+      if (!saved && p.status === 'fulfilled') {
+        res.contact.name = p.value.data?.user?.name || '';
+        res.contact.email = p.value.data?.user?.email || '';
       }
       if (c.status === 'fulfilled') setCerts(c.value.data.certificates || []);
-      setR(base);
-      setLoading(false);
+      skipSave.current = true;
+      setR(res);
     });
-  }, []);
+    loadVersions();
+  }, [loadVersions]);
 
-  useEffect(() => { try { localStorage.setItem('learnmap.resumeTemplate', template); } catch {} }, [template]);
+  // Opened from a job page: /resume-builder?job=123
+  useEffect(() => {
+    const id = params.get('job');
+    if (id && r) {
+      setTailorJobId(Number(id));
+      setTailorOpen(true);
+      params.delete('job');
+      setParams(params, { replace: true });
+    }
+  }, [params, r, setParams]);
 
-  const set = (k) => (e) => { setR((x) => ({ ...x, [k]: e.target.value })); setDirty(true); };
+  // Job keywords for the live check (from the version's job or the job being tailored).
+  const jobId = target.job_id || tailorJobId;
+  useEffect(() => {
+    if (!jobId) { setJob(null); return; }
+    api.get(`/jobs/${jobId}`).then((x) => setJob({ id: jobId, title: x.data.job.title, company: x.data.job.company, skills: x.data.job.skills || [] })).catch(() => setJob(null));
+  }, [jobId]);
 
-  const save = useCallback(async (silent) => {
+  /* ---------- Save ---------- */
+  const save = useCallback(async (silent = true, data = r, to = target) => {
+    if (!data) return;
     setSaving(true);
     try {
-      await api.post('/resume/save', { resume_data: { ...r, template, includeCerts } });
+      if (to.kind === 'version') await api.put(`/resume/versions/${to.id}`, { data });
+      else await api.post('/resume/save', { resume_data: data });
       setDirty(false);
       setLastSaved(new Date());
-      if (!silent) toast.success('Resume saved');
-    } catch (err) {
-      toast.error(errorMessage(err, 'Could not save resume'));
+      if (!silent) toast.success('Saved');
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not save'));
     } finally {
       setSaving(false);
     }
-  }, [r, template, includeCerts, toast]);
+  }, [r, target, toast]);
 
-  // Auto-save 2s after the last change.
   useEffect(() => {
-    if (firstLoad.current) { firstLoad.current = false; return; }
-    if (!dirty) return;
-    const t = setTimeout(() => save(true), 2000);
+    if (!r) return;
+    if (skipSave.current) { skipSave.current = false; return; }
+    setDirty(true);
+    const t = setTimeout(() => save(true), 1500);
     return () => clearTimeout(t);
-  }, [r, dirty, save]);
+  }, [r]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Ctrl/Cmd + S
   useEffect(() => {
     const onKey = (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(false); } };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [save]);
 
-  const writeSummary = async () => {
-    if (!r.skills.trim()) { toast.info('Add your skills first so the summary is accurate.'); setTab('skills'); return; }
-    setWriting(true);
+  const update = (patch) => setR((x) => ({ ...x, ...patch }));
+
+  /* ---------- Versions ---------- */
+  const switchTo = async (value) => {
+    if (dirty) await save(true);
     try {
-      const res = await api.post('/resume/generate-summary', { skills: r.skills, experience: r.experience, goal: r.goal });
-      setR((x) => ({ ...x, summary: res.data.summary || x.summary }));
-      setDirty(true);
-    } catch (err) {
-      toast.error(errorMessage(err, 'Could not write a summary'));
-    } finally {
-      setWriting(false);
+      if (value === 'main') {
+        const s = await api.get('/resume/saved', { noCache: true });
+        skipSave.current = true;
+        setR(upgradeResume(s.data.resume));
+        setTarget({ kind: 'main' });
+        setTailorJobId(null);
+      } else {
+        const v = await api.get(`/resume/versions/${value}`, { noCache: true });
+        skipSave.current = true;
+        setR(upgradeResume(v.data.data));
+        setTarget({ kind: 'version', id: v.data.id, name: v.data.name, job_id: v.data.job_id });
+      }
+      setDirty(false);
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not open that version'));
     }
   };
 
-  const runScore = async () => {
-    if (!r.skills.trim() && !r.experience.trim()) { toast.info('Fill in skills and experience first.'); return; }
-    setReviewing('score');
+  const createVersion = async (name, jobIdForVersion) => {
+    if (dirty) await save(true);
+    const res = await api.post('/resume/versions', { name, job_id: jobIdForVersion || null, data: r });
+    setTarget({ kind: 'version', id: res.data.id, name, job_id: jobIdForVersion || null });
+    setDirty(false);
+    loadVersions();
+    return res.data.id;
+  };
+
+  const duplicate = async () => {
     try {
-      const res = await api.post('/resume/score', r);
-      setReview({ kind: 'score', data: res.data });
-    } catch (err) {
-      toast.error(errorMessage(err, 'Could not score the resume'));
-    } finally {
-      setReviewing(null);
+      await createVersion(`${target.kind === 'main' ? 'Copy of main resume' : `Copy of ${target.name}`}`);
+      toast.success('Created a new version — edits now go there');
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not create a version'));
     }
   };
 
-  const runAts = async () => {
-    setAtsOpen(false);
-    setReviewing('ats');
+  const renameVersion = async () => {
     try {
-      const res = await api.post('/resume/ats-check', { ...r, jobDescription: jd.trim() || undefined });
-      setReview({ kind: 'ats', data: res.data });
-    } catch (err) {
-      toast.error(errorMessage(err, 'Could not run the ATS check'));
-    } finally {
-      setReviewing(null);
+      await api.put(`/resume/versions/${target.id}`, { name: renaming });
+      setTarget((t) => ({ ...t, name: renaming }));
+      setRenaming(null);
+      loadVersions();
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not rename'));
     }
   };
 
-  const download = async () => {
-    const el = document.getElementById('resume-preview');
-    if (!el) return;
-    setExporting(true);
+  const deleteVersion = async () => {
+    const id = toDelete;
+    setToDelete(null);
     try {
-      const mod = await import('html2pdf.js');
-      const html2pdf = mod.default || mod;
-      const clone = el.cloneNode(true);
-      clone.style.boxShadow = 'none';
-      clone.style.borderRadius = '0';
-      clone.style.width = '794px';
-      clone.style.aspectRatio = 'auto';
-      clone.style.minHeight = '1123px';
-      clone.style.overflow = 'visible';
-      await html2pdf().set({
-        margin: 0,
-        filename: `${(r.name || 'resume').replace(/\s+/g, '_')}_resume.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait', hotfixes: ['px_scaling'] },
-      }).from(clone).save();
-    } catch (err) {
-      toast.error('Could not create the PDF. Try Print → Save as PDF instead.');
-    } finally {
-      setExporting(false);
+      await api.delete(`/resume/versions/${id}`);
+      if (target.kind === 'version' && target.id === id) await switchTo('main');
+      loadVersions();
+      toast.success('Version deleted');
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not delete'));
     }
   };
 
-  const completeness = useMemo(() => {
-    const keys = ['name', 'email', 'goal', 'summary', 'skills', 'experience', 'education'];
-    return Math.round((keys.filter((k) => r[k]?.trim()).length / keys.length) * 100);
-  }, [r]);
+  /* ---------- Tailor ---------- */
+  // Before the first change is applied, put the tailored edits in their own version.
+  const ensureTailoredVersion = async () => {
+    if (target.kind === 'version') return true;
+    const j = tailorJobRef.current;
+    const name = j && j.title ? `${j.company ? `${j.company} — ` : ''}${j.title}` : 'Tailored resume';
+    try {
+      await createVersion(name.slice(0, 120), j?.id);
+      toast.info(`Saved as a new version: “${name}”. Your main resume is unchanged.`);
+      return true;
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not create a tailored version'));
+      return false;
+    }
+  };
 
-  if (loading) return <Loading label="Loading your resume…" />;
+  const applyChange = (ch) => {
+    setR((x) => {
+      if (ch.type === 'summary') return { ...x, summary: ch.value };
+      if (ch.type === 'headline') return { ...x, contact: { ...x.contact, headline: ch.value } };
+      if (ch.type === 'skill') {
+        if (skillList(x).some((s) => s.toLowerCase() === ch.value.toLowerCase())) return x;
+        const skills = [...x.skills];
+        const g = skills[0] || { id: uid(), group: '', items: '' };
+        skills[0] = { ...g, items: g.items.trim() ? `${g.items.replace(/,\s*$/, '')}, ${ch.value}` : ch.value };
+        return { ...x, skills };
+      }
+      if (ch.type === 'bullet') {
+        const list = x[ch.kind].map((e, i) => (i === ch.entryIndex ? { ...e, bullets: e.bullets.map((b, k) => (k === ch.bulletIndex ? ch.value : b)) } : e));
+        return { ...x, [ch.kind]: list };
+      }
+      return x;
+    });
+  };
 
-  const tips = review?.data && (Array.isArray(review.data.tips) ? review.data.tips : review.data.tips ? String(review.data.tips).split(/(?<=\.)\s+/).filter(Boolean) : []);
-  const suggestions = review?.data && (Array.isArray(review.data.suggestions) ? review.data.suggestions : review.data.suggestions ? String(review.data.suggestions).split(/(?<=\.)\s+/).filter(Boolean) : []);
+  /* ---------- Import ---------- */
+  const runImport = async () => {
+    setImporting(true);
+    try {
+      const res = await api.post('/resume/import', { text: importText });
+      const d = res.data.resume || {};
+      const next = upgradeResume({
+        version: 2,
+        ...r,
+        contact: { ...r.contact, ...Object.fromEntries(Object.entries(d.contact || {}).filter(([, v]) => v)) },
+        summary: d.summary || r.summary,
+        skills: d.skills?.length ? withIds(d.skills) : r.skills,
+        experience: withIds(d.experience || []),
+        projects: withIds(d.projects || []),
+        education: withIds(d.education || []),
+        certifications: withIds(d.certifications || []),
+      });
+      setR(next);
+      setImportOpen(false);
+      setImportText('');
+      toast.success('Imported — check each section and fix anything the AI misread');
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not import'));
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  /* ---------- Other actions ---------- */
+  const runReview = async () => {
+    setReviewing(true);
+    try {
+      const res = await api.post('/resume/score', { resume: r });
+      setReview(res.data);
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not review the resume'));
+    } finally {
+      setReviewing(false);
+    }
+  };
+
+  const syncSkills = async () => {
+    setSyncing(true);
+    try {
+      const p = await api.get('/jobs/profile', { noCache: true });
+      const prof = p.data || {};
+      await api.put('/jobs/profile', {
+        ...prof,
+        skills: skillList(r),
+        target_roles: prof.target_roles?.length ? prof.target_roles : [r.contact.headline].filter(Boolean),
+      });
+      toast.success('Job matches now use these skills');
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not update job matching'));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const shownCerts = r && r.includeLearnMapCerts ? certs : [];
+
+  const copyText = () => {
+    navigator.clipboard?.writeText(toPlainText(r, shownCerts))
+      .then(() => toast.success('Copied as plain text — paste it into application forms'))
+      .catch(() => toast.error('Could not copy'));
+  };
+
+  const downloadPdf = async () => {
+    if (dirty) await save(true);
+    const paper = PAPER[r.paper] || PAPER.letter;
+    const style = document.createElement('style');
+    style.textContent = `@page { size: ${paper.css}; margin: ${MARGIN_Y}px ${MARGIN_X}px; }`;
+    document.head.appendChild(style);
+    const oldTitle = document.title;
+    document.title = `${(r.contact.name || 'Resume').trim().replace(/\s+/g, '_')}_Resume`;
+    document.documentElement.classList.add('print-resume');
+    const done = () => {
+      document.documentElement.classList.remove('print-resume');
+      document.title = oldTitle;
+      style.remove();
+      window.removeEventListener('afterprint', done);
+    };
+    window.addEventListener('afterprint', done);
+    setTimeout(() => window.print(), 50);
+  };
+
+  const jump = (section) => {
+    const id = { contact: 'sec-contact', layout: 'sec-preview' }[section] || `sec-${section}`;
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const moveSection = (s, dir) => {
+    const order = [...r.order];
+    const i = order.indexOf(s);
+    const j = i + dir;
+    if (j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    update({ order });
+  };
+  const toggleHidden = (s) => update({ hidden: r.hidden.includes(s) ? r.hidden.filter((x) => x !== s) : [...r.hidden, s] });
+
+  const analysis = useMemo(() => (r ? analyzeResume(r, { pages, jobSkills: job?.skills, learnMapCerts: shownCerts.length }) : null), [r, pages, job, shownCerts.length]);
+  const onPages = useCallback((n) => setPages(n), []);
+
+  if (!r) return <Loading label="Loading your resume…" />;
+
+  const context = { targetRole: r.contact.headline, keywords: job?.skills?.join(', ') };
+  const sectionBody = {
+    summary: <SummaryEditor value={r.summary} onChange={(v) => update({ summary: v })} resume={r} jobTitle={job?.title} />,
+    skills: <SkillsEditor value={r.skills} onChange={(v) => update({ skills: v })} onSync={syncSkills} syncing={syncing} />,
+    experience: <EntriesEditor kind="experience" value={r.experience} onChange={(v) => update({ experience: v })} context={context} />,
+    projects: <EntriesEditor kind="projects" value={r.projects} onChange={(v) => update({ projects: v })} context={context} />,
+    education: <EntriesEditor kind="education" value={r.education} onChange={(v) => update({ education: v })} />,
+    certifications: (
+      <>
+        <EntriesEditor kind="certifications" value={r.certifications} onChange={(v) => update({ certifications: v })} />
+        {certs.length > 0 && (
+          <label className="checkbox mt-2">
+            <input type="checkbox" checked={r.includeLearnMapCerts} onChange={(e) => update({ includeLearnMapCerts: e.target.checked })} />
+            Include my {certs.length} LearnMap certificate{certs.length > 1 ? 's' : ''}
+          </label>
+        )}
+      </>
+    ),
+  };
 
   return (
-    <div>
+    <div className="resume-page">
       <PageHeader
+        eyebrow="Career"
         title="Resume builder"
-        description="Write once, preview live, and check it against real job descriptions."
+        description="An ATS-friendly resume with live feedback as you type, AI help on every bullet, and a tailored version for each job."
         actions={
           <>
-            <span className="small subtle row" style={{ gap: 6 }}>
-              {saving ? <><Spinner size={12} /> Saving…</> : dirty ? 'Unsaved changes' : lastSaved ? <><Icon name="check" size={13} /> Saved</> : null}
+            <span className="small subtle row nowrap" style={{ gap: 6 }}>
+              {saving ? <><Spinner size={12} /> Saving…</> : dirty ? 'Editing…' : lastSaved ? <><Icon name="check" size={13} /> Saved</> : null}
             </span>
-            <Button icon="target" loading={reviewing === 'score'} onClick={runScore}>Score</Button>
-            <Button icon="search" loading={reviewing === 'ats'} onClick={() => setAtsOpen(true)}>ATS check</Button>
-            <Button variant="primary" icon="download" loading={exporting} onClick={download}>Download PDF</Button>
+            <Button icon="upload" onClick={() => setImportOpen(true)}>Import</Button>
+            <Button icon="target" onClick={() => { setTailorJobId(null); setTailorOpen(true); }}>Tailor to a job</Button>
+            <Dropdown trigger={({ toggle }) => <Button variant="primary" icon="download" iconRight="chevronDown" onClick={toggle}>Export</Button>}>
+              <button className="menu-item" onClick={downloadPdf}><Icon name="file" size={15} /> Download PDF</button>
+              <button className="menu-item" onClick={copyText}><Icon name="copy" size={15} /> Copy as plain text</button>
+            </Dropdown>
           </>
         }
       />
 
-      <div className="split" style={{ alignItems: 'start' }}>
-        <div className="stack-lg">
-          <Card pad={false}>
-            <div style={{ padding: '6px 20px 0' }}>
-              <Tabs
-                value={tab}
-                onChange={setTab}
-                tabs={[{ value: 'details', label: 'Details' }, { value: 'summary', label: 'Summary' }, { value: 'skills', label: 'Skills' }, { value: 'experience', label: 'Experience' }, { value: 'education', label: 'Education' }]}
-              />
-            </div>
-            <div style={{ padding: '0 20px 20px' }}>
-              {tab === 'details' && (
-                <div className="form-grid fade-in">
-                  <Field label="Full name"><Input value={r.name} onChange={set('name')} /></Field>
-                  <Field label="Target role"><Input value={r.goal} onChange={set('goal')} placeholder="QA Automation Engineer" /></Field>
-                  <Field label="Email"><Input type="email" value={r.email} onChange={set('email')} /></Field>
-                  <Field label="Phone" optional><Input value={r.phone} onChange={set('phone')} /></Field>
-                  <Field label="Location" optional><Input value={r.location} onChange={set('location')} placeholder="Jersey City, NJ" /></Field>
-                  <Field label="LinkedIn" optional><Input value={r.linkedin} onChange={set('linkedin')} placeholder="linkedin.com/in/you" /></Field>
-                  <Field label="GitHub / portfolio" optional className="full"><Input value={r.github} onChange={set('github')} placeholder="github.com/you" /></Field>
-                </div>
-              )}
-              {tab === 'summary' && (
-                <div className="fade-in">
-                  <Field label="Professional summary" hint="3–4 sentences: who you are, what you’re great at, what you want next.">
-                    <Textarea rows={6} value={r.summary} onChange={set('summary')} />
-                  </Field>
-                  <Button className="mt-2" icon="sparkles" loading={writing} onClick={writeSummary}>{r.summary ? 'Rewrite with AI' : 'Write with AI'}</Button>
-                </div>
-              )}
-              {tab === 'skills' && (
-                <div className="fade-in">
-                  <Field label="Skills" hint="Separate with commas. Put the most relevant first.">
-                    <Textarea rows={4} value={r.skills} onChange={set('skills')} placeholder="Python, Selenium, Pytest, SQL, Git, Jenkins, REST API testing" />
-                  </Field>
-                  <div className="row row-wrap mt-2" style={{ gap: 6 }}>
-                    {r.skills.split(',').map((s) => s.trim()).filter(Boolean).map((s, i) => <Badge key={`${s}-${i}`}>{s}</Badge>)}
-                  </div>
-                </div>
-              )}
-              {tab === 'experience' && (
-                <div className="fade-in">
-                  <Field label="Experience" hint="One role per block: “Title, Company | Dates” then bullet lines starting with “-”.">
-                    <Textarea rows={12} value={r.experience} onChange={set('experience')} style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5 }}
-                      placeholder={'Senior Test Engineer, Accenture | 2021 – 2022\n- Automated 300+ regression tests with Selenium and Java\n- Cut release testing time by 40%'} />
-                  </Field>
-                </div>
-              )}
-              {tab === 'education' && (
-                <div className="fade-in">
-                  <Field label="Education" hint="Same format: “Degree, School | Year”, with optional bullets.">
-                    <Textarea rows={7} value={r.education} onChange={set('education')} style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5 }}
-                      placeholder={'MS Computer Science, Long Island University | 2026\nBTech Civil Engineering, VR Siddhartha | 2018'} />
-                  </Field>
-                  {certs.length > 0 && (
-                    <label className="checkbox mt-2">
-                      <input type="checkbox" checked={includeCerts} onChange={(e) => { setIncludeCerts(e.target.checked); setDirty(true); }} />
-                      Include my {certs.length} LearnMap certificate{certs.length > 1 ? 's' : ''}
-                    </label>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="card-foot" style={{ justifyContent: 'space-between' }}>
-              <span className="small muted">{completeness}% complete</span>
-              <Button variant="secondary" icon="check" loading={saving} onClick={() => save(false)}>Save</Button>
-            </div>
+      <div className="version-bar">
+        <Icon name="layers" size={15} style={{ color: 'var(--text-3)' }} />
+        <Select value={target.kind === 'main' ? 'main' : String(target.id)} onChange={(e) => switchTo(e.target.value)} aria-label="Resume version" className="version-select">
+          <option value="main">Main resume</option>
+          {versions.length > 0 && (
+            <optgroup label="Tailored versions">
+              {versions.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </optgroup>
+          )}
+        </Select>
+        {target.kind === 'version' && <Badge tone="accent">Tailored{job ? ` for ${job.title}` : ''}</Badge>}
+        <div className="grow" />
+        <Button size="sm" variant="ghost" icon="copy" onClick={duplicate}>Duplicate</Button>
+        {target.kind === 'version' && (
+          <>
+            <Button size="sm" variant="ghost" icon="edit" onClick={() => setRenaming(target.name)}>Rename</Button>
+            <Button size="sm" variant="ghost" icon="trash" onClick={() => setToDelete(target.id)}>Delete</Button>
+          </>
+        )}
+      </div>
+
+      <div className="resume-layout">
+        <div className="stack-lg resume-editor">
+          <Card id="sec-contact" title="Contact" description="How recruiters reach you">
+            <ContactEditor value={r.contact} onChange={(v) => update({ contact: v })} />
           </Card>
 
-          {review && (
+          {r.order.map((s, i) => (
             <Card
-              className="fade-in"
-              title={review.kind === 'score' ? 'Resume score' : 'ATS check'}
-              description={review.kind === 'ats' && jd.trim() ? 'Compared with the job description you pasted' : undefined}
-              actions={<Button variant="ghost" size="sm" icon="x" onClick={() => setReview(null)} aria-label="Close" />}
-            >
-              <div className="row" style={{ gap: 20, alignItems: 'flex-start' }}>
-                <Ring value={review.kind === 'score' ? review.data.score : review.data.atsScore} size={84} tone={(review.kind === 'score' ? review.data.score : review.data.atsScore) >= 75 ? 'success' : 'warning'} />
-                <div className="grow stack">
-                  {review.kind === 'score' ? (
-                    <>
-                      {review.data.strengths?.length > 0 && (
-                        <div><div className="label mb-1">Strengths</div>{review.data.strengths.map((s, i) => <div key={i} className="row small" style={{ alignItems: 'flex-start' }}><Icon name="check" size={14} className="text-success" style={{ marginTop: 3 }} />{s}</div>)}</div>
-                      )}
-                      {tips.length > 0 && (
-                        <div><div className="label mb-1">Improve</div>{tips.map((s, i) => <div key={i} className="row small" style={{ alignItems: 'flex-start' }}><Icon name="arrowRight" size={14} className="text-accent" style={{ marginTop: 3 }} />{s}</div>)}</div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {review.data.keywordsFound?.length > 0 && <div><div className="label mb-1">Keywords found</div><div className="row row-wrap" style={{ gap: 5 }}>{review.data.keywordsFound.map((k, i) => <Badge key={`${k}-${i}`} tone="success">{k}</Badge>)}</div></div>}
-                      {review.data.keywordsMissing?.length > 0 && <div><div className="label mb-1">Missing keywords</div><div className="row row-wrap" style={{ gap: 5 }}>{review.data.keywordsMissing.map((k, i) => <Badge key={`${k}-${i}`} tone="danger">{k}</Badge>)}</div></div>}
-                      {suggestions.length > 0 && <div><div className="label mb-1">Suggestions</div>{suggestions.map((s, i) => <div key={i} className="row small" style={{ alignItems: 'flex-start' }}><Icon name="arrowRight" size={14} className="text-accent" style={{ marginTop: 3 }} />{s}</div>)}</div>}
-                    </>
-                  )}
+              key={s}
+              id={`sec-${s}`}
+              title={SECTION_LABELS[s]}
+              className={r.hidden.includes(s) ? 'section-hidden' : ''}
+              actions={
+                <div className="row" style={{ gap: 0 }}>
+                  <Button size="sm" variant="ghost" icon={r.hidden.includes(s) ? 'eyeOff' : 'eye'} onClick={() => toggleHidden(s)} aria-label={r.hidden.includes(s) ? `Show ${SECTION_LABELS[s]}` : `Hide ${SECTION_LABELS[s]}`} title={r.hidden.includes(s) ? 'Hidden from resume' : 'Shown on resume'} />
+                  <Button size="sm" variant="ghost" icon="chevronDown" style={{ transform: 'rotate(180deg)' }} disabled={i === 0} onClick={() => moveSection(s, -1)} aria-label={`Move ${SECTION_LABELS[s]} up`} />
+                  <Button size="sm" variant="ghost" icon="chevronDown" disabled={i === r.order.length - 1} onClick={() => moveSection(s, 1)} aria-label={`Move ${SECTION_LABELS[s]} down`} />
                 </div>
-              </div>
+              }
+            >
+              {sectionBody[s]}
             </Card>
-          )}
+          ))}
         </div>
 
-        <div className="sticky-top stack">
-          <div className="row-between">
-            <span className="small muted">Live preview</span>
-            <Segmented value={template} onChange={(v) => { setTemplate(v); setDirty(true); }} options={TEMPLATES} />
+        <div className="resume-side">
+          <div className="sticky-top stack">
+            <HealthPanel analysis={analysis} onJump={jump} jobLabel={job ? `${job.title}${job.company ? ` at ${job.company}` : ''}` : ''} />
+            <div id="sec-preview" className="row-between row-wrap" style={{ gap: 8 }}>
+              <Segmented value={r.template} onChange={(v) => update({ template: v })} options={TEMPLATES.map((t) => ({ value: t.value, label: t.label }))} />
+              <div className="row" style={{ gap: 8 }}>
+                <Select value={r.paper} onChange={(e) => update({ paper: e.target.value })} aria-label="Paper size" className="select-sm" style={{ width: 'auto' }}>
+                  {Object.entries(PAPER).map(([k, p]) => <option key={k} value={k}>{p.label}</option>)}
+                </Select>
+                <span className={`small nowrap ${pages > 1.05 ? 'text-warning' : 'subtle'}`}>{pages <= 1.02 ? '1 page' : `${pages.toFixed(1)} pages`}</span>
+              </div>
+            </div>
+            <ResumePaper r={r} certs={shownCerts} onPages={onPages} />
+            <div className="row-between">
+              <Button size="sm" variant="ghost" icon="sparkles" loading={reviewing} onClick={runReview}>Recruiter review</Button>
+              <span className="tiny subtle">All templates are single-column, real text — safe for ATS.</span>
+            </div>
           </div>
-          <Preview r={r} template={template} certs={includeCerts ? certs : []} />
         </div>
       </div>
 
+      {createPortal(<PrintableResume r={r} certs={shownCerts} />, document.body)}
+
+      <TailorModal
+        open={tailorOpen}
+        onClose={() => setTailorOpen(false)}
+        resume={r}
+        initialJobId={tailorJobId}
+        onStart={ensureTailoredVersion}
+        onApply={applyChange}
+        onJobPicked={(id, j) => { tailorJobRef.current = { id, ...j }; if (id) setTailorJobId(id); }}
+      />
+
       <Modal
-        open={atsOpen}
-        onClose={() => setAtsOpen(false)}
-        title="ATS check"
-        description="Paste a job description for a targeted check, or leave it empty to compare against typical postings for your target role."
-        footer={<><Button onClick={() => setAtsOpen(false)}>Cancel</Button><Button variant="primary" icon="search" onClick={runAts}>Run check</Button></>}
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        size="lg"
+        title="Import your existing resume"
+        description="Open your current resume (PDF or Word) or LinkedIn profile, select all the text, copy it, and paste it here. AI sorts it into sections without changing your words."
+        footer={<><Button variant="ghost" onClick={() => setImportOpen(false)}>Cancel</Button><Button variant="primary" icon="upload" loading={importing} onClick={runImport}>Import</Button></>}
       >
-        {!r.skills.trim() && <div className="mb-2"><Alert tone="warning">Add your skills first for a meaningful result.</Alert></div>}
-        <Field label="Job description" optional>
-          <Textarea rows={8} value={jd} onChange={(e) => setJd(e.target.value)} placeholder="Paste the full job posting here" />
-        </Field>
+        {(r.experience.length > 0 || r.projects.length > 0) && <p className="small text-warning mb-2">This replaces the experience, projects, education and certifications in the version you’re editing. Duplicate it first if you want to keep a copy.</p>}
+        <Textarea rows={14} value={importText} onChange={(e) => setImportText(e.target.value)} placeholder="Paste your resume text here" />
       </Modal>
+
+      <Modal open={!!review} onClose={() => setReview(null)} title="Recruiter review" description="A frank first-impression read, like a recruiter’s 6-second scan.">
+        {review && (
+          <div className="stack">
+            <div className="row" style={{ gap: 16 }}>
+              <Ring value={review.score || 0} size={72} tone={(review.score || 0) >= 75 ? 'success' : 'warning'} />
+              <p className="small" style={{ color: 'var(--text)' }}>{review.first_impression}</p>
+            </div>
+            {review.strengths?.length > 0 && <div><div className="section-label">Strengths</div><ul className="check-list">{review.strengths.map((s, i) => <li key={i}><Icon name="checkCircle" size={14} className="text-success" />{s}</li>)}</ul></div>}
+            {review.tips?.length > 0 && <div><div className="section-label">Improve</div><ul className="check-list">{review.tips.map((s, i) => <li key={i}><Icon name="arrowRight" size={14} />{s}</li>)}</ul></div>}
+          </div>
+        )}
+      </Modal>
+
+      <Modal open={renaming !== null} onClose={() => setRenaming(null)} title="Rename version"
+        footer={<><Button variant="ghost" onClick={() => setRenaming(null)}>Cancel</Button><Button variant="primary" onClick={renameVersion}>Save</Button></>}>
+        <Field label="Name"><Input value={renaming || ''} onChange={(e) => setRenaming(e.target.value)} /></Field>
+      </Modal>
+
+      <ConfirmDialog open={!!toDelete} title="Delete this version?" description="Your main resume and other versions are not affected." onConfirm={deleteVersion} onCancel={() => setToDelete(null)} />
     </div>
   );
 }
