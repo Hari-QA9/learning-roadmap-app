@@ -179,7 +179,7 @@ function Jobs() {
       </Card>
 
       <p className="tiny subtle mt-2">
-        Listings come from Remotive, Arbeitnow, The Muse, and company boards on Greenhouse and Lever. You always apply on the employer’s own site.
+        Listings come from public job boards and company career pages. Each job shows where it was posted, and you always apply on the original site.
       </p>
 
       <JobPrefsModal open={prefsOpen} onClose={() => setPrefsOpen(false)} onSaved={() => { clearCache(); load(); }} />
