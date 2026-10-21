@@ -49,4 +49,6 @@ app.get('/', (req, res) => res.send('Learning Roadmap API Running'));
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  // Add any new columns the app needs (only adds; never removes data).
+  require('./lib/migrate')().catch((e) => console.warn('[migrate] skipped:', e.message));
 });

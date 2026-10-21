@@ -288,34 +288,62 @@ export function Avatar({ name = '', src, size }) {
   return <div className={cx('avatar', size === 'lg' && 'avatar-lg')}>{src ? <img src={src} alt="" /> : initials}</div>;
 }
 
-/* ---------- Simple markdown-ish renderer for AI text ---------- */
+/* ---------- Simple markdown renderer for AI text ---------- */
+function inlineMd(s) {
+  // **bold** and `code`
+  return String(s).split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) return <strong key={i}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith('`') && part.endsWith('`') && part.length > 2) return <code key={i} className="inline-code">{part.slice(1, -1)}</code>;
+    return part;
+  });
+}
+
 export function Prose({ text }) {
   if (!text) return null;
   const lines = String(text).replace(/\r/g, '').split('\n');
   const out = [];
   let list = null;
+  let code = null;
   let k = 0;
   const key = () => `b${k++}`;
-  const inline = (s) =>
-    s.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
-      part.startsWith('**') && part.endsWith('**') ? <strong key={i}>{part.slice(2, -2)}</strong> : part
-    );
   const flush = () => { if (list) { out.push(list.ordered ? <ol key={key()}>{list.items}</ol> : <ul key={key()}>{list.items}</ul>); list = null; } };
-  lines.forEach((raw, i) => {
+  lines.forEach((raw) => {
+    if (code) {
+      if (raw.trim().startsWith('```')) { out.push(<pre key={key()} className="code-block"><code>{code.join('\n')}</code></pre>); code = null; }
+      else code.push(raw);
+      return;
+    }
     const line = raw.trim();
+    if (line.startsWith('```')) { flush(); code = []; return; }
     if (!line) { flush(); return; }
     const h = line.match(/^#{1,4}\s+(.*)/);
     const ul = line.match(/^[-*•]\s+(.*)/);
     const ol = line.match(/^\d+[.)]\s+(.*)/);
-    if (h) { flush(); out.push(<h3 key={key()}>{inline(h[1])}</h3>); }
+    if (h) { flush(); out.push(<h3 key={key()}>{inlineMd(h[1])}</h3>); }
     else if (ul || ol) {
       const ordered = !!ol;
       if (!list || list.ordered !== ordered) { flush(); list = { ordered, items: [] }; }
-      list.items.push(<li key={i}>{inline((ul || ol)[1])}</li>);
-    } else { flush(); out.push(<p key={key()}>{inline(line)}</p>); }
+      list.items.push(<li key={key()}>{inlineMd((ul || ol)[1])}</li>);
+    } else { flush(); out.push(<p key={key()}>{inlineMd(line)}</p>); }
   });
+  if (code) out.push(<pre key={key()} className="code-block"><code>{code.join('\n')}</code></pre>);
   flush();
   return <div className="prose">{out}</div>;
+}
+
+/** Parse a JSON column safely. */
+export function parseDetails(v) {
+  if (!v) return {};
+  if (typeof v === 'object') return v;
+  try { return JSON.parse(v) || {}; } catch { return {}; }
+}
+
+export function formatMinutes(min) {
+  const m = Math.round(Number(min) || 0);
+  if (!m) return '';
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60), r = m % 60;
+  return r ? `${h}h ${r}m` : `${h}h`;
 }
 
 export function formatDate(d, opts) {
