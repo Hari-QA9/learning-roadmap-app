@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { NavLink, Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import api, { getUser, logout } from '../lib/api';
 import { useTheme } from '../lib/theme';
-import { Icon, Dropdown, Avatar, Button } from './ui';
+import { Icon, Dropdown, Avatar, Button, SkeletonRows } from './ui';
+import { preload } from '../lib/pages';
 
 export const NAV = [
   {
@@ -80,7 +81,7 @@ export default function AppShell() {
             <div className="nav-group" key={g.label}>
               <div className="nav-label">{g.label}</div>
               {g.items.map((i) => (
-                <NavLink key={i.to} to={i.to} end={i.to === '/quiz'} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                <NavLink key={i.to} to={i.to} end={i.to === '/quiz'} onMouseEnter={() => preload(i.to)} onFocus={() => preload(i.to)} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                   <Icon name={i.icon} size={16} />
                   {i.label}
                 </NavLink>
@@ -137,7 +138,9 @@ export default function AppShell() {
           </div>
         </header>
         <main className="content page-enter" key={pathname}>
-          <Outlet context={{ refreshUnread }} />
+          <Suspense fallback={<div className="card" style={{ marginTop: 8 }}><SkeletonRows rows={4} /></div>}>
+            <Outlet context={{ refreshUnread }} />
+          </Suspense>
         </main>
       </div>
     </div>

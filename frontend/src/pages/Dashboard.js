@@ -58,14 +58,14 @@ function Dashboard() {
         actions={<Button variant="primary" icon="plus" onClick={() => navigate('/roadmaps?new=1')}>New roadmap</Button>}
       />
 
-      <div className="grid-4 mb-3">
+      <div className="grid-4 mb-3 stagger">
         <Stat label="Roadmaps" icon="map" value={stats?.totalRoadmaps ?? 0} loading={loading} />
         <Stat label="Tasks completed" icon="checkCircle" value={stats?.completedTasks ?? 0} note={totalTasks ? `${overall}% of all tasks` : undefined} loading={loading} />
         <Stat label="Day streak" icon="flame" value={stats?.streak ?? 0} note="Log in daily to grow it" loading={loading} />
         <Stat label="Quiz accuracy" icon="target" value={`${quiz.overall?.accuracy ?? 0}%`} note={`${quiz.overall?.totalAttempts ?? 0} answers`} loading={loading} />
       </div>
 
-      <div className="split">
+      <div className="split stagger">
         <Card
           title="Continue learning"
           description="Your most recent roadmaps"

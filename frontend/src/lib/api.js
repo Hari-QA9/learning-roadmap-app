@@ -6,6 +6,31 @@ export const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/a
 
 const api = axios.create({ baseURL: API_URL, timeout: 90000 });
 
+/* ---------- Instant revisits ----------
+   GET responses are kept in memory for 60 seconds, so going back to a page you
+   just saw shows it instantly. Any change you make (POST/PUT/DELETE) clears the
+   cache, so you never see stale data after editing something. */
+const CACHE_TTL = 60 * 1000;
+const cache = new Map();
+const baseAdapter = axios.getAdapter ? axios.getAdapter(axios.defaults.adapter) : axios.defaults.adapter;
+
+export function clearCache() { cache.clear(); }
+
+api.defaults.adapter = async (config) => {
+  const method = (config.method || 'get').toLowerCase();
+  if (method !== 'get' || config.noCache) {
+    const res = await baseAdapter(config);
+    cache.clear();
+    return res;
+  }
+  const key = `${config.url}|${JSON.stringify(config.params || {})}|${config.headers?.Authorization || ''}`;
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.time < CACHE_TTL) return { ...hit.res, config };
+  const res = await baseAdapter(config);
+  if (res.status >= 200 && res.status < 300) cache.set(key, { time: Date.now(), res });
+  return res;
+};
+
 /* ---------- Session ----------
    "Remember me" keeps the session in localStorage (survives closing the browser);
    otherwise it lives in sessionStorage and ends when the browser closes. */
@@ -26,6 +51,7 @@ export function isLoggedIn() {
 
 export function setSession(token, user, remember = true) {
   logout();
+  clearCache();
   const s = remember ? localStorage : sessionStorage;
   s.setItem('token', token);
   s.setItem('user', JSON.stringify(user || {}));
@@ -78,6 +104,7 @@ export function getUser() {
 }
 
 export function logout() {
+  cache.clear();
   for (const s of [localStorage, sessionStorage]) {
     try { s.removeItem('token'); s.removeItem('user'); } catch {}
   }

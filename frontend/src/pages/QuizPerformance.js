@@ -45,7 +45,7 @@ function QuizPerformance() {
         </Card>
       ) : (
         <>
-          <div className="split mb-3">
+          <div className="split mb-3 stagger">
             <div className="grid-3">
               <Stat label="Correct answers" icon="checkCircle" value={overall.totalCorrect} />
               <Stat label="Questions answered" icon="quiz" value={overall.totalAttempts} />

@@ -60,7 +60,7 @@ function Templates() {
       ) : visible.length === 0 ? (
         <Card><EmptyState icon="search" title="No templates found" description="Try another search, or generate a custom roadmap with AI." /></Card>
       ) : (
-        <div className="grid-auto">
+        <div className="grid-auto stagger">
           {visible.map((t) => (
             <div key={t.id} className="card" style={{ display: 'flex', flexDirection: 'column' }}>
               <div className="card-pad grow stack" style={{ gap: 12 }}>
