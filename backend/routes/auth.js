@@ -48,11 +48,29 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
     // Update streak
-    await db.promise().query(
-      `UPDATE user_stats SET streak_days = streak_days + 1,
-       last_active = CURDATE() WHERE user_id = ?`,
-      [user.id]
-    );
+    // Update daily streak: +1 if last active yesterday, unchanged if today, else reset to 1.
+    try {
+      const [statsRows] = await db.promise().query(
+        'SELECT streak_days, last_active FROM user_stats WHERE user_id = ?', [user.id]
+      );
+      const toDay = (d) => {
+        if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) { const [y, m, dd] = d.slice(0, 10).split('-').map(Number); return Date.UTC(y, m - 1, dd); }
+        const x = new Date(d); return Date.UTC(x.getFullYear(), x.getMonth(), x.getDate());
+      };
+      const today = toDay(new Date());
+      if (statsRows.length === 0) {
+        await db.promise().query('INSERT INTO user_stats (user_id, streak_days, last_active) VALUES (?, 1, CURDATE())', [user.id]);
+      } else {
+        const { streak_days, last_active } = statsRows[0];
+        const diff = last_active ? Math.round((today - toDay(last_active)) / 86400000) : null;
+        const streak = diff === 0 ? (streak_days || 1) : diff === 1 ? (streak_days || 0) + 1 : 1;
+        await db.promise().query(
+          'UPDATE user_stats SET streak_days = ?, last_active = CURDATE() WHERE user_id = ?', [streak, user.id]
+        );
+      }
+    } catch (e) {
+      console.error('Streak update failed:', e.message);
+    }
     const token = jwt.sign(
       { id: user.id, name: user.name, email: user.email },
       process.env.JWT_SECRET,

@@ -26,15 +26,16 @@ router.get('/dashboard', verifyToken, (req, res) => {
     runQuery(`SELECT COUNT(*) as count FROM user_badges WHERE user_id = ?`, [userId]),
     // ✅ Fixed: use quiz_results table instead of quiz_attempts
     runQuery(`SELECT COUNT(*) as count FROM quiz_results WHERE user_id = ?`, [userId]),
+    runQuery(`SELECT streak_days as count FROM user_stats WHERE user_id = ?`, [userId]),
   ])
-    .then(([totalRoadmaps, completedTasks, pendingTasks, badges, quizzesTaken]) => {
+    .then(([totalRoadmaps, completedTasks, pendingTasks, badges, quizzesTaken, streak]) => {
       res.json({
         totalRoadmaps,
         completedTasks,
         pendingTasks,
         badges,
         quizzesTaken,
-        streak: 0,
+        streak,
       });
     })
     .catch(err => {

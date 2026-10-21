@@ -7,7 +7,11 @@ const auth = require('../middleware/auth');
 router.get('/', auth, async (req, res) => {
   try {
     const [rows] = await db.promise().query(
-      'SELECT * FROM roadmaps WHERE user_id = ? ORDER BY created_at DESC',
+      `SELECT r.*,
+         (SELECT COUNT(*) FROM modules m WHERE m.roadmap_id = r.id) AS module_count,
+         (SELECT COUNT(*) FROM tasks t JOIN modules m ON t.module_id = m.id WHERE m.roadmap_id = r.id) AS total_tasks,
+         (SELECT COUNT(*) FROM tasks t JOIN modules m ON t.module_id = m.id WHERE m.roadmap_id = r.id AND t.status = 'done') AS completed_tasks
+       FROM roadmaps r WHERE r.user_id = ? ORDER BY r.created_at DESC`,
       [req.user.id]
     );
     res.json(rows);
@@ -71,6 +75,18 @@ router.put('/:id', auth, async (req, res) => {
 // DELETE roadmap
 router.delete('/:id', auth, async (req, res) => {
   try {
+    const [owned] = await db.promise().query(
+      'SELECT id FROM roadmaps WHERE id=? AND user_id=?',
+      [req.params.id, req.user.id]
+    );
+    if (owned.length === 0) return res.status(404).json({ message: 'Not found' });
+    // Remove children first so nothing is left orphaned.
+    await db.promise().query(
+      'DELETE FROM tasks WHERE module_id IN (SELECT id FROM modules WHERE roadmap_id = ?)',
+      [req.params.id]
+    );
+    await db.promise().query('DELETE FROM modules WHERE roadmap_id=?', [req.params.id]);
+    await db.promise().query('DELETE FROM resources WHERE roadmap_id=?', [req.params.id]);
     await db.promise().query(
       'DELETE FROM roadmaps WHERE id=? AND user_id=?',
       [req.params.id, req.user.id]

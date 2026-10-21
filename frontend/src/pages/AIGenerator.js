@@ -1,230 +1,155 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import api, { errorMessage } from '../lib/api';
+import { useToast } from '../components/Toast';
+import { PageHeader, Button, Card, Field, Input, Select, Alert, Icon, Badge, Segmented, Spinner } from '../components/ui';
+
+const SUGGESTIONS = ['Python for data analysis', 'React and TypeScript', 'Selenium test automation', 'System design basics', 'AWS cloud fundamentals', 'SQL for analysts'];
+const STAGES = ['Reading your topic', 'Designing modules', 'Writing tasks', 'Finding free resources', 'Saving your roadmap'];
 
 function AIGenerator() {
-  const [topic, setTopic] = useState('');
-  const [duration, setDuration] = useState('4 weeks');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
-  const [generatedData, setGeneratedData] = useState(null);
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  const toast = useToast();
+  const [params] = useSearchParams();
+  const [topic, setTopic] = useState(params.get('topic') || '');
+  const [duration, setDuration] = useState('4 weeks');
+  const [level, setLevel] = useState('beginner');
+  const [loading, setLoading] = useState(false);
+  const [stage, setStage] = useState(0);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState(null);
 
-  function handleGenerate() {
-    if (!topic.trim()) {
-      setError('Please enter a topic!');
-      return;
-    }
+  // Progress hints while the AI works (it usually takes 10–30s).
+  useEffect(() => {
+    if (!loading) return;
+    setStage(0);
+    const t = setInterval(() => setStage((s) => Math.min(s + 1, STAGES.length - 1)), 4500);
+    return () => clearInterval(t);
+  }, [loading]);
+
+  const generate = async (e) => {
+    e?.preventDefault();
+    if (!topic.trim()) { setError('Tell us what you want to learn.'); return; }
     setError('');
     setLoading(true);
-    setSuccess(false);
-    setGeneratedData(null);
-
-    axios.post(
-      'http://localhost:5000/api/ai/generate',
-      { topic: topic, duration: duration },
-      { headers: { Authorization: 'Bearer ' + token } }
-    ).then(function(res) {
+    setResult(null);
+    try {
+      const r = await api.post('/ai/generate', { topic: topic.trim(), duration, level });
+      setResult({ id: r.data.roadmapId, data: r.data.data || {} });
+      toast.success('Roadmap created');
+    } catch (err) {
+      setError(errorMessage(err, 'Could not generate the roadmap. Please try again.'));
+    } finally {
       setLoading(false);
-      setSuccess(true);
-      setGeneratedData(res.data.data);
-    }).catch(function(err) {
-      setLoading(false);
-      if (err.response && err.response.data) {
-        setError('Failed: ' + err.response.data.message);
-      } else {
-        setError('Failed to generate roadmap. Please try again!');
-      }
-    });
-  }
+    }
+  };
 
-  function resetForm() {
-    setSuccess(false);
-    setTopic('');
-    setGeneratedData(null);
-    setError('');
-  }
+  const reset = () => { setResult(null); setTopic(''); setError(''); };
+  const mods = result?.data?.modules || [];
+  const res = result?.data?.resources || [];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f5f9', padding: '24px', fontFamily: 'Segoe UI, sans-serif' }}>
+    <div style={{ maxWidth: 820, margin: '0 auto' }}>
+      <PageHeader
+        title="Roadmap generator"
+        description="Describe what you want to learn. AI drafts modules, tasks and free resources, and saves it as a roadmap you can edit."
+      />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
-        <button
-          onClick={function() { navigate('/dashboard'); }}
-          style={{ padding: '8px 16px', background: '#64748b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-          Back
-        </button>
-        <h1 style={{ margin: 0, fontSize: '24px', color: '#1e293b' }}>
-          AI Roadmap Generator
-        </h1>
-      </div>
-
-      <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-
-        {error !== '' && (
-          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444', padding: '12px', borderRadius: '8px', marginBottom: '16px', textAlign: 'center', fontSize: '14px' }}>
-            {error}
-          </div>
-        )}
-
-        {success === false && (
-          <div style={{ background: 'white', borderRadius: '16px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '24px' }}>
-
-            <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-              <div style={{ fontSize: '56px' }}>🤖</div>
-              <h2 style={{ margin: '12px 0 6px', color: '#1e293b', fontSize: '22px' }}>
-                AI Learning Roadmap
-              </h2>
-              <p style={{ color: '#64748b', margin: 0, fontSize: '14px' }}>
-                Enter a topic and AI will build a complete roadmap for you!
-              </p>
-            </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <p style={{ margin: '0 0 8px', fontWeight: 'bold', color: '#374151', fontSize: '14px' }}>
-                What do you want to learn?
-              </p>
-              <input
-                type="text"
-                placeholder="e.g. Python, Web Development, Machine Learning..."
+      {!result && (
+        <Card>
+          <form onSubmit={generate}>
+            {error && <div className="mb-2"><Alert tone="danger" onClose={() => setError('')}>{error}</Alert></div>}
+            <Field label="What do you want to learn?">
+              <Input
+                autoFocus
                 value={topic}
-                onChange={function(e) { setTopic(e.target.value); }}
-                onKeyPress={function(e) { if (e.key === 'Enter') { handleGenerate(); } }}
-                style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '2px solid #e2e8f0', fontSize: '15px', boxSizing: 'border-box', outline: 'none', background: '#ffffff',
-    color: '#1e293b' }}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="e.g. Playwright end-to-end testing with TypeScript"
+                disabled={loading}
+                style={{ height: 44, fontSize: 15 }}
               />
+            </Field>
+            <div className="row row-wrap mt-2" style={{ gap: 6 }}>
+              {SUGGESTIONS.map((s) => (
+                <button key={s} type="button" className="badge" style={{ cursor: 'pointer', height: 26 }} disabled={loading} onClick={() => setTopic(s)}>{s}</button>
+              ))}
             </div>
-
-            <div style={{ marginBottom: '28px' }}>
-              <p style={{ margin: '0 0 8px', fontWeight: 'bold', color: '#374151', fontSize: '14px' }}>
-                How long do you want to study?
-              </p>
-              <select
-                value={duration}
-                onChange={function(e) { setDuration(e.target.value); }}
-                style={{ width: '100%', padding: '14px', borderRadius: '10px', border: '2px solid #e2e8f0', fontSize: '15px', boxSizing: 'border-box', outline: 'none',  background: '#ffffff',
-    color: '#1e293b',
-    cursor: 'pointer' }}>
-                <option value="1 week">1 Week</option>
-                <option value="2 weeks">2 Weeks</option>
-                <option value="4 weeks">1 Month</option>
-                <option value="8 weeks">2 Months</option>
-                <option value="12 weeks">3 Months</option>
-                <option value="6 months">6 Months</option>
-              </select>
+            <div className="form-grid mt-3">
+              <Field label="Duration">
+                <Select value={duration} onChange={(e) => setDuration(e.target.value)} disabled={loading}>
+                  {['1 week', '2 weeks', '4 weeks', '6 weeks', '8 weeks', '3 months', '6 months'].map((d) => <option key={d}>{d}</option>)}
+                </Select>
+              </Field>
+              <Field label="Your level">
+                <Segmented value={level} onChange={(v) => !loading && setLevel(v)} options={[{ value: 'beginner', label: 'Beginner' }, { value: 'intermediate', label: 'Intermediate' }, { value: 'advanced', label: 'Advanced' }]} />
+              </Field>
             </div>
-
-            <button
-              onClick={handleGenerate}
-              disabled={loading}
-              style={{ width: '100%', padding: '15px', background: loading ? '#94a3b8' : '#8b5cf6', color: 'white', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer' }}>
-              {loading ? 'Generating... Please wait' : 'Generate Roadmap with AI'}
-            </button>
-
-            {loading && (
-              <div style={{ textAlign: 'center', marginTop: '24px' }}>
-                <div style={{ fontSize: '36px', marginBottom: '8px' }}>⏳</div>
-                <p style={{ margin: 0, color: '#64748b', fontWeight: 'bold' }}>
-                  AI is building your personalized roadmap...
-                </p>
-                <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#94a3b8' }}>
-                  This may take 15 to 30 seconds
-                </p>
+            <hr />
+            {loading ? (
+              <div className="row" style={{ gap: 12 }}>
+                <Spinner />
+                <div className="grow">
+                  <div style={{ fontWeight: 500 }}>{STAGES[stage]}…</div>
+                  <div className="tiny subtle">This usually takes 10–30 seconds.</div>
+                </div>
+              </div>
+            ) : (
+              <div className="row-between">
+                <span className="small subtle">You can edit everything afterwards.</span>
+                <Button type="submit" variant="primary" icon="wand" disabled={!topic.trim()}>Generate roadmap</Button>
               </div>
             )}
+          </form>
+        </Card>
+      )}
 
-            <div style={{ marginTop: '28px', padding: '20px', background: '#f8fafc', borderRadius: '12px' }}>
-              <p style={{ margin: '0 0 12px', fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>
-                What AI will create for you:
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <span>📋</span>
-                  <span style={{ color: '#475569', fontSize: '14px' }}>Complete roadmap with modules and tasks</span>
+      {result && (
+        <div className="stack-lg fade-in">
+          <Alert tone="success">Your roadmap is saved. Open it to start working through the tasks.</Alert>
+          <Card
+            title={result.data.title || topic}
+            description={result.data.description}
+            actions={<Badge><Icon name="clock" size={11} /> {duration}</Badge>}
+            footer={
+              <>
+                <Button variant="ghost" icon="refresh" onClick={reset}>Generate another</Button>
+                <Button variant="primary" iconRight="arrowRight" onClick={() => navigate(result.id ? `/roadmaps/${result.id}` : '/roadmaps')}>Open roadmap</Button>
+              </>
+            }
+          >
+            {result.data.goal && <p className="mb-3"><strong>Goal:</strong> {result.data.goal}</p>}
+            <div className="steps">
+              {mods.map((m, i) => (
+                <div key={i} className="step">
+                  <div className="step-num">{i + 1}</div>
+                  <div>
+                    <h3>{m.title}</h3>
+                    {m.description && <p className="small mt-1">{m.description}</p>}
+                    {Array.isArray(m.tasks) && m.tasks.length > 0 && (
+                      <ul className="small mt-1" style={{ paddingLeft: 18, color: 'var(--text-2)' }}>
+                        {m.tasks.map((t, j) => <li key={j}>{typeof t === 'string' ? t : t.title}</li>)}
+                      </ul>
+                    )}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <span>✅</span>
-                  <span style={{ color: '#475569', fontSize: '14px' }}>Step by step learning tasks</span>
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <span>🔗</span>
-                  <span style={{ color: '#475569', fontSize: '14px' }}>Free learning resources and links</span>
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <span>⭐</span>
-                  <span style={{ color: '#475569', fontSize: '14px' }}>30 XP points added to your profile</span>
-                </div>
-              </div>
+              ))}
             </div>
-
-          </div>
-        )}
-
-        {success === true && generatedData && (
-          <div style={{ background: 'white', borderRadius: '16px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-
-            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <div style={{ fontSize: '56px' }}>🎉</div>
-              <h2 style={{ margin: '12px 0 6px', color: '#22c55e', fontSize: '22px' }}>
-                Roadmap Created!
-              </h2>
-              <p style={{ color: '#64748b', margin: 0 }}>
-                Your roadmap has been saved to your dashboard!
-              </p>
-            </div>
-
-            <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-              <h3 style={{ margin: '0 0 8px', color: '#1e293b' }}>
-                {generatedData.title}
-              </h3>
-              <p style={{ margin: '0 0 8px', color: '#475569', fontSize: '14px' }}>
-                {generatedData.description}
-              </p>
-              <p style={{ margin: '0 0 4px', color: '#8b5cf6', fontSize: '13px' }}>
-                Goal: {generatedData.goal}
-              </p>
-              <p style={{ margin: 0, color: '#06b6d4', fontSize: '13px' }}>
-                Modules: {generatedData.modules ? generatedData.modules.length : 0}
-              </p>
-            </div>
-
-            {generatedData.modules && generatedData.modules.map(function(mod, i) {
-              return (
-                <div key={i} style={{ padding: '16px', background: '#f8fafc', borderRadius: '10px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
-                  <h4 style={{ margin: '0 0 8px', color: '#1e293b', fontSize: '15px' }}>
-                    Module {i + 1}: {mod.title}
-                  </h4>
-                  {mod.tasks && mod.tasks.map(function(task, j) {
-                    return (
-                      <div key={j} style={{ display: 'flex', gap: '8px', padding: '3px 0' }}>
-                        <span style={{ color: '#22c55e', fontSize: '12px' }}>✓</span>
-                        <span style={{ color: '#475569', fontSize: '13px' }}>{task.title}</span>
-                      </div>
-                    );
-                  })}
+            {res.length > 0 && (
+              <>
+                <hr />
+                <h3 className="mb-2">Free resources</h3>
+                <div className="stack-sm">
+                  {res.map((r, i) => (
+                    <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="row small" style={{ gap: 8 }}>
+                      <Icon name="external" size={13} /> <span className="truncate">{r.title}</span> <span className="subtle">· {r.type}</span>
+                    </a>
+                  ))}
                 </div>
-              );
-            })}
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-              <button
-                onClick={function() { navigate('/dashboard'); }}
-                style={{ flex: 1, padding: '14px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer' }}>
-                Go to Dashboard
-              </button>
-              <button
-                onClick={resetForm}
-                style={{ flex: 1, padding: '14px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer' }}>
-                Generate Another
-              </button>
-            </div>
-
-          </div>
-        )}
-
-      </div>
+              </>
+            )}
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

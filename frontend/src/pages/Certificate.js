@@ -1,284 +1,102 @@
-import React, { useEffect, useState, useRef } from 'react';
-import axios from 'axios';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import api, { errorMessage } from '../lib/api';
+import { useToast } from '../components/Toast';
+import { PageHeader, Button, Card, EmptyState, Loading, Icon, formatDate } from '../components/ui';
 
-export default function Certificate() {
-  const [certificates, setCertificates] = useState([]);
-  const [loading, setLoading] = useState(true);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function printCertificate(cert) {
+  const w = window.open('', '_blank');
+  if (!w) return false;
+  const date = new Date(cert.issued_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Certificate — ${esc(cert.roadmap_title)}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    @page { size: landscape; margin: 0; }
+    body { margin: 0; font-family: Inter, sans-serif; background: #fff; color: #1a1a19; }
+    .cert { width: 1000px; height: 680px; margin: 30px auto; box-sizing: border-box; padding: 64px 80px; border: 1px solid #d4d3ce; position: relative; display: flex; flex-direction: column; }
+    .cert::before { content: ''; position: absolute; inset: 14px; border: 1px solid #e6e5e1; pointer-events: none; }
+    .brand { font-family: Fraunces, serif; font-size: 20px; }
+    .eyebrow { margin-top: 56px; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: #8f8e88; }
+    .name { font-family: Fraunces, serif; font-size: 56px; font-weight: 400; margin: 18px 0 6px; letter-spacing: -0.02em; }
+    .text { font-size: 16px; color: #5d5c57; line-height: 1.7; max-width: 640px; }
+    .course { font-family: Fraunces, serif; font-size: 28px; color: #33409e; margin: 8px 0 0; }
+    .foot { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; font-size: 13px; color: #5d5c57; }
+    .foot b { display: block; color: #1a1a19; font-weight: 500; margin-bottom: 2px; }
+  </style></head><body>
+  <div class="cert">
+    <div class="brand">LearnMap</div>
+    <div class="eyebrow">Certificate of completion</div>
+    <div class="name">${esc(cert.user_name)}</div>
+    <div class="text">has successfully completed every module and passed the final assessment for</div>
+    <div class="course">${esc(cert.roadmap_title)}</div>
+    <div class="foot">
+      <div><b>${date}</b>Date issued</div>
+      <div style="text-align:right"><b>${esc(cert.certificate_id)}</b>Certificate ID</div>
+    </div>
+  </div>
+  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); };</script>
+  </body></html>`);
+  w.document.close();
+  return true;
+}
+
+function Certificate() {
+  const { roadmapId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const newCert = location.state?.certificate || null;
-  const token = localStorage.getItem('token');
+  const toast = useToast();
+  const [certs, setCerts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/evaluation/certificates', {
-      headers: { Authorization: 'Bearer ' + token }
-    })
-      .then((res) => {
-        setCertificates(res.data.certificates);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [token]);
+    api.get('/evaluation/certificates')
+      .then((r) => setCerts(r.data.certificates || []))
+      .catch((e) => toast.error(errorMessage(e, 'Could not load certificates')))
+      .finally(() => setLoading(false));
+  }, [toast]);
 
-  function printCertificate(cert) {
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-      <head>
-        <title>Certificate - ${cert.roadmap_title}</title>
-        <style>
-          body { margin: 0; padding: 0; font-family: 'Georgia', serif; background: #fff; }
-          .cert { width: 800px; margin: 40px auto; padding: 60px; border: 12px double #b8860b; text-align: center; background: linear-gradient(135deg, #fffdf0, #fff9e6); position: relative; }
-          .cert::before { content: ''; position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; border: 2px solid #b8860b; pointer-events: none; }
-          h1 { font-size: 48px; color: #b8860b; margin: 0 0 8px 0; letter-spacing: 0.05em; }
-          h2 { font-size: 18px; color: #64748b; font-weight: normal; margin: 0 0 40px 0; letter-spacing: 0.2em; text-transform: uppercase; }
-          .name { font-size: 36px; color: #1e293b; font-weight: bold; margin: 20px 0; border-bottom: 2px solid #b8860b; padding-bottom: 10px; display: inline-block; }
-          .course { font-size: 24px; color: #6366f1; font-weight: bold; margin: 16px 0; }
-          .desc { font-size: 16px; color: #475569; margin: 24px 0; line-height: 1.8; }
-          .certid { font-size: 12px; color: #94a3b8; margin-top: 40px; }
-                    .date { font-size: 14px; color: #64748b; margin-top: 8px; }
-          .seal { font-size: 64px; margin: 20px 0; }
-          .signature { margin-top: 40px; border-top: 1px solid #b8860b; padding-top: 10px; display: inline-block; font-size: 14px; color: #475569; }
-        </style>
-      </head>
-      <body>
-        <div class="cert">
-          <div class="seal">🏆</div>
-          <h1>Certificate</h1>
-          <h2>of Completion</h2>
-          <p class="desc">This is to certify that</p>
-          <div class="name">${cert.user_name}</div>
-          <p class="desc">has successfully completed the course</p>
-          <div class="course">${cert.roadmap_title}</div>
-          <p class="desc">by demonstrating proficiency through module evaluations<br/>and a final comprehensive assessment with a passing score.</p>
-          <div class="signature">Learning Roadmap App — Nephilims</div>
-          <p class="date">Issued on: ${new Date(cert.issued_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-          <p class="certid">Certificate ID: ${cert.certificate_id}</p>
-        </div>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-  }
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#94a3b8' }}>Loading certificates...</p>
-      </div>
-    );
-  }
+  // Show the certificate for this roadmap first.
+  const sorted = [...certs].sort((a, b) => (String(b.roadmap_id) === roadmapId) - (String(a.roadmap_id) === roadmapId));
 
   return (
-    <div style={styles.page}>
-      <div style={styles.topNav}>
-        <button style={styles.backBtn} onClick={() => navigate('/dashboard')}>
-          ← Back
-        </button>
-        <h2 style={styles.navTitle}>🏆 My Certificates</h2>
-        <div></div>
-      </div>
-
-      <div style={styles.container}>
-
-        {/* NEW CERTIFICATE BANNER */}
-        {newCert && (
-          <div style={styles.newCertBanner}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎉</div>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: '22px', fontWeight: '800', color: '#f1f5f9' }}>
-              Congratulations!
-            </h2>
-            <p style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#94a3b8' }}>
-              You have earned a certificate for completing <strong style={{ color: '#a5b4fc' }}>{newCert.roadmap_title}</strong>
-            </p>
-            <button
-              style={styles.downloadBtn}
-              onClick={() => printCertificate(newCert)}
-            >
-              🖨️ Print / Download Certificate
-            </button>
-          </div>
-        )}
-
-        {/* CERTIFICATES LIST */}
-        {certificates.length === 0 && !newCert ? (
-          <div style={styles.emptyState}>
-            <div style={{ fontSize: '64px', marginBottom: '16px' }}>🏆</div>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', color: '#f1f5f9' }}>
-              No Certificates Yet
-            </h3>
-            <p style={{ margin: '0 0 20px 0', color: '#64748b', fontSize: '14px' }}>
-              Complete a full roadmap and pass all evaluations to earn your certificate!
-            </p>
-            <button
-              style={styles.goRoadmapBtn}
-              onClick={() => navigate('/dashboard')}
-            >
-              Go to My Roadmaps
-            </button>
-          </div>
-        ) : (
-          <div>
-            <h3 style={styles.sectionTitle}>All Earned Certificates</h3>
-            <div style={styles.certGrid}>
-              {certificates.map((cert, i) => (
-                <div key={i} style={styles.certCard}>
-                  <div style={styles.certIcon}>🏆</div>
-                  <div style={styles.certInfo}>
-                    <h4 style={styles.certTitle}>{cert.roadmap_title}</h4>
-                    <p style={styles.certDate}>
-                      Issued: {new Date(cert.issued_at).toLocaleDateString('en-US', {
-                        year: 'numeric', month: 'long', day: 'numeric'
-                      })}
-                    </p>
-                    <p style={styles.certId}>ID: {cert.certificate_id}</p>
-                  </div>
-                  <button
-                    style={styles.printBtn}
-                    onClick={() => printCertificate(cert)}
-                  >
-                    🖨️ Print
-                  </button>
+    <>
+      <PageHeader title="Certificates" description="Earned by completing a roadmap and passing its final assessment." />
+      {loading ? (
+        <Card><Loading /></Card>
+      ) : sorted.length === 0 ? (
+        <Card>
+          <EmptyState icon="award" title="No certificates yet" description="Finish every module in a roadmap, pass the assessments, then take the final assessment."
+            action={<Button variant="primary" onClick={() => navigate('/roadmaps')}>Go to roadmaps</Button>} />
+        </Card>
+      ) : (
+        <div className="stack-lg">
+          {sorted.map((c, i) => {
+            const featured = i === 0 && String(c.roadmap_id) === roadmapId;
+            return (
+              <div key={c.id} className="card" style={{ overflow: 'hidden' }}>
+                <div style={{ padding: featured ? '48px 48px 36px' : '24px 28px', borderBottom: '1px solid var(--border)', background: featured ? 'var(--surface)' : undefined }}>
+                  <div className="tiny subtle" style={{ letterSpacing: '.14em', textTransform: 'uppercase' }}>Certificate of completion</div>
+                  <div className="display" style={{ fontSize: featured ? 40 : 24, marginTop: 10, letterSpacing: '-0.02em' }}>{c.user_name}</div>
+                  <p className="mt-1">has completed</p>
+                  <div className="display text-accent" style={{ fontSize: featured ? 24 : 18, marginTop: 4 }}>{c.roadmap_title}</div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+                <div className="row-between row-wrap" style={{ padding: '14px 28px' }}>
+                  <div className="row small muted" style={{ gap: 16 }}>
+                    <span className="row" style={{ gap: 6 }}><Icon name="calendar" size={14} /> {formatDate(c.issued_at, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    <span className="mono tiny">{c.certificate_id}</span>
+                  </div>
+                  <Button variant={featured ? 'primary' : 'secondary'} size="sm" icon="download" onClick={() => { if (!printCertificate(c)) toast.error('Allow pop-ups to download the certificate'); }}>
+                    Download PDF
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }
 
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#0f172a',
-    fontFamily: "'Segoe UI', sans-serif",
-    color: '#e2e8f0',
-  },
-  topNav: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '14px 28px',
-    background: '#1e293b',
-    borderBottom: '1px solid #334155',
-    position: 'sticky',
-    top: 0,
-    zIndex: 100,
-  },
-  navTitle: {
-    margin: 0,
-    fontSize: '20px',
-    fontWeight: '700',
-    color: '#f1f5f9',
-  },
-  backBtn: {
-    background: 'transparent',
-    border: '1px solid #475569',
-    color: '#94a3b8',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-  },
-  container: {
-    maxWidth: '900px',
-    margin: '0 auto',
-    padding: '32px 24px',
-  },
-  newCertBanner: {
-    background: 'linear-gradient(135deg, #1e293b, #334155)',
-    borderRadius: '16px',
-    padding: '40px',
-    textAlign: 'center',
-    border: '2px solid #b8860b',
-    marginBottom: '32px',
-    boxShadow: '0 0 40px rgba(184,134,11,0.2)',
-  },
-  downloadBtn: {
-    background: 'linear-gradient(135deg, #b8860b, #d4a017)',
-    border: 'none',
-    color: '#fff',
-    padding: '12px 28px',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    fontSize: '15px',
-    fontWeight: '700',
-  },
-  emptyState: {
-    textAlign: 'center',
-    padding: '60px 20px',
-    background: '#1e293b',
-    borderRadius: '16px',
-    border: '1px solid #334155',
-  },
-  goRoadmapBtn: {
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    border: 'none',
-    color: '#fff',
-    padding: '12px 28px',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    fontSize: '15px',
-    fontWeight: '600',
-  },
-  sectionTitle: {
-    margin: '0 0 20px 0',
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#f1f5f9',
-  },
-  certGrid: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '14px',
-  },
-  certCard: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    background: '#1e293b',
-    borderRadius: '12px',
-    padding: '20px',
-    border: '1px solid #334155',
-  },
-  certIcon: {
-    fontSize: '36px',
-    flexShrink: 0,
-  },
-  certInfo: {
-    flex: 1,
-  },
-  certTitle: {
-    margin: '0 0 4px 0',
-    fontSize: '16px',
-    fontWeight: '700',
-    color: '#f1f5f9',
-  },
-  certDate: {
-    margin: '0 0 2px 0',
-    fontSize: '13px',
-    color: '#64748b',
-  },
-  certId: {
-    margin: 0,
-    fontSize: '11px',
-    color: '#475569',
-    fontFamily: 'monospace',
-  },
-  printBtn: {
-    background: 'linear-gradient(135deg, #b8860b, #d4a017)',
-    border: 'none',
-    color: '#fff',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: '600',
-    flexShrink: 0,
-  },
-};
-
+export default Certificate;

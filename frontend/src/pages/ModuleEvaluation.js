@@ -1,511 +1,107 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import api, { errorMessage } from '../lib/api';
+import { useToast } from '../components/Toast';
+import QuizRunner from '../components/QuizRunner';
+import { PageHeader, Button, Card, EmptyState, Loading, Alert } from '../components/ui';
 
-export default function ModuleEvaluation() {
-  const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [submitted, setSubmitted] = useState(false);
-  const [result, setResult] = useState(null);
-  const [current, setCurrent] = useState(0);
-
+function ModuleEvaluation() {
+  const { moduleId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const params = new URLSearchParams(location.search);
-  const moduleId = params.get('moduleId');
-  const roadmapId = params.get('roadmapId');
-  const moduleTitle = params.get('title') || 'Module';
-  const tasksParam = params.get('tasks') || '';
-  const tasks = tasksParam.split('|').filter(Boolean);
+  const toast = useToast();
+  const [mod, setMod] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState(null);
 
-  const token = localStorage.getItem('token');
-
-  useEffect(() => {
-    axios.post(
-      'http://localhost:5000/api/evaluation/module-quiz',
-      { moduleTitle, tasks },
-      { headers: { Authorization: 'Bearer ' + token } }
-    )
-      .then((res) => {
-        setQuestions(res.data.questions || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+  const generate = useCallback(async (m) => {
+    setLoading(true);
+    setError('');
+    setResult(null);
+    try {
+      const r = await api.post('/evaluation/module-quiz', {
+        moduleTitle: m.title,
+        tasks: (m.tasks || []).map((t) => t.title),
+      });
+      const qs = (r.data.questions || []).filter((q) => q.question && Array.isArray(q.options));
+      if (!qs.length) throw new Error('empty');
+      setQuestions(qs);
+    } catch (e) {
+      setError(e.message === 'empty' ? 'The AI returned no questions. Please try again.' : errorMessage(e, 'Could not generate the assessment.'));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  function selectAnswer(qIndex, optIndex) {
-    if (submitted) return;
-    setAnswers((prev) => ({ ...prev, [qIndex]: optIndex }));
-  }
+  useEffect(() => {
+    api.get(`/modules/item/${moduleId}`)
+      .then((r) => { setMod(r.data); generate(r.data); })
+      .catch((e) => { setError(errorMessage(e, 'Module not found')); setLoading(false); });
+  }, [moduleId, generate]);
 
-  function submitEvaluation() {
-    let score = 0;
-    questions.forEach((q, i) => {
-      if (answers[i] === q.correct) score++;
-    });
-
-    axios.post(
-      'http://localhost:5000/api/evaluation/module-result',
-      { module_id: moduleId, roadmap_id: roadmapId, score, total: questions.length },
-      { headers: { Authorization: 'Bearer ' + token } }
-    )
-      .then((res) => {
-        setResult({ ...res.data, score, total: questions.length });
-        setSubmitted(true);
-      })
-      .catch(() => {});
-  }
-
-  const answered = Object.keys(answers).length;
-  const percent = result ? Math.round((result.score / result.total) * 100) : 0;
-
-  if (loading) {
-    return (
-      <div style={styles.page}>
-        <div style={styles.center}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🤖</div>
-          <p style={{ color: '#94a3b8', fontSize: '18px' }}>
-            Generating evaluation questions...
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const submit = async (answers, score) => {
+    setSubmitting(true);
+    try {
+      const r = await api.post('/evaluation/module-result', {
+        module_id: Number(moduleId), roadmap_id: mod.roadmap_id, score, total: questions.length,
+      });
+      setResult({ ...r.data, answers });
+      if (r.data.passed) toast.success('Module passed — the next module is unlocked');
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not save your result'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.topNav}>
-        <h2 style={styles.navTitle}>📝 Module Evaluation</h2>
-        <p style={styles.navSub}>{moduleTitle}</p>
-      </div>
+    <div style={{ maxWidth: 760, margin: '0 auto' }}>
+      <PageHeader
+        back={mod ? `/roadmaps/${mod.roadmap_id}` : true}
+        eyebrow={mod ? `${mod.roadmap_title} · Module assessment` : 'Module assessment'}
+        title={mod?.title || 'Assessment'}
+        description="5 questions generated from this module’s tasks. Score 70% or more to pass and unlock the next module."
+      />
 
-      <div style={styles.container}>
-        {!submitted ? (
-          <div>
-            <div style={styles.progressBar}>
-              <div style={styles.progressInfo}>
-                <span style={{ color: '#94a3b8', fontSize: '14px' }}>
-                  Question {current + 1} of {questions.length}
-                </span>
-                <span style={{ color: '#94a3b8', fontSize: '14px' }}>
-                  {answered}/{questions.length} answered
-                </span>
-              </div>
-              <div style={styles.progressTrack}>
-                <div style={{
-                  ...styles.progressFill,
-                  width: ((current + 1) / questions.length * 100) + '%',
-                }}></div>
-              </div>
-            </div>
-
-            {questions.length > 0 && (
-              <div style={styles.questionCard}>
-                <p style={styles.questionNumber}>Question {current + 1}</p>
-                <h3 style={styles.questionText}>
-                  {questions[current].question}
-                </h3>
-                <div style={styles.options}>
-                  {questions[current].options.map((opt, oi) => (
-                    <button
-                      key={oi}
-                      style={{
-                        ...styles.option,
-                        background: answers[current] === oi
-                          ? 'rgba(99,102,241,0.2)'
-                          : '#0f172a',
-                        border: answers[current] === oi
-                          ? '2px solid #6366f1'
-                          : '2px solid #334155',
-                        color: answers[current] === oi ? '#a5b4fc' : '#e2e8f0',
-                      }}
-                      onClick={() => selectAnswer(current, oi)}
-                    >
-                      <span style={styles.optionLetter}>
-                        {['A', 'B', 'C', 'D'][oi]}
-                      </span>
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-
-                <div style={styles.navButtons}>
-                  <button
-                    style={styles.prevBtn}
-                    onClick={() => setCurrent((p) => Math.max(0, p - 1))}
-                    disabled={current === 0}
-                  >
-                    ← Previous
-                  </button>
-
-                  {current < questions.length - 1 ? (
-                    <button
-                      style={styles.nextBtn}
-                      onClick={() => setCurrent((p) => p + 1)}
-                    >
-                      Next →
-                    </button>
-                  ) : (
-                    <button
-                      style={answered < questions.length ? styles.disabledBtn : styles.submitBtn}
-                      onClick={submitEvaluation}
-                      disabled={answered < questions.length}
-                    >
-                                            {answered < questions.length
-                        ? `Answer all questions (${answered}/${questions.length})`
-                        : 'Submit Evaluation'}
-                    </button>
-                  )}
-                </div>
-
-                {/* QUESTION DOTS */}
-                <div style={styles.dots}>
-                  {questions.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrent(i)}
-                      style={{
-                        ...styles.dot,
-                        background: answers[i] !== undefined
-                          ? '#6366f1'
-                          : i === current
-                          ? '#334155'
-                          : '#1e293b',
-                        border: i === current ? '2px solid #6366f1' : '2px solid #334155',
-                      }}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* RESULT SCREEN */
-          <div style={styles.resultCard}>
-            <div style={{
-              fontSize: '72px',
-              marginBottom: '16px',
-              textAlign: 'center',
-            }}>
-              {result.passed ? '🎉' : '😔'}
-            </div>
-
-            <h2 style={{
-              textAlign: 'center',
-              margin: '0 0 8px 0',
-              fontSize: '24px',
-              fontWeight: '800',
-              color: result.passed ? '#10b981' : '#ef4444',
-            }}>
-              {result.passed ? 'Module Passed!' : 'Module Failed'}
-            </h2>
-
-            <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '24px' }}>
-              {result.passed
-                ? 'Great job! You can proceed to the next module.'
-                : 'You need 70% to pass. Review the module and try again.'}
-            </p>
-
-            {/* SCORE CIRCLE */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              marginBottom: '24px',
-            }}>
-              <div style={{
-                width: '120px',
-                height: '120px',
-                borderRadius: '50%',
-                background: result.passed
-                  ? 'linear-gradient(135deg, #10b981, #059669)'
-                  : 'linear-gradient(135deg, #ef4444, #dc2626)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: result.passed
-                  ? '0 0 30px rgba(16,185,129,0.4)'
-                  : '0 0 30px rgba(239,68,68,0.4)',
-              }}>
-                <span style={{ fontSize: '28px', fontWeight: '800', color: '#fff' }}>
-                  {percent}%
-                </span>
-                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)' }}>
-                  {result.score}/{result.total}
-                </span>
-              </div>
-            </div>
-
-            {/* ANSWER REVIEW */}
-            <div style={styles.reviewSection}>
-              <h4 style={{ margin: '0 0 14px 0', color: '#f1f5f9', fontSize: '15px' }}>
-                Answer Review
-              </h4>
-              {questions.map((q, i) => {
-                const isCorrect = answers[i] === q.correct;
-                return (
-                  <div key={i} style={{
-                    background: isCorrect ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                    border: '1px solid ' + (isCorrect ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'),
-                    borderRadius: '8px',
-                    padding: '12px',
-                    marginBottom: '10px',
-                  }}>
-                    <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#e2e8f0', fontWeight: '600' }}>
-                      {isCorrect ? '✅' : '❌'} Q{i + 1}: {q.question}
-                    </p>
-                    <p style={{ margin: '0 0 2px 0', fontSize: '12px', color: '#94a3b8' }}>
-                      Your answer: {q.options[answers[i]] || 'Not answered'}
-                    </p>
-                    {!isCorrect && (
-                      <p style={{ margin: 0, fontSize: '12px', color: '#10b981' }}>
-                        Correct answer: {q.options[q.correct]}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-              {!result.passed && (
-                <button
-                  style={styles.retryBtn}
-                  onClick={() => {
-                    setSubmitted(false);
-                    setAnswers({});
-                    setResult(null);
-                    setCurrent(0);
-                    setLoading(true);
-                    axios.post(
-                      'http://localhost:5000/api/evaluation/module-quiz',
-                      { moduleTitle, tasks },
-                      { headers: { Authorization: 'Bearer ' + token } }
-                    ).then((res) => {
-                      setQuestions(res.data.questions || []);
-                      setLoading(false);
-                    }).catch(() => setLoading(false));
-                  }}
-                >
-                  🔄 Retry Evaluation
-                </button>
+      {loading ? (
+        <Card><Loading label="Generating questions…" /></Card>
+      ) : error ? (
+        <Card>
+          <EmptyState icon="alert" title="Couldn’t start the assessment" description={error}
+            action={<div className="row" style={{ justifyContent: 'center' }}>
+              {mod && <Button variant="primary" icon="refresh" onClick={() => generate(mod)}>Try again</Button>}
+              <Button onClick={() => navigate(-1)}>Go back</Button>
+            </div>}
+          />
+        </Card>
+      ) : result ? (
+        <QuizRunner
+          questions={questions}
+          review
+          reviewAnswers={result.answers}
+          resultSlot={
+            <div className="row row-wrap">
+              {result.passed ? (
+                <Button variant="primary" iconRight="arrowRight" onClick={() => navigate(`/roadmaps/${mod.roadmap_id}`)}>Continue roadmap</Button>
+              ) : (
+                <>
+                  <Button variant="primary" icon="refresh" onClick={() => generate(mod)}>Retake with new questions</Button>
+                  <Button onClick={() => navigate(`/roadmaps/${mod.roadmap_id}`)}>Back to roadmap</Button>
+                </>
               )}
-              <button
-                style={styles.backRoadmapBtn}
-                onClick={() => navigate('/roadmap/' + roadmapId)}
-              >
-                ← Back to Roadmap
-              </button>
             </div>
-          </div>
-        )}
-      </div>
+          }
+        />
+      ) : (
+        <>
+          <div className="mb-2"><Alert tone="info">Tip: use keys 1–4 to pick an answer and ← → to move between questions.</Alert></div>
+          <QuizRunner questions={questions} onSubmit={submit} submitting={submitting} />
+        </>
+      )}
     </div>
   );
 }
 
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#0f172a',
-    fontFamily: "'Segoe UI', sans-serif",
-    color: '#e2e8f0',
-  },
-  center: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-  },
-  topNav: {
-    background: '#1e293b',
-    borderBottom: '1px solid #334155',
-    padding: '16px 28px',
-    textAlign: 'center',
-  },
-  navTitle: {
-    margin: 0,
-    fontSize: '20px',
-    fontWeight: '700',
-    color: '#f1f5f9',
-  },
-  navSub: {
-    margin: '4px 0 0 0',
-    fontSize: '14px',
-    color: '#64748b',
-  },
-  container: {
-    maxWidth: '700px',
-    margin: '32px auto',
-    padding: '0 24px',
-  },
-  progressBar: {
-    marginBottom: '24px',
-  },
-  progressInfo: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: '8px',
-  },
-  progressTrack: {
-    height: '6px',
-    background: '#1e293b',
-    borderRadius: '3px',
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '6px',
-    background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
-    borderRadius: '3px',
-    transition: 'width 0.3s ease',
-  },
-  questionCard: {
-    background: '#1e293b',
-    borderRadius: '16px',
-    padding: '32px',
-    border: '1px solid #334155',
-  },
-  questionNumber: {
-    margin: '0 0 8px 0',
-    fontSize: '12px',
-    color: '#6366f1',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: '0.1em',
-  },
-  questionText: {
-    margin: '0 0 24px 0',
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#f1f5f9',
-    lineHeight: '1.5',
-  },
-  options: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    marginBottom: '24px',
-  },
-  option: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '14px 18px',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    textAlign: 'left',
-    transition: 'all 0.2s',
-  },
-  optionLetter: {
-    width: '28px',
-    height: '28px',
-    borderRadius: '50%',
-    background: '#334155',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '12px',
-    fontWeight: '700',
-    flexShrink: 0,
-    color: '#94a3b8',
-  },
-  navButtons: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  prevBtn: {
-    background: 'transparent',
-    border: '1px solid #334155',
-    color: '#94a3b8',
-    padding: '10px 20px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-  },
-  nextBtn: {
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    border: 'none',
-    color: '#fff',
-    padding: '10px 24px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
-  },
-  submitBtn: {
-    background: 'linear-gradient(135deg, #10b981, #059669)',
-    border: 'none',
-    color: '#fff',
-    padding: '10px 24px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
-  },
-  disabledBtn: {
-    background: '#334155',
-    border: 'none',
-    color: '#64748b',
-    padding: '10px 24px',
-    borderRadius: '8px',
-    cursor: 'not-allowed',
-    fontSize: '14px',
-  },
-  dots: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '8px',
-    marginTop: '20px',
-    justifyContent: 'center',
-  },
-  dot: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: '600',
-    color: '#e2e8f0',
-  },
-  resultCard: {
-    background: '#1e293b',
-    borderRadius: '16px',
-    padding: '32px',
-    border: '1px solid #334155',
-  },
-  reviewSection: {
-    background: '#0f172a',
-    borderRadius: '10px',
-    padding: '16px',
-    border: '1px solid #334155',
-  },
-  retryBtn: {
-    flex: 1,
-    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-    border: 'none',
-    color: '#fff',
-    padding: '12px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
-  },
-  backRoadmapBtn: {
-    flex: 1,
-    background: 'transparent',
-    border: '1px solid #334155',
-    color: '#94a3b8',
-    padding: '12px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-  },
-};
-
+export default ModuleEvaluation;

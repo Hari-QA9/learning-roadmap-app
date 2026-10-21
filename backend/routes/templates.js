@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
+const { insertTask } = require('../lib/tasks');
 
 const TEMPLATES = [
   {
@@ -100,67 +101,40 @@ router.get('/', verifyToken, (req, res) => {
 });
 
 // POST import a template as a new roadmap
-router.post('/import/:id', verifyToken, (req, res) => {
+router.post('/import/:id', verifyToken, async (req, res) => {
   const userId = req.user.id;
-  const templateId = parseInt(req.params.id);
-  const template = TEMPLATES.find((t) => t.id === templateId);
+  const template = TEMPLATES.find((t) => t.id === parseInt(req.params.id, 10));
+  if (!template) return res.status(404).json({ message: 'Template not found' });
 
-  if (!template) {
-    return res.status(404).json({ error: 'Template not found' });
-  }
+  try {
+    const q = db.promise();
+    const [result] = await q.query(
+      'INSERT INTO roadmaps (user_id, title, description, duration, status) VALUES (?, ?, ?, ?, ?)',
+      [userId, template.title, template.description, template.duration, 'active']
+    );
+    const roadmapId = result.insertId;
 
-  db.query(
-    'INSERT INTO roadmaps (user_id, title, description, duration) VALUES (?, ?, ?, ?)',
-    [userId, template.title, template.description, template.duration],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-
-      const roadmapId = result.insertId;
-      let modulesDone = 0;
-
-      if (template.modules.length === 0) {
-        return res.json({ message: 'Roadmap imported!', roadmapId });
+    for (let m = 0; m < template.modules.length; m++) {
+      const mod = template.modules[m];
+      const [modResult] = await q.query(
+        'INSERT INTO modules (roadmap_id, title, position, order_index) VALUES (?, ?, ?, ?)',
+        [roadmapId, mod.title, m, m]
+      );
+      for (let t = 0; t < mod.tasks.length; t++) {
+        await insertTask({ userId, roadmapId, moduleId: modResult.insertId, title: mod.tasks[t], position: t });
       }
-
-      template.modules.forEach((mod, modIndex) => {
-        db.query(
-          'INSERT INTO modules (roadmap_id, title, position) VALUES (?, ?, ?)',
-          [roadmapId, mod.title, modIndex],
-          (err2, modResult) => {
-            if (err2) return res.status(500).json({ error: err2.message });
-
-            const moduleId = modResult.insertId;
-            let tasksDone = 0;
-
-            if (mod.tasks.length === 0) {
-              modulesDone++;
-              if (modulesDone === template.modules.length) {
-                res.json({ message: 'Roadmap imported!', roadmapId });
-              }
-              return;
-            }
-
-            mod.tasks.forEach((task, taskIndex) => {
-              db.query(
-                'INSERT INTO tasks (user_id, roadmap_id, module_id, title, status, position) VALUES (?, ?, ?, ?, "pending", ?)',
-                [userId, roadmapId, moduleId, task, taskIndex],
-                (err3) => {
-                  if (err3) return;
-                  tasksDone++;
-                  if (tasksDone === mod.tasks.length) {
-                    modulesDone++;
-                    if (modulesDone === template.modules.length) {
-                      res.json({ message: 'Roadmap imported!', roadmapId });
-                    }
-                  }
-                }
-              );
-            });
-          }
-        );
-      });
     }
-  );
+
+    await q.query(
+      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)',
+      [userId, 'Imported Template', `Imported template: ${template.title}`]
+    ).catch(() => {});
+
+    res.json({ message: 'Roadmap imported!', roadmapId });
+  } catch (err) {
+    console.error('Template import error:', err.message);
+    res.status(500).json({ message: 'Could not import template' });
+  }
 });
 
 module.exports = router;

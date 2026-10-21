@@ -1,333 +1,157 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import Navbar from '../components/Navbar';
+import api, { getUser } from '../lib/api';
+import {
+  PageHeader, Stat, Card, Button, Progress, EmptyState, SkeletonRows, Icon, Badge, timeAgo,
+} from '../components/ui';
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+const SHORTCUTS = [
+  { label: 'Generate a roadmap', desc: 'Let AI draft modules and tasks', icon: 'wand', path: '/ai-generator' },
+  { label: 'Browse templates', desc: 'Start from a proven path', icon: 'layers', path: '/templates' },
+  { label: 'Plan my week', desc: 'Build a study schedule', icon: 'calendar', path: '/study-planner' },
+  { label: 'Career advice', desc: 'Roles, gaps and next steps', icon: 'compass', path: '/career-advisor' },
+];
 
 function Dashboard() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const headers = { Authorization: `Bearer ${token}` };
-
-  const [stats, setStats] = useState({
-    totalRoadmaps: 0,
-    completedTasks: 0,
-    pendingTasks: 0,
-    streak: 0,
-    badges: 0,
-    quizzesTaken: 0,
-  });
-
+  const user = getUser();
+  const [stats, setStats] = useState(null);
   const [roadmaps, setRoadmaps] = useState([]);
-  const [quizHistory, setQuizHistory] = useState([]);
+  const [quiz, setQuiz] = useState({ overall: null, history: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
+    let alive = true;
+    Promise.allSettled([
+      api.get('/stats/dashboard'),
+      api.get('/roadmaps'),
+      api.get('/quiz/my-performance'),
+    ]).then(([s, r, q]) => {
+      if (!alive) return;
+      if (s.status === 'fulfilled') setStats(s.value.data);
+      if (r.status === 'fulfilled') setRoadmaps(r.value.data || []);
+      if (q.status === 'fulfilled') setQuiz({ overall: q.value.data?.overall, history: (q.value.data?.quizHistory || []).slice(0, 5) });
+      setLoading(false);
+    });
+    return () => { alive = false; };
   }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      const [statsRes, roadmapsRes, quizRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/stats/dashboard', { headers }),
-        axios.get('http://localhost:5000/api/roadmaps', { headers }),
-        axios.get('http://localhost:5000/api/quiz/my-performance', { headers }),
-      ]);
-
-      setStats({
-        ...statsRes.data,
-        quizzesTaken: quizRes.data?.overall?.totalAttempts || statsRes.data?.quizzesTaken || 0,
-      });
-
-      setRoadmaps((roadmapsRes.data || []).slice(0, 4));
-      setQuizHistory((quizRes.data?.quizHistory || []).slice(0, 5));
-    } catch (err) {
-      console.error('Dashboard fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const statCards = [
-    { label: 'Total Roadmaps', value: stats.totalRoadmaps, icon: '🗺️', color: '#8b5cf6' },
-    { label: 'Tasks Completed', value: stats.completedTasks, icon: '✅', color: '#10b981' },
-    { label: 'Tasks Pending', value: stats.pendingTasks, icon: '⏳', color: '#f59e0b' },
-    { label: 'Day Streak', value: stats.streak || 0, icon: '🔥', color: '#ef4444' },
-    { label: 'Badges Earned', value: stats.badges || 0, icon: '🏆', color: '#06b6d4' },
-    { label: 'Quizzes Taken', value: stats.quizzesTaken || 0, icon: '🧠', color: '#ec4899' },
-  ];
-
-  const quickActions = [
-    { label: 'New Roadmap', icon: '➕', path: '/roadmaps', color: '#8b5cf6' },
-    { label: 'AI Generator', icon: '🤖', path: '/ai-generator', color: '#06b6d4' },
-    { label: 'Templates', icon: '📋', path: '/templates', color: '#10b981' },
-    { label: 'Study Planner', icon: '📅', path: '/study-planner', color: '#f59e0b' },
-    { label: 'Career Advisor', icon: '🎯', path: '/career-advisor', color: '#ec4899' },
-    { label: 'Resume Builder', icon: '📄', path: '/resume-builder', color: '#a78bfa' },
-    { label: 'Take Quiz', icon: '🧠', path: '/quiz', color: '#34d399' },
-    { label: 'Chat AI', icon: '💬', path: '/chat', color: '#60a5fa' },
-  ];
+  const pct = (rm) => (rm.total_tasks > 0 ? Math.round((rm.completed_tasks / rm.total_tasks) * 100) : 0);
+  const active = roadmaps.slice(0, 4);
+  const totalTasks = (stats?.completedTasks || 0) + (stats?.pendingTasks || 0);
+  const overall = totalTasks ? Math.round(((stats?.completedTasks || 0) / totalTasks) * 100) : 0;
+  const firstName = (user?.name || '').split(' ')[0];
 
   return (
-    <div style={pageStyle}>
-      <Navbar />
+    <>
+      <PageHeader
+        eyebrow={new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+        title={`${greeting()}${firstName ? `, ${firstName}` : ''}`}
+        description="Here’s where your learning stands today."
+        actions={<Button variant="primary" icon="plus" onClick={() => navigate('/roadmaps?new=1')}>New roadmap</Button>}
+      />
 
-      <div style={containerStyle}>
-        <div style={headerStyle}>
-          <h1 style={{ color: '#fff', margin: 0 }}>⚡ Command Center</h1>
-          <p style={{ color: '#cbd5e1', marginTop: '10px' }}>
-            Welcome back! Here&apos;s your learning overview.
-          </p>
-        </div>
+      <div className="grid-4 mb-3">
+        <Stat label="Roadmaps" icon="map" value={stats?.totalRoadmaps ?? 0} loading={loading} />
+        <Stat label="Tasks completed" icon="checkCircle" value={stats?.completedTasks ?? 0} note={totalTasks ? `${overall}% of all tasks` : undefined} loading={loading} />
+        <Stat label="Day streak" icon="flame" value={stats?.streak ?? 0} note="Log in daily to grow it" loading={loading} />
+        <Stat label="Quiz accuracy" icon="target" value={`${quiz.overall?.accuracy ?? 0}%`} note={`${quiz.overall?.totalAttempts ?? 0} answers`} loading={loading} />
+      </div>
 
-        <div style={statsGrid}>
-          {statCards.map((card, i) => (
-            <div
-              key={i}
-              style={{
-                ...cardStyle,
-                border: `1px solid ${card.color}33`,
-              }}
-            >
-              <div style={{ fontSize: '30px' }}>{card.icon}</div>
-              <div style={{ fontSize: '28px', fontWeight: '800', color: '#fff', marginTop: '10px' }}>
-                {loading ? '—' : card.value}
-              </div>
-              <div style={{ color: '#cbd5e1', marginTop: '6px' }}>{card.label}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={mainGrid}>
-          <div style={sectionCard}>
-            <div style={sectionHeader}>
-              <h2 style={sectionTitle}>🗺️ My Roadmaps</h2>
-              <button onClick={() => navigate('/roadmaps')} style={linkBtn}>
-                View All →
-              </button>
-            </div>
-
-            {loading ? (
-              <p style={{ color: '#cbd5e1' }}>Loading...</p>
-            ) : roadmaps.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '30px 10px' }}>
-                <div style={{ fontSize: '40px' }}>🗺️</div>
-                <p style={{ color: '#cbd5e1' }}>No roadmaps yet</p>
-                <button onClick={() => navigate('/roadmaps')} style={primaryBtn}>
-                  Create First Roadmap
-                </button>
-              </div>
-            ) : (
-              roadmaps.map((rm) => {
-                const progress =
-                  rm.total_tasks > 0
-                    ? Math.round((rm.completed_tasks / rm.total_tasks) * 100)
-                    : 0;
-
-                return (
-                  <div
-                    key={rm.id}
-                    onClick={() => navigate(`/roadmaps/${rm.id}`)}
-                    style={roadmapCard}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-                      <h3 style={{ margin: 0, color: '#fff' }}>{rm.title}</h3>
-                      <span style={{ color: '#8b5cf6', fontWeight: '700' }}>{progress}%</span>
+      <div className="split">
+        <Card
+          title="Continue learning"
+          description="Your most recent roadmaps"
+          pad={false}
+          actions={roadmaps.length > 0 && <Button variant="ghost" size="sm" iconRight="arrowRight" onClick={() => navigate('/roadmaps')}>All roadmaps</Button>}
+        >
+          {loading ? (
+            <SkeletonRows rows={3} />
+          ) : active.length === 0 ? (
+            <EmptyState
+              icon="map"
+              title="No roadmaps yet"
+              description="Create your first roadmap, start from a template, or let AI draft one for you."
+              action={
+                <div className="row" style={{ justifyContent: 'center' }}>
+                  <Button variant="primary" icon="plus" onClick={() => navigate('/roadmaps?new=1')}>Create roadmap</Button>
+                  <Button variant="secondary" icon="wand" onClick={() => navigate('/ai-generator')}>Use AI</Button>
+                </div>
+              }
+            />
+          ) : (
+            <div className="list">
+              {active.map((rm) => (
+                <div key={rm.id} className="list-row clickable" onClick={() => navigate(`/roadmaps/${rm.id}`)} style={{ padding: '16px 20px' }}>
+                  <div className="list-icon"><Icon name="map" size={15} /></div>
+                  <div className="grow">
+                    <div className="row-between">
+                      <div style={{ fontWeight: 500 }} className="truncate">{rm.title}</div>
+                      <span className="small muted nowrap">{pct(rm)}%</span>
                     </div>
-
-                    <div style={progressBarWrap}>
-                      <div style={{ ...progressBarFill, width: `${progress}%` }} />
+                    <div className="mt-1"><Progress value={pct(rm)} size="sm" tone={pct(rm) === 100 ? 'success' : undefined} /></div>
+                    <div className="tiny subtle mt-1">
+                      {rm.module_count || 0} modules · {rm.completed_tasks || 0}/{rm.total_tasks || 0} tasks
                     </div>
-
-                    <p style={{ color: '#cbd5e1', margin: '10px 0 0 0' }}>
-                      {rm.category || 'General'} • {rm.completed_tasks || 0}/{rm.total_tasks || 0} tasks
-                    </p>
                   </div>
-                );
-              })
-            )}
-          </div>
-
-          <div style={sectionCard}>
-            <h2 style={sectionTitle}>🚀 Quick Actions</h2>
-            <div style={actionsGrid}>
-              {quickActions.map((action, i) => (
-                <div
-                  key={i}
-                  onClick={() => navigate(action.path)}
-                  style={{
-                    background: `${action.color}11`,
-                    border: `1px solid ${action.color}33`,
-                    borderRadius: '12px',
-                    padding: '16px 10px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '8px',
-                    color: action.color,
-                    fontWeight: '700',
-                  }}
-                >
-                  <div style={{ fontSize: '26px' }}>{action.icon}</div>
-                  <div style={{ textAlign: 'center', fontSize: '14px' }}>{action.label}</div>
+                  <Icon name="chevronRight" size={16} style={{ color: 'var(--text-3)' }} />
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-
-        <div style={sectionCard}>
-          <div style={sectionHeader}>
-            <h2 style={sectionTitle}>🧠 Recent Quiz History</h2>
-            <button onClick={() => navigate('/quiz-performance')} style={linkBtn}>
-              View Full History →
-            </button>
-          </div>
-
-          {loading ? (
-            <p style={{ color: '#cbd5e1' }}>Loading quiz history...</p>
-          ) : quizHistory.length === 0 ? (
-            <p style={{ color: '#cbd5e1' }}>No quiz history yet.</p>
-          ) : (
-            quizHistory.map((item, i) => (
-              <div
-                key={i}
-                style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${item.is_correct ? '#22c55e55' : '#ef444455'}`,
-                  borderRadius: '12px',
-                  padding: '14px',
-                  marginBottom: '12px',
-                }}
-              >
-                <div style={{ color: '#fff', fontWeight: '700', marginBottom: '8px' }}>
-                  {item.is_correct ? '✅' : '❌'} {item.question}
-                </div>
-
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', color: '#cbd5e1' }}>
-                  <span style={{ color: item.is_correct ? '#22c55e' : '#ef4444', fontWeight: '700' }}>
-                    {item.is_correct ? 'Correct' : 'Wrong'}
-                  </span>
-                  <span>Your Answer: {item.selected_answer}</span>
-                  <span>Correct: {item.correct_answer}</span>
-                  <span>{new Date(item.answered_at).toLocaleString()}</span>
-                </div>
-              </div>
-            ))
           )}
+        </Card>
+
+        <div className="stack-lg">
+          <Card title="Shortcuts" pad={false}>
+            <div className="list">
+              {SHORTCUTS.map((s) => (
+                <div key={s.path} className="list-row clickable" onClick={() => navigate(s.path)}>
+                  <div className="list-icon"><Icon name={s.icon} size={15} /></div>
+                  <div className="grow">
+                    <div style={{ fontWeight: 500 }}>{s.label}</div>
+                    <div className="tiny subtle">{s.desc}</div>
+                  </div>
+                  <Icon name="chevronRight" size={15} style={{ color: 'var(--text-3)' }} />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card
+            title="Recent quiz answers"
+            pad={false}
+            actions={quiz.history.length > 0 && <Button variant="ghost" size="sm" onClick={() => navigate('/quiz-performance')}>View all</Button>}
+          >
+            {loading ? (
+              <SkeletonRows rows={2} />
+            ) : quiz.history.length === 0 ? (
+              <EmptyState icon="quiz" title="No quizzes yet" description="Take a quick quiz to check what you’ve learned." action={<Button size="sm" onClick={() => navigate('/quiz')}>Take a quiz</Button>} />
+            ) : (
+              <div className="list">
+                {quiz.history.map((q, i) => (
+                  <div key={i} className="list-row" style={{ alignItems: 'flex-start' }}>
+                    <Icon name={q.is_correct ? 'checkCircle' : 'xCircle'} size={16} className={q.is_correct ? 'text-success' : 'text-danger'} style={{ marginTop: 2 }} />
+                    <div className="grow">
+                      <div className="small" style={{ color: 'var(--text)' }}>{q.question}</div>
+                      <div className="tiny subtle mt-1">{timeAgo(q.answered_at)}</div>
+                    </div>
+                    <Badge tone={q.is_correct ? 'success' : 'danger'}>{q.is_correct ? 'Correct' : 'Missed'}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </div>
       </div>
-    </div>
+    </>
   );
 }
-
-const pageStyle = {
-  minHeight: '100vh',
-  background: 'var(--bg-primary)',
-  padding: '0',
-  fontFamily: 'Inter, sans-serif',
-};
-
-const containerStyle = {
-  maxWidth: '1200px',
-  margin: '0 auto',
-};
-
-const headerStyle = {
-  marginBottom: '24px',
-};
-
-const statsGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-  gap: '16px',
-  marginBottom: '24px',
-};
-
-const cardStyle = {
-  background: 'rgba(10,22,40,0.8)',
-  backdropFilter: 'blur(20px)',
-  borderRadius: '16px',
-  padding: '20px',
-};
-
-const mainGrid = {
-  display: 'grid',
-  gridTemplateColumns: '1.5fr 1fr',
-  gap: '20px',
-  marginBottom: '24px',
-};
-
-const sectionCard = {
-  background: 'rgba(10,22,40,0.8)',
-  backdropFilter: 'blur(20px)',
-  border: '1px solid rgba(139,92,246,0.2)',
-  borderRadius: '16px',
-  padding: '20px',
-  marginBottom: '24px',
-};
-
-const sectionHeader = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: '12px',
-  flexWrap: 'wrap',
-  marginBottom: '16px',
-};
-
-const sectionTitle = {
-  color: '#fff',
-  margin: 0,
-};
-
-const linkBtn = {
-  background: 'rgba(139,92,246,0.15)',
-  border: '1px solid rgba(139,92,246,0.3)',
-  borderRadius: '8px',
-  padding: '8px 14px',
-  color: '#a78bfa',
-  cursor: 'pointer',
-  fontWeight: '700',
-};
-
-const primaryBtn = {
-  background: '#8b5cf6',
-  color: '#fff',
-  border: 'none',
-  borderRadius: '10px',
-  padding: '10px 18px',
-  cursor: 'pointer',
-  fontWeight: '700',
-};
-
-const roadmapCard = {
-  background: 'rgba(255,255,255,0.03)',
-  border: '1px solid rgba(139,92,246,0.15)',
-  borderRadius: '14px',
-  padding: '18px',
-  cursor: 'pointer',
-  marginBottom: '14px',
-};
-
-const progressBarWrap = {
-  width: '100%',
-  height: '10px',
-  background: '#334155',
-  borderRadius: '999px',
-  overflow: 'hidden',
-  marginTop: '12px',
-};
-
-const progressBarFill = {
-  height: '100%',
-  background: 'linear-gradient(90deg, #8b5cf6, #06b6d4)',
-};
-
-const actionsGrid = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, 1fr)',
-  gap: '12px',
-};
 
 export default Dashboard;

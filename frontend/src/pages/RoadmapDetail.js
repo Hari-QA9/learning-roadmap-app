@@ -1,769 +1,484 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import api, { errorMessage } from '../lib/api';
+import { useToast } from '../components/Toast';
+import {
+  PageHeader, Button, Card, Badge, Icon, Input, Select, Tabs, Ring, Progress, EmptyState, Loading,
+  ConfirmDialog, Dropdown, Modal, Field, Textarea, Alert, formatDate,
+} from '../components/ui';
+
+const NEXT_STATUS = { pending: 'in_progress', in_progress: 'done', done: 'pending' };
+const STATUS_LABEL = { pending: 'To do', in_progress: 'In progress', done: 'Done' };
+const PRIORITY_TONE = { high: 'danger', medium: 'warning', low: undefined };
+
+function StatusButton({ status, onClick, disabled }) {
+  const icon = status === 'done' ? 'checkCircle' : 'circle';
+  const color = status === 'done' ? 'var(--success)' : status === 'in_progress' ? 'var(--warning)' : 'var(--text-3)';
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? 'Module locked' : `Mark as ${STATUS_LABEL[NEXT_STATUS[status] || 'in_progress'].toLowerCase()}`}
+      aria-label={`Status: ${STATUS_LABEL[status] || 'To do'}. Click to change.`}
+      style={{ background: 'none', border: 0, padding: 2, cursor: disabled ? 'not-allowed' : 'pointer', color, display: 'grid', placeItems: 'center', position: 'relative' }}
+    >
+      <Icon name={icon} size={19} stroke={status === 'done' ? 2 : 1.75} />
+      {status === 'in_progress' && (
+        <span style={{ position: 'absolute', width: 7, height: 7, borderRadius: 9, background: 'var(--warning)' }} />
+      )}
+    </button>
+  );
+}
+
+function isOverdue(d, status) {
+  if (!d || status === 'done') return false;
+  const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const due = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(d);
+  due.setHours(23, 59, 59);
+  return due < new Date();
+}
+
+function AddTaskRow({ onAdd }) {
+  const [title, setTitle] = useState('');
+  const [priority, setPriority] = useState('medium');
+  const [due, setDue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    setBusy(true);
+    const ok = await onAdd({ title: title.trim(), priority, due_date: due || null });
+    setBusy(false);
+    if (ok) { setTitle(''); setDue(''); setPriority('medium'); }
+  };
+  return (
+    <form onSubmit={submit} className="row row-wrap" style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', gap: 8 }}>
+      <div className="input-group grow" style={{ minWidth: 200 }}>
+        <Icon name="plus" size={15} />
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Add a task" aria-label="New task title" />
+      </div>
+      <Select value={priority} onChange={(e) => setPriority(e.target.value)} style={{ width: 120 }} aria-label="Priority">
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </Select>
+      <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} style={{ width: 150 }} aria-label="Due date" />
+      <Button type="submit" variant="secondary" loading={busy} disabled={!title.trim()}>Add</Button>
+    </form>
+  );
+}
 
 function RoadmapDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  const toast = useToast();
 
   const [roadmap, setRoadmap] = useState(null);
   const [modules, setModules] = useState([]);
   const [tasks, setTasks] = useState({});
   const [resources, setResources] = useState([]);
-  const [evalStatus, setEvalStatus] = useState({});
-  const [activeTab, setActiveTab] = useState('modules');
+  const [passed, setPassed] = useState({});
+  const [tab, setTab] = useState('modules');
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [collapsed, setCollapsed] = useState({});
 
-  const [newModule, setNewModule] = useState('');
-  const [newTask, setNewTask] = useState({});
-  const [newTaskDueDate, setNewTaskDueDate] = useState({});
-  const [newTaskPriority, setNewTaskPriority] = useState({});
+  const [showModule, setShowModule] = useState(false);
+  const [moduleForm, setModuleForm] = useState({ title: '', description: '' });
+  const [savingModule, setSavingModule] = useState(false);
 
-  const authHeaders = {
-    headers: { Authorization: `Bearer ${token}` },
-  };
+  const [showResource, setShowResource] = useState(false);
+  const [resourceForm, setResourceForm] = useState({ title: '', url: '', type: 'article' });
+  const [savingResource, setSavingResource] = useState(false);
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-    fetchAll();
+  const [confirm, setConfirm] = useState(null); // { kind, item }
+  const [busyConfirm, setBusyConfirm] = useState(false);
+
+  const loadTasks = useCallback(async (moduleId) => {
+    const r = await api.get(`/tasks/${moduleId}`).catch(() => ({ data: [] }));
+    setTasks((p) => ({ ...p, [moduleId]: r.data || [] }));
+  }, []);
+
+  const loadModules = useCallback(async () => {
+    const r = await api.get(`/modules/${id}`);
+    const list = r.data || [];
+    setModules(list);
+    await Promise.all(list.map(async (m) => {
+      const [t, s] = await Promise.all([
+        api.get(`/tasks/${m.id}`).catch(() => ({ data: [] })),
+        api.get(`/evaluation/module-status/${m.id}`).catch(() => ({ data: {} })),
+      ]);
+      setTasks((p) => ({ ...p, [m.id]: t.data || [] }));
+      setPassed((p) => ({ ...p, [m.id]: s.data?.passed === true }));
+    }));
   }, [id]);
 
-  const fetchAll = async () => {
+  useEffect(() => {
+    let alive = true;
     setLoading(true);
-    await Promise.all([fetchRoadmap(), fetchModules(), fetchResources()]);
-    setLoading(false);
-  };
+    Promise.all([
+      api.get(`/roadmaps/${id}`).then((r) => alive && setRoadmap(r.data)),
+      loadModules(),
+      api.get(`/resources/${id}`).then((r) => alive && setResources(r.data || [])).catch(() => {}),
+    ])
+      .catch((e) => { if (e.response?.status === 404) setNotFound(true); else toast.error(errorMessage(e, 'Could not load roadmap')); })
+      .finally(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, [id, loadModules, toast]);
 
-  const fetchRoadmap = async () => {
+  /* ---------- derived ---------- */
+  const allTasks = modules.flatMap((m) => tasks[m.id] || []);
+  const doneCount = allTasks.filter((t) => t.status === 'done').length;
+  const overall = allTasks.length ? Math.round((doneCount / allTasks.length) * 100) : 0;
+  const isUnlocked = (i) => i === 0 || passed[modules[i - 1]?.id] === true;
+  const moduleDone = (m) => { const t = tasks[m.id] || []; return t.length > 0 && t.every((x) => x.status === 'done'); };
+  const allComplete = modules.length > 0 && modules.every((m) => moduleDone(m) && passed[m.id]);
+
+  /* ---------- actions ---------- */
+  const addModule = async (e) => {
+    e.preventDefault();
+    if (!moduleForm.title.trim()) return;
+    setSavingModule(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/roadmaps/${id}`, authHeaders);
-      setRoadmap(res.data);
+      await api.post('/modules', { roadmap_id: id, title: moduleForm.title.trim(), description: moduleForm.description, order_index: modules.length });
+      await loadModules();
+      setShowModule(false);
+      setModuleForm({ title: '', description: '' });
+      toast.success('Module added');
     } catch (err) {
-      console.error('Error fetching roadmap:', err);
+      toast.error(errorMessage(err, 'Could not add module'));
+    } finally {
+      setSavingModule(false);
     }
   };
 
-  const fetchModules = async () => {
+  const addTask = async (moduleId, data) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/modules/${id}`, authHeaders);
-      const moduleList = res.data || [];
-      setModules(moduleList);
+      await api.post('/tasks', { module_id: moduleId, description: '', ...data });
+      await loadTasks(moduleId);
+      return true;
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not add task'));
+      return false;
+    }
+  };
 
-      for (const mod of moduleList) {
-        fetchTasks(mod.id);
-        fetchEvalStatus(mod.id);
+  const cycleStatus = async (task, moduleId) => {
+    const next = NEXT_STATUS[task.status] || 'in_progress';
+    // Optimistic update so the click feels instant.
+    setTasks((p) => ({ ...p, [moduleId]: (p[moduleId] || []).map((t) => (t.id === task.id ? { ...t, status: next } : t)) }));
+    try {
+      await api.put(`/tasks/${task.id}`, {
+        title: task.title,
+        description: task.description || '',
+        status: next,
+        due_date: task.due_date ? String(task.due_date).slice(0, 10) : null,
+        priority: task.priority || 'medium',
+      });
+    } catch (err) {
+      setTasks((p) => ({ ...p, [moduleId]: (p[moduleId] || []).map((t) => (t.id === task.id ? task : t)) }));
+      toast.error(errorMessage(err, 'Could not update task'));
+    }
+  };
+
+  const addResource = async (e) => {
+    e.preventDefault();
+    if (!resourceForm.title.trim()) return;
+    setSavingResource(true);
+    try {
+      await api.post('/resources', { roadmap_id: id, ...resourceForm, title: resourceForm.title.trim(), is_free: true });
+      const r = await api.get(`/resources/${id}`);
+      setResources(r.data || []);
+      setShowResource(false);
+      setResourceForm({ title: '', url: '', type: 'article' });
+      toast.success('Resource added');
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not add resource'));
+    } finally {
+      setSavingResource(false);
+    }
+  };
+
+  const runConfirm = async () => {
+    if (!confirm) return;
+    const { kind, item, moduleId } = confirm;
+    setBusyConfirm(true);
+    try {
+      if (kind === 'module') {
+        await api.delete(`/modules/${item.id}`);
+        setModules((m) => m.filter((x) => x.id !== item.id));
+        toast.success('Module deleted');
+      } else if (kind === 'task') {
+        await api.delete(`/tasks/${item.id}`);
+        setTasks((p) => ({ ...p, [moduleId]: (p[moduleId] || []).filter((t) => t.id !== item.id) }));
+      } else if (kind === 'resource') {
+        await api.delete(`/resources/${item.id}`);
+        setResources((r) => r.filter((x) => x.id !== item.id));
+      } else if (kind === 'roadmap') {
+        await api.delete(`/roadmaps/${id}`);
+        toast.success('Roadmap deleted');
+        navigate('/roadmaps');
+        return;
       }
+      setConfirm(null);
     } catch (err) {
-      console.error('Error fetching modules:', err);
+      toast.error(errorMessage(err, 'Could not delete'));
+    } finally {
+      setBusyConfirm(false);
     }
   };
 
-  const fetchTasks = async (moduleId) => {
-    try {
-      const res = await axios.get(`http://localhost:5000/api/tasks/${moduleId}`, authHeaders);
-      setTasks((prev) => ({
-        ...prev,
-        [moduleId]: res.data || [],
-      }));
-    } catch (err) {
-      console.error('Error fetching tasks:', err);
-    }
-  };
-
-  const fetchResources = async () => {
-    try {
-      const res = await axios.get(`http://localhost:5000/api/resources/${id}`, authHeaders);
-      setResources(res.data || []);
-    } catch (err) {
-      console.error('Error fetching resources:', err);
-    }
-  };
-
-  const fetchEvalStatus = async (moduleId) => {
-    try {
-      const res = await axios.get(
-        `http://localhost:5000/api/evaluation/module-status/${moduleId}`,
-        authHeaders
-      );
-      setEvalStatus((prev) => ({
-        ...prev,
-        [moduleId]: res.data?.passed === true,
-      }));
-    } catch (err) {
-      setEvalStatus((prev) => ({
-        ...prev,
-        [moduleId]: false,
-      }));
-    }
-  };
-
-  const addModule = async () => {
-    if (!newModule.trim()) return;
-
-    try {
-      await axios.post(
-        'http://localhost:5000/api/modules',
-        {
-          roadmap_id: id,
-          title: newModule,
-          description: '',
-          order_index: modules.length,
-        },
-        authHeaders
-      );
-      setNewModule('');
-      fetchModules();
-    } catch (err) {
-      console.error('Error adding module:', err);
-    }
-  };
-
-  const deleteModule = async (moduleId) => {
-    if (!window.confirm('Delete this module?')) return;
-
-    try {
-      await axios.delete(`http://localhost:5000/api/modules/${moduleId}`, authHeaders);
-      fetchModules();
-    } catch (err) {
-      console.error('Error deleting module:', err);
-    }
-  };
-
-  const addTask = async (moduleId) => {
-    const title = newTask[moduleId]?.trim();
-    if (!title) return;
-
-    try {
-      await axios.post(
-        'http://localhost:5000/api/tasks',
-        {
-          module_id: moduleId,
-          roadmap_id: id,
-          title,
-          description: '',
-          due_date: newTaskDueDate[moduleId] || null,
-          priority: newTaskPriority[moduleId] || 'medium',
-        },
-        authHeaders
-      );
-
-      setNewTask((prev) => ({ ...prev, [moduleId]: '' }));
-      setNewTaskDueDate((prev) => ({ ...prev, [moduleId]: '' }));
-      setNewTaskPriority((prev) => ({ ...prev, [moduleId]: 'medium' }));
-      fetchTasks(moduleId);
-    } catch (err) {
-      console.error('Error adding task:', err);
-    }
-  };
-
-  const updateTaskStatus = async (task, moduleId) => {
-    const nextStatus =
-      task.status === 'pending'
-        ? 'in_progress'
-        : task.status === 'in_progress'
-        ? 'done'
-        : 'pending';
-
-    try {
-      await axios.put(
-        `http://localhost:5000/api/tasks/${task.id}`,
-        {
-          title: task.title,
-          description: task.description || '',
-          status: nextStatus,
-          due_date: task.due_date || null,
-          priority: task.priority || 'medium',
-        },
-        authHeaders
-      );
-      fetchTasks(moduleId);
-    } catch (err) {
-      console.error('Error updating task:', err);
-    }
-  };
-
-  const deleteTask = async (taskId, moduleId) => {
-    if (!window.confirm('Delete this task?')) return;
-
-    try {
-      await axios.delete(`http://localhost:5000/api/tasks/${taskId}`, authHeaders);
-      fetchTasks(moduleId);
-    } catch (err) {
-      console.error('Error deleting task:', err);
-    }
-  };
-
-  const isModuleUnlocked = (modIndex) => {
-    if (modIndex === 0) return true;
-    const prevModule = modules[modIndex - 1];
-    return evalStatus[prevModule?.id] === true;
-  };
-
-  const allModulesComplete = () => {
-    return modules.every((mod) => {
-      const moduleTasks = tasks[mod.id] || [];
-      const allDone = moduleTasks.length > 0 && moduleTasks.every((t) => t.status === 'done');
-      return allDone && evalStatus[mod.id] === true;
-    });
-  };
-
-  const getStatusColor = (status) => {
-    if (status === 'done') return '#22c55e';
-    if (status === 'in_progress') return '#f59e0b';
-    return '#94a3b8';
-  };
-
-  const getStatusLabel = (status) => {
-    if (status === 'done') return 'Done';
-    if (status === 'in_progress') return 'In Progress';
-    return 'Pending';
-  };
-
-  const getPriorityColor = (priority) => {
-    if (priority === 'high') return '#ef4444';
-    if (priority === 'medium') return '#f59e0b';
-    return '#64748b';
-  };
-
-  const getPriorityBg = (priority) => {
-    if (priority === 'high') return 'rgba(239,68,68,0.1)';
-    if (priority === 'medium') return 'rgba(245,158,11,0.1)';
-    return 'rgba(100,116,139,0.1)';
-  };
-
-  const getPriorityIcon = (priority) => {
-    if (priority === 'high') return '🔴';
-    if (priority === 'medium') return '🟡';
-    return '🟢';
-  };
-
-  const isDueOverdue = (dueDate) => {
-    if (!dueDate) return false;
-    return new Date(dueDate) < new Date();
-  };
-
-  if (loading) {
+  /* ---------- render ---------- */
+  if (loading) return <Loading label="Loading roadmap…" />;
+  if (notFound || !roadmap) {
     return (
-      <div style={{ minHeight: '100vh', padding: '40px', color: '#fff', background: '#0f172a' }}>
-        Loading roadmap...
-      </div>
+      <Card>
+        <EmptyState icon="map" title="Roadmap not found" description="It may have been deleted." action={<Button onClick={() => navigate('/roadmaps')}>Back to roadmaps</Button>} />
+      </Card>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#0f172a',
-        color: '#fff',
-        padding: '24px',
-        fontFamily: 'Arial, sans-serif',
-      }}
-    >
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-        <button
-          onClick={() => navigate('/roadmaps')}
-          style={{
-            marginBottom: '20px',
-            background: '#1e293b',
-            color: '#fff',
-            border: '1px solid #334155',
-            padding: '10px 16px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-          }}
-        >
-          ← Back
-        </button>
+    <>
+      <PageHeader
+        back="/roadmaps"
+        title={roadmap.title}
+        description={roadmap.description}
+        actions={
+          <>
+            <Button icon="plus" onClick={() => setShowModule(true)}>Add module</Button>
+            {allComplete && <Button variant="primary" icon="award" onClick={() => navigate(`/roadmap-evaluation/${id}`)}>Final assessment</Button>}
+            <Dropdown trigger={({ toggle }) => <Button variant="ghost" icon="more" onClick={toggle} aria-label="More actions" />}>
+              <button className="menu-item" onClick={() => navigate(`/quiz?topic=${encodeURIComponent(roadmap.title)}`)}><Icon name="quiz" size={15} /> Practice quiz on this topic</button>
+              <button className="menu-item" onClick={() => navigate('/study-planner')}><Icon name="calendar" size={15} /> Make a study plan</button>
+              <div className="menu-sep" />
+              <button className="menu-item danger" onClick={() => setConfirm({ kind: 'roadmap' })}><Icon name="trash" size={15} /> Delete roadmap</button>
+            </Dropdown>
+          </>
+        }
+      />
 
-        <div
-          style={{
-            background: '#1e293b',
-            borderRadius: '16px',
-            padding: '24px',
-            marginBottom: '24px',
-            border: '1px solid #334155',
-          }}
-        >
-          <h1 style={{ margin: 0, marginBottom: '10px', color: '#f8fafc' }}>
-            {roadmap?.title || 'Roadmap'}
-          </h1>
-
-          {roadmap?.goal && (
-            <p style={{ margin: '8px 0', color: '#cbd5e1' }}>
-              <strong>Goal:</strong> {roadmap.goal}
-            </p>
-          )}
-
-          {roadmap?.duration && (
-            <p style={{ margin: '8px 0', color: '#cbd5e1' }}>
-              <strong>Duration:</strong> {roadmap.duration}
-            </p>
-          )}
-
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '18px' }}>
-            <button
-              onClick={() => navigate('/roadmaps')}
-              style={actionBtn('#3b82f6')}
-            >
-              View All Roadmaps
-            </button>
-
-            <button
-              onClick={() => navigate('/roadmaps')}
-              style={actionBtn('#22c55e')}
-            >
-              Take Quiz
-            </button>
-
-            {allModulesComplete() && (
-              <button
-                onClick={() => navigate(`/roadmap-evaluation/${id}`)}
-                style={actionBtn('#8b5cf6')}
-              >
-                🎓 Final Evaluation
-              </button>
-            )}
-          </div>
-        </div>
-
-        {modules.length > 0 && (
-          <div
-            style={{
-              background: '#1e293b',
-              borderRadius: '16px',
-              padding: '20px',
-              marginBottom: '24px',
-              border: '1px solid #334155',
-            }}
-          >
-            <h3 style={{ marginTop: 0 }}>Course Progress</h3>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-              {modules.map((mod, i) => {
-                const moduleTasks = tasks[mod.id] || [];
-                const allTasksDone =
-                  moduleTasks.length > 0 && moduleTasks.every((t) => t.status === 'done');
-                const passed = evalStatus[mod.id] === true;
-
-                return (
-                  <div
-                    key={mod.id}
-                    style={{
-                      padding: '10px 14px',
-                      borderRadius: '999px',
-                      background: '#0f172a',
-                      border: '1px solid #334155',
-                      fontSize: '14px',
-                    }}
-                  >
-                    {passed ? '✅' : allTasksDone ? '⏳' : isModuleUnlocked(i) ? '🔓' : '🔒'} Module{' '}
-                    {i + 1}
-                  </div>
-                );
-              })}
+      {/* Overview */}
+      <div className="card card-pad mb-3">
+        <div className="row row-wrap" style={{ gap: 28 }}>
+          <Ring value={overall} size={84} stroke={7} tone={overall === 100 ? 'success' : 'accent'} />
+          <div className="grow" style={{ minWidth: 220 }}>
+            <div className="row row-wrap" style={{ gap: 24 }}>
+              <div><div className="tiny subtle">Modules</div><div style={{ fontWeight: 600, fontSize: 18 }}>{modules.length}</div></div>
+              <div><div className="tiny subtle">Tasks done</div><div style={{ fontWeight: 600, fontSize: 18 }}>{doneCount}<span className="subtle" style={{ fontWeight: 400 }}> / {allTasks.length}</span></div></div>
+              <div><div className="tiny subtle">Assessments passed</div><div style={{ fontWeight: 600, fontSize: 18 }}>{modules.filter((m) => passed[m.id]).length}<span className="subtle" style={{ fontWeight: 400 }}> / {modules.length}</span></div></div>
             </div>
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-          <button
-            onClick={() => setActiveTab('modules')}
-            style={tabBtn(activeTab === 'modules')}
-          >
-            Modules and Tasks
-          </button>
-          <button
-            onClick={() => setActiveTab('resources')}
-            style={tabBtn(activeTab === 'resources')}
-          >
-            Free Resources ({resources.length})
-          </button>
-        </div>
-
-        {activeTab === 'modules' && (
-          <div>
-            <div
-              style={{
-                display: 'flex',
-                gap: '12px',
-                marginBottom: '20px',
-                flexWrap: 'wrap',
-              }}
-            >
-              <input
-                type="text"
-                placeholder="Add new module..."
-                value={newModule}
-                onChange={(e) => setNewModule(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addModule()}
-                style={inputStyle}
-              />
-              <button onClick={addModule} style={actionBtn('#8b5cf6')}>
-                Add Module
-              </button>
-            </div>
-
-            {modules.length === 0 && (
-              <div style={cardStyle}>
-                <p style={{ margin: 0, color: '#cbd5e1' }}>
-                  No modules yet. Add your first module above.
-                </p>
+            {(roadmap.goal || roadmap.duration) && (
+              <div className="row row-wrap mt-2" style={{ gap: 8 }}>
+                {roadmap.goal && <Badge><Icon name="target" size={12} /> {roadmap.goal}</Badge>}
+                {roadmap.duration && <Badge><Icon name="clock" size={12} /> {roadmap.duration}</Badge>}
               </div>
             )}
-
-            {modules.map((mod, modIndex) => {
-              const moduleTasks = tasks[mod.id] || [];
-              const doneCount = moduleTasks.filter((t) => t.status === 'done').length;
-              const unlocked = isModuleUnlocked(modIndex);
-              const allTasksDone =
-                moduleTasks.length > 0 && moduleTasks.every((t) => t.status === 'done');
-              const passed = evalStatus[mod.id] === true;
-
-              return (
-                <div key={mod.id} style={cardStyle}>
-                  {!unlocked && (
-                    <div
-                      style={{
-                        marginBottom: '16px',
-                        padding: '12px',
-                        background: 'rgba(239,68,68,0.12)',
-                        border: '1px solid rgba(239,68,68,0.3)',
-                        borderRadius: '10px',
-                        color: '#fecaca',
-                      }}
-                    >
-                      🔒 Module Locked — Pass Module {modIndex} evaluation to unlock this module.
-                    </div>
-                  )}
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: '12px',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      marginBottom: '16px',
-                    }}
-                  >
-                    <div>
-                      <h3 style={{ margin: 0, marginBottom: '8px', color: '#fff' }}>
-                        {passed ? '✅' : allTasksDone ? '⏳' : unlocked ? '🔓' : '🔒'} Module{' '}
-                        {modIndex + 1}: {mod.title}
-                      </h3>
-                      <p style={{ margin: 0, color: '#cbd5e1' }}>
-                        {doneCount}/{moduleTasks.length} tasks done
-                        {passed ? ' • Evaluation Passed ✓' : ''}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => deleteModule(mod.id)}
-                      style={{
-                        background: '#ef4444',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '10px 14px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-
-                  {moduleTasks.length === 0 && (
-                    <p style={{ color: '#94a3b8' }}>No tasks yet.</p>
-                  )}
-
-                  {moduleTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      style={{
-                        background: '#0f172a',
-                        border: '1px solid #334155',
-                        borderRadius: '12px',
-                        padding: '14px',
-                        marginBottom: '12px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          gap: '12px',
-                          alignItems: 'center',
-                          flexWrap: 'wrap',
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontWeight: '600', color: '#f8fafc' }}>{task.title}</div>
-                          <div style={{ marginTop: '8px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                            <span
-                              style={{
-                                padding: '4px 10px',
-                                borderRadius: '999px',
-                                background: getStatusColor(task.status),
-                                color: '#fff',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                              }}
-                            >
-                              {getStatusLabel(task.status)}
-                            </span>
-
-                            {task.due_date && (
-                              <span style={{ color: isDueOverdue(task.due_date) ? '#fca5a5' : '#cbd5e1' }}>
-                                📅 {new Date(task.due_date).toLocaleDateString()}
-                                {isDueOverdue(task.due_date) ? ' (Overdue)' : ''}
-                              </span>
-                            )}
-
-                            {task.priority && (
-                              <span
-                                style={{
-                                  padding: '4px 10px',
-                                  borderRadius: '999px',
-                                  color: getPriorityColor(task.priority),
-                                  background: getPriorityBg(task.priority),
-                                  fontSize: '12px',
-                                  fontWeight: '600',
-                                }}
-                              >
-                                {getPriorityIcon(task.priority)} {task.priority}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                          {unlocked && (
-                            <button
-                              onClick={() => updateTaskStatus(task, mod.id)}
-                              style={actionBtn('#f59e0b')}
-                            >
-                              Change Status
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => deleteTask(task.id, mod.id)}
-                            style={actionBtn('#ef4444')}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {unlocked && (
-                    <div
-                      style={{
-                        marginTop: '16px',
-                        background: '#0f172a',
-                        border: '1px solid #334155',
-                        borderRadius: '12px',
-                        padding: '16px',
-                      }}
-                    >
-                      <h4 style={{ marginTop: 0 }}>Add Task</h4>
-
-                      <div style={{ display: 'grid', gap: '12px' }}>
-                        <input
-                          type="text"
-                          placeholder="Add new task..."
-                          value={newTask[mod.id] || ''}
-                          onChange={(e) =>
-                            setNewTask((prev) => ({
-                              ...prev,
-                              [mod.id]: e.target.value,
-                            }))
-                          }
-                          onKeyDown={(e) => e.key === 'Enter' && addTask(mod.id)}
-                          style={inputStyle}
-                        />
-
-                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                          <input
-                            type="date"
-                            value={newTaskDueDate[mod.id] || ''}
-                            onChange={(e) =>
-                              setNewTaskDueDate((prev) => ({
-                                ...prev,
-                                [mod.id]: e.target.value,
-                              }))
-                            }
-                            style={inputStyle}
-                          />
-
-                          <select
-                            value={newTaskPriority[mod.id] || 'medium'}
-                            onChange={(e) =>
-                              setNewTaskPriority((prev) => ({
-                                ...prev,
-                                [mod.id]: e.target.value,
-                              }))
-                            }
-                            style={inputStyle}
-                          >
-                            <option value="low">🟢 Low</option>
-                            <option value="medium">🟡 Medium</option>
-                            <option value="high">🔴 High</option>
-                          </select>
-
-                          <button onClick={() => addTask(mod.id)} style={actionBtn('#22c55e')}>
-                            Add Task
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {unlocked && allTasksDone && !passed && (
-                    <div style={{ marginTop: '16px' }}>
-                      <button
-                        onClick={() => navigate(`/module-evaluation/${mod.id}`)}
-                        style={actionBtn('#8b5cf6')}
-                      >
-                        📝 Take Module Evaluation
-                      </button>
-                    </div>
-                  )}
-
-                  {passed && (
-                    <div
-                      style={{
-                        marginTop: '16px',
-                        padding: '12px',
-                        borderRadius: '10px',
-                        background: 'rgba(34,197,94,0.12)',
-                        border: '1px solid rgba(34,197,94,0.3)',
-                        color: '#bbf7d0',
-                      }}
-                    >
-                      ✅ Module evaluation passed! Next module is unlocked.
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {allModulesComplete() && (
-              <div
-                style={{
-                  ...cardStyle,
-                  textAlign: 'center',
-                  background: 'linear-gradient(135deg, #1e293b, #312e81)',
-                }}
-              >
-                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎓</div>
-                <h2>All Modules Complete!</h2>
-                <p style={{ color: '#cbd5e1' }}>
-                  You have completed all modules and passed all evaluations. Take the final
-                  evaluation to earn your certificate.
-                </p>
-                <button
-                  onClick={() => navigate(`/roadmap-evaluation/${id}`)}
-                  style={actionBtn('#22c55e')}
+          </div>
+          {modules.length > 0 && (
+            <div className="row" style={{ gap: 6 }} aria-label="Module progress">
+              {modules.map((m, i) => (
+                <div
+                  key={m.id}
+                  title={`Module ${i + 1}: ${m.title}`}
+                  style={{
+                    width: 26, height: 26, borderRadius: 7, display: 'grid', placeItems: 'center', fontSize: 11.5, fontWeight: 600,
+                    background: passed[m.id] ? 'var(--success)' : moduleDone(m) ? 'var(--warning-soft)' : 'var(--surface-2)',
+                    color: passed[m.id] ? '#fff' : moduleDone(m) ? 'var(--warning)' : isUnlocked(i) ? 'var(--text-2)' : 'var(--text-3)',
+                    border: '1px solid var(--border)',
+                  }}
                 >
-                  🏆 Take Final Evaluation & Earn Certificate
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+                  {passed[m.id] ? <Icon name="check" size={13} stroke={2.5} /> : !isUnlocked(i) ? <Icon name="lock" size={11} /> : i + 1}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
-        {activeTab === 'resources' && (
-          <div style={cardStyle}>
-            <h3 style={{ marginTop: 0 }}>Free Learning Resources ({resources.length})</h3>
+      {allComplete && (
+        <div className="mb-3">
+          <Alert tone="success">
+            All modules complete and every assessment passed. <button className="btn btn-sm btn-ghost" style={{ color: 'inherit', textDecoration: 'underline' }} onClick={() => navigate(`/roadmap-evaluation/${id}`)}>Take the final assessment</button> to earn your certificate.
+          </Alert>
+        </div>
+      )}
 
-            {resources.length === 0 && (
-              <p style={{ color: '#cbd5e1' }}>
-                No resources yet. Generate a roadmap with AI to get free resources.
-              </p>
-            )}
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        tabs={[{ value: 'modules', label: `Modules (${modules.length})` }, { value: 'resources', label: `Resources (${resources.length})` }]}
+      />
 
-            {resources.map((resource, index) => (
-              <div
-                key={resource.id || index}
-                style={{
-                  background: '#0f172a',
-                  border: '1px solid #334155',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  marginBottom: '12px',
-                }}
-              >
-                <h4 style={{ margin: 0, marginBottom: '8px' }}>{resource.title}</h4>
-                <p style={{ margin: '6px 0', color: '#cbd5e1' }}>
-                  Type: {resource.type || 'article'}
-                </p>
-                <p style={{ margin: '6px 0', color: '#22c55e', fontWeight: '600' }}>FREE</p>
+      {tab === 'modules' && (
+        <div className="stack-lg">
+          {modules.length === 0 && (
+            <Card>
+              <EmptyState icon="layers" title="Add your first module" description="Modules are the chapters of your roadmap. Each one holds a few tasks." action={<Button variant="primary" icon="plus" onClick={() => setShowModule(true)}>Add module</Button>} />
+            </Card>
+          )}
 
-                {resource.url && (
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: '#60a5fa', textDecoration: 'none', fontWeight: '600' }}
-                  >
-                    Open Resource
-                  </a>
+          {modules.map((m, i) => {
+            const list = tasks[m.id] || [];
+            const done = list.filter((t) => t.status === 'done').length;
+            const unlocked = isUnlocked(i);
+            const complete = moduleDone(m);
+            const ok = passed[m.id];
+            const isCollapsed = collapsed[m.id] ?? !unlocked;
+            return (
+              <div key={m.id} className="card" style={{ opacity: unlocked ? 1 : 0.75 }}>
+                <div className="card-head" style={{ cursor: 'pointer' }} onClick={() => setCollapsed((c) => ({ ...c, [m.id]: !isCollapsed }))}>
+                  <div className="row grow" style={{ gap: 12 }}>
+                    <Icon name="chevronDown" size={16} style={{ color: 'var(--text-3)', transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform var(--dur) var(--ease)' }} />
+                    <div className="grow">
+                      <div className="tiny subtle">Module {i + 1}</div>
+                      <h2 className="truncate">{m.title}</h2>
+                    </div>
+                  </div>
+                  <div className="row" onClick={(e) => e.stopPropagation()}>
+                    {ok ? <Badge tone="success"><Icon name="check" size={12} /> Passed</Badge>
+                      : !unlocked ? <Badge><Icon name="lock" size={11} /> Locked</Badge>
+                      : complete ? <Badge tone="warning">Ready for assessment</Badge>
+                      : <span className="small muted nowrap">{done}/{list.length} done</span>}
+                    <Dropdown trigger={({ toggle }) => <Button variant="ghost" size="sm" icon="more" onClick={toggle} aria-label="Module actions" />}>
+                      <button className="menu-item danger" onClick={() => setConfirm({ kind: 'module', item: m })}><Icon name="trash" size={15} /> Delete module</button>
+                    </Dropdown>
+                  </div>
+                </div>
+
+                {!isCollapsed && (
+                  <>
+                    {list.length > 0 && <div style={{ padding: '14px 20px 2px' }}><Progress value={list.length ? (done / list.length) * 100 : 0} size="sm" tone={complete ? 'success' : undefined} /></div>}
+                    {!unlocked && (
+                      <div style={{ padding: '14px 20px 0' }}>
+                        <Alert tone="warning">Pass the Module {i} assessment to unlock this module.</Alert>
+                      </div>
+                    )}
+                    {m.description && <p className="small" style={{ padding: '12px 20px 0' }}>{m.description}</p>}
+
+                    {list.length === 0 ? (
+                      <p className="small subtle" style={{ padding: '16px 20px' }}>No tasks yet{unlocked ? ' — add one below.' : '.'}</p>
+                    ) : (
+                      <div className="list" style={{ marginTop: 8 }}>
+                        {list.map((t) => (
+                          <div key={t.id} className="list-row task-row" style={{ padding: '10px 20px' }}>
+                            <StatusButton status={t.status} disabled={!unlocked} onClick={() => cycleStatus(t, m.id)} />
+                            <div className="grow">
+                              <div style={{ color: t.status === 'done' ? 'var(--text-3)' : 'var(--text)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</div>
+                              <div className="row row-wrap tiny mt-1" style={{ gap: 8 }}>
+                                {t.status === 'in_progress' && <span className="text-warning">In progress</span>}
+                                {t.due_date && (
+                                  <span className={isOverdue(t.due_date, t.status) ? 'text-danger' : 'subtle'}>
+                                    <Icon name="calendar" size={11} style={{ verticalAlign: '-1px' }} /> {formatDate(t.due_date, { month: 'short', day: 'numeric' })}{isOverdue(t.due_date, t.status) ? ' · overdue' : ''}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {t.priority && t.priority !== 'medium' && <Badge tone={PRIORITY_TONE[t.priority]}>{t.priority === 'high' ? 'High' : 'Low'}</Badge>}
+                            <Button variant="ghost" size="sm" icon="trash" aria-label="Delete task" onClick={() => setConfirm({ kind: 'task', item: t, moduleId: m.id })} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {unlocked && <AddTaskRow onAdd={(d) => addTask(m.id, d)} />}
+
+                    {unlocked && complete && !ok && (
+                      <div className="card-foot" style={{ justifyContent: 'space-between' }}>
+                        <span className="small muted">All tasks done. Score 70% or more to pass this module.</span>
+                        <Button variant="primary" size="sm" iconRight="arrowRight" onClick={() => navigate(`/module-evaluation/${m.id}`, { state: { module: m, roadmapId: id, tasks: list.map((x) => x.title) } })}>
+                          Take assessment
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+            );
+          })}
+        </div>
+      )}
+
+      {tab === 'resources' && (
+        <Card
+          title="Learning resources"
+          description="Articles, videos and courses for this roadmap"
+          pad={false}
+          actions={<Button size="sm" icon="plus" onClick={() => setShowResource(true)}>Add resource</Button>}
+        >
+          {resources.length === 0 ? (
+            <EmptyState icon="link" title="No resources yet" description="Save useful links here, or generate a roadmap with AI to get free resources automatically." />
+          ) : (
+            <div className="list">
+              {resources.map((r) => (
+                <div key={r.id} className="list-row">
+                  <div className="list-icon"><Icon name={r.type === 'video' ? 'video' : r.type === 'course' ? 'grad' : 'book'} size={15} /></div>
+                  <div className="grow">
+                    <div style={{ fontWeight: 500 }} className="truncate">{r.title}</div>
+                    <div className="tiny subtle truncate">{r.url ? r.url.replace(/^https?:\/\//, '') : 'No link'}</div>
+                  </div>
+                  <Badge>{r.type || 'article'}</Badge>
+                  {r.is_free ? <Badge tone="success">Free</Badge> : null}
+                  {r.url && (
+                    <a className="btn btn-ghost btn-sm" href={r.url} target="_blank" rel="noopener noreferrer"><Icon name="external" size={14} /> Open</a>
+                  )}
+                  <Button variant="ghost" size="sm" icon="trash" aria-label="Delete resource" onClick={() => setConfirm({ kind: 'resource', item: r })} />
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Modals */}
+      <Modal
+        open={showModule}
+        onClose={() => setShowModule(false)}
+        title="Add module"
+        footer={<><Button onClick={() => setShowModule(false)}>Cancel</Button><Button variant="primary" type="submit" form="add-module" loading={savingModule} disabled={!moduleForm.title.trim()}>Add module</Button></>}
+      >
+        <form id="add-module" onSubmit={addModule}>
+          <Field label="Module title"><Input autoFocus value={moduleForm.title} onChange={(e) => setModuleForm({ ...moduleForm, title: e.target.value })} placeholder="e.g. JavaScript fundamentals" /></Field>
+          <Field label="Description" optional><Textarea rows={3} value={moduleForm.description} onChange={(e) => setModuleForm({ ...moduleForm, description: e.target.value })} /></Field>
+        </form>
+      </Modal>
+
+      <Modal
+        open={showResource}
+        onClose={() => setShowResource(false)}
+        title="Add resource"
+        footer={<><Button onClick={() => setShowResource(false)}>Cancel</Button><Button variant="primary" type="submit" form="add-resource" loading={savingResource} disabled={!resourceForm.title.trim()}>Add resource</Button></>}
+      >
+        <form id="add-resource" onSubmit={addResource}>
+          <Field label="Title"><Input autoFocus value={resourceForm.title} onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })} placeholder="MDN — JavaScript guide" /></Field>
+          <Field label="Link"><Input type="url" value={resourceForm.url} onChange={(e) => setResourceForm({ ...resourceForm, url: e.target.value })} placeholder="https://" /></Field>
+          <Field label="Type">
+            <Select value={resourceForm.type} onChange={(e) => setResourceForm({ ...resourceForm, type: e.target.value })}>
+              <option value="article">Article</option>
+              <option value="video">Video</option>
+              <option value="course">Course</option>
+              <option value="docs">Documentation</option>
+              <option value="other">Other</option>
+            </Select>
+          </Field>
+        </form>
+      </Modal>
+
+      <ConfirmDialog
+        open={!!confirm}
+        title={confirm?.kind === 'roadmap' ? 'Delete this roadmap?' : confirm?.kind === 'module' ? 'Delete module?' : confirm?.kind === 'task' ? 'Delete task?' : 'Remove resource?'}
+        description={
+          confirm?.kind === 'roadmap' ? `“${roadmap.title}” and all its modules and tasks will be removed.`
+            : confirm?.kind === 'module' ? `“${confirm.item.title}” and its tasks will be removed.`
+              : `“${confirm?.item?.title}” will be removed.`
+        }
+        confirmLabel={confirm?.kind === 'resource' ? 'Remove' : 'Delete'}
+        loading={busyConfirm}
+        onConfirm={runConfirm}
+        onCancel={() => setConfirm(null)}
+      />
+    </>
   );
 }
-
-const actionBtn = (bg) => ({
-  background: bg,
-  color: '#fff',
-  border: 'none',
-  padding: '10px 16px',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  fontWeight: '600',
-});
-
-const tabBtn = (active) => ({
-  background: active ? '#8b5cf6' : '#1e293b',
-  color: '#fff',
-  border: '1px solid #334155',
-  padding: '10px 16px',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  fontWeight: '600',
-});
-
-const inputStyle = {
-  flex: 1,
-  minWidth: '220px',
-  padding: '10px 12px',
-  borderRadius: '8px',
-  border: '1px solid #475569',
-  background: '#fff',
-  color: '#111827',
-  outline: 'none',
-  fontSize: '14px',
-  cursor: 'text',
-};
-
-const cardStyle = {
-  background: '#1e293b',
-  borderRadius: '16px',
-  padding: '20px',
-  marginBottom: '20px',
-  border: '1px solid #334155',
-};
 
 export default RoadmapDetail;

@@ -2,84 +2,48 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-require('dotenv').config();
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+const { generateJSON, sendAIError } = require('../lib/gemini');
 
 // GENERATE QUIZ
 router.post('/generate', auth, async (req, res) => {
-  const { topic } = req.body;
+  const topic = String(req.body.topic || '').trim();
+  const difficulty = req.body.difficulty || 'medium';
+  const count = Math.min(10, Math.max(3, parseInt(req.body.count, 10) || 5));
+  if (!topic) return res.status(400).json({ message: 'Please enter a topic.' });
+
+  let questions;
   try {
-    const prompt = `Create exactly 5 multiple choice quiz questions about "${topic}".
-Return ONLY a valid JSON array no markdown no backticks:
-[
-  {
-    "question": "question text",
-    "option_a": "option A text",
-    "option_b": "option B text",
-    "option_c": "option C text",
-    "option_d": "option D text",
-    "correct_answer": "A"
+    const data = await generateJSON(`Create exactly ${count} ${difficulty} multiple-choice questions about "${topic}".
+Each question has 4 plausible options and exactly one correct answer. Add a one-sentence explanation.
+Return JSON: { "questions": [ { "question": "string", "option_a": "string", "option_b": "string", "option_c": "string", "option_d": "string", "correct_answer": "A|B|C|D", "explanation": "string" } ] }`);
+    questions = (Array.isArray(data) ? data : data.questions || [])
+      .filter((q) => q && q.question && q.option_a && q.option_b)
+      .map((q) => ({ ...q, correct_answer: String(q.correct_answer || 'A').trim().charAt(0).toUpperCase() }));
+    if (!questions.length) throw new Error('The AI response was not valid JSON. Please try again.');
+  } catch (err) {
+    return sendAIError(res, err, 'Could not generate a quiz. Please try again.');
   }
-]`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    let cleaned = text.trim()
-      .replace(/^```json\n?/, '')
-      .replace(/^```\n?/, '')
-      .replace(/```$/, '')
-      .trim();
-
-    let questions;
-    try {
-      questions = JSON.parse(cleaned);
-    } catch (e) {
-      const match = cleaned.match(/\[[\s\S]*\]/);
-      if (match) questions = JSON.parse(match);
-      else throw new Error('Could not parse quiz');
-    }
-
-    // Save each question without roadmap_id
-    const savedQuestions = [];
+  try {
+    const saved = [];
     for (const q of questions) {
       try {
         const [ins] = await db.promise().query(
-          `INSERT INTO quizzes
-           (roadmap_id, question, option_a, option_b, option_c, option_d, correct_answer)
+          `INSERT INTO quizzes (roadmap_id, question, option_a, option_b, option_c, option_d, correct_answer)
            VALUES (NULL, ?, ?, ?, ?, ?, ?)`,
-          [q.question, q.option_a, q.option_b, q.option_c, q.option_d, q.correct_answer]
+          [q.question, q.option_a, q.option_b, q.option_c || '', q.option_d || '', q.correct_answer]
         );
-        savedQuestions.push({
-          id: ins.insertId,
-          question: q.question,
-          option_a: q.option_a,
-          option_b: q.option_b,
-          option_c: q.option_c,
-          option_d: q.option_d,
-          correct_answer: q.correct_answer
-        });
-        console.log('Quiz saved ID:', ins.insertId);
+        saved.push({ id: ins.insertId, ...q });
       } catch (e) {
         console.log('Quiz save error:', e.message);
-        savedQuestions.push({ id: null, ...q });
+        saved.push({ id: null, ...q });
       }
     }
-
-    try {
-      await db.promise().query(
-        'UPDATE user_stats SET xp_points = xp_points + 15 WHERE user_id = ?',
-        [req.user.id]
-      );
-    } catch(e) {}
-
-    res.json({ message: 'Quiz generated', questions: savedQuestions });
-
+    await db.promise().query('UPDATE user_stats SET xp_points = xp_points + 15 WHERE user_id = ?', [req.user.id]).catch(() => {});
+    res.json({ message: 'Quiz generated', topic, questions: saved });
   } catch (err) {
     console.error('Quiz error:', err);
-    res.status(500).json({ message: 'Quiz generation failed', error: err.message });
+    res.status(500).json({ message: 'Could not save the quiz.' });
   }
 });
 
@@ -88,6 +52,7 @@ router.post('/submit', auth, async (req, res) => {
   const { quiz_id, selected_answer, correct_answer } = req.body;
   try {
     const is_correct = selected_answer === correct_answer ? 1 : 0;
+    if (!quiz_id) return res.json({ message: 'Not recorded', is_correct: is_correct === 1 });
     await db.promise().query(
       'INSERT INTO quiz_results (user_id, quiz_id, selected_answer, is_correct) VALUES (?, ?, ?, ?)',
       [req.user.id, quiz_id, selected_answer, is_correct]

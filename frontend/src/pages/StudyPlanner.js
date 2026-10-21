@@ -1,423 +1,176 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import api, { errorMessage } from '../lib/api';
+import { useToast } from '../components/Toast';
+import { PageHeader, Button, Card, Field, Input, Textarea, Select, Alert, Badge, Icon, EmptyState, Spinner, Segmented } from '../components/ui';
 
-export default function StudyPlanner() {
-  const [goal, setGoal] = useState('');
-  const [hoursPerDay, setHoursPerDay] = useState('2');
-  const [daysPerWeek, setDaysPerWeek] = useState('5');
-  const [currentLevel, setCurrentLevel] = useState('beginner');
-  const [skills, setSkills] = useState('');
-  const [plan, setPlan] = useState(null);
+const STORE = 'learnmap.studyplan';
+const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } };
+
+function planToText(plan) {
+  const lines = [plan.title, `${plan.totalDuration || ''}`, '', plan.overview || '', ''];
+  (plan.weeklySchedule || []).forEach((d) => {
+    lines.push(`${d.day} — ${d.topic} (${d.duration})`);
+    (d.tasks || []).forEach((t) => lines.push(`  • ${t}`));
+  });
+  const tips = Array.isArray(plan.tips) ? plan.tips : plan.tips ? [plan.tips] : [];
+  if (tips.length) { lines.push('', 'Tips:'); tips.forEach((t) => lines.push(`  • ${t}`)); }
+  return lines.join('\n');
+}
+
+function StudyPlanner() {
+  const toast = useToast();
+  const saved = load();
+  const [form, setForm] = useState(saved.form || { goal: '', skills: '', currentLevel: 'beginner', hoursPerDay: '2', daysPerWeek: '5', weeks: '' });
+  const [plan, setPlan] = useState(saved.plan || null);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const token = localStorage.getItem('token');
+  const [error, setError] = useState('');
+  const [done, setDone] = useState(saved.done || {});
 
-  function generatePlan() {
-    if (!goal.trim()) {
-      alert('Please enter your learning goal!');
-      return;
-    }
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const persist = (next) => { try { localStorage.setItem(STORE, JSON.stringify({ form, plan, done, ...next })); } catch {} };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.goal.trim()) { setError('Describe what you want to achieve.'); return; }
+    setError('');
     setLoading(true);
-    axios.post(
-      'http://localhost:5000/api/ai/study-plan',
-      { goal, hoursPerDay, daysPerWeek, currentLevel, skills },
-      { headers: { Authorization: 'Bearer ' + token } }
-    )
-      .then((res) => {
-        setPlan(res.data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }
+    try {
+      const r = await api.post('/ai/study-plan', form);
+      setPlan(r.data);
+      setDone({});
+      persist({ plan: r.data, done: {} });
+    } catch (err) {
+      setError(errorMessage(err, 'Could not create the plan. Please try again.'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const dayColors = ['#6366f1','#8b5cf6','#10b981','#f59e0b','#ef4444','#3b82f6','#ec4899'];
+  const toggle = (key) => {
+    const next = { ...done, [key]: !done[key] };
+    setDone(next);
+    persist({ done: next });
+  };
+
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(planToText(plan)); toast.success('Plan copied to clipboard'); }
+    catch { toast.error('Could not copy'); }
+  };
+
+  const tips = plan ? (Array.isArray(plan.tips) ? plan.tips : plan.tips ? String(plan.tips).split(/(?<=\.)\s+/).filter(Boolean) : []) : [];
+  const totalTasks = (plan?.weeklySchedule || []).reduce((n, d) => n + (d.tasks || []).length, 0);
+  const doneTasks = Object.values(done).filter(Boolean).length;
 
   return (
-    <div style={styles.page}>
-      <div style={styles.topNav}>
-        <button style={styles.backBtn} onClick={() => navigate('/dashboard')}>
-          ← Back
-        </button>
-        <h2 style={styles.navTitle}>📅 AI Study Planner</h2>
-        <div></div>
-      </div>
+    <>
+      <PageHeader title="Study planner" description="A weekly schedule built around your goal and the time you actually have." />
 
-      <div style={styles.container}>
-        <div style={styles.layout}>
-
-          {/* INPUT */}
-          <div style={styles.inputPanel}>
-            <h3 style={styles.panelTitle}>Plan Your Study Schedule</h3>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Learning Goal</label>
-              <textarea
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-                placeholder="e.g. Learn React and become a frontend developer"
-                rows={3}
-                style={styles.textarea}
-              />
+      <div className="split form-left">
+        <Card title="Your goal" className="sticky-top">
+          <form onSubmit={submit}>
+            {error && <div className="mb-2"><Alert tone="danger" onClose={() => setError('')}>{error}</Alert></div>}
+            <Field label="What do you want to achieve?">
+              <Textarea rows={3} value={form.goal} onChange={set('goal')} placeholder="Become job-ready in test automation with Python and Selenium" />
+            </Field>
+            <Field label="What you already know" optional>
+              <Input value={form.skills} onChange={set('skills')} placeholder="Basic Python, manual testing" />
+            </Field>
+            <Field label="Level">
+              <Segmented value={form.currentLevel} onChange={(v) => setForm({ ...form, currentLevel: v })} options={[{ value: 'beginner', label: 'Beginner' }, { value: 'intermediate', label: 'Intermediate' }, { value: 'advanced', label: 'Advanced' }]} />
+            </Field>
+            <div className="form-grid mt-2">
+              <Field label="Hours per day">
+                <Select value={form.hoursPerDay} onChange={set('hoursPerDay')}>
+                  {['1', '2', '3', '4', '5', '6', '8', '10'].map((h) => <option key={h} value={h}>{h} hour{h === '1' ? '' : 's'}</option>)}
+                </Select>
+              </Field>
+              <Field label="Days per week">
+                <Select value={form.daysPerWeek} onChange={set('daysPerWeek')}>
+                  {['3', '4', '5', '6', '7'].map((d) => <option key={d} value={d}>{d} days</option>)}
+                </Select>
+              </Field>
             </div>
+            <Field label="Total length" optional className="mt-2">
+              <Input value={form.weeks} onChange={set('weeks')} placeholder="e.g. 12 (weeks)" inputMode="numeric" />
+            </Field>
+            <Button type="submit" variant="primary" block loading={loading} icon="calendar" className="mt-3">{plan ? 'Rebuild plan' : 'Build my plan'}</Button>
+          </form>
+        </Card>
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Current Skills</label>
-              <textarea
-                value={skills}
-                onChange={(e) => setSkills(e.target.value)}
-                placeholder="e.g. HTML, CSS, basic JavaScript"
-                rows={2}
-                style={styles.textarea}
-              />
-            </div>
+        <div className="stack-lg">
+          {loading && !plan && <Card><div className="loading-block"><Spinner /> Building your schedule…</div></Card>}
+          {!loading && !plan && <Card><EmptyState icon="calendar" title="Your plan will appear here" description="Tell us your goal and how much time you have. Takes about 10 seconds." /></Card>}
 
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Current Level</label>
-              <select
-                value={currentLevel}
-                onChange={(e) => setCurrentLevel(e.target.value)}
-                style={styles.select}
-              >
-                <option value="beginner">Beginner</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="advanced">Advanced</option>
-              </select>
-            </div>
-
-            <div style={styles.row}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Hours Per Day</label>
-                <select
-                  value={hoursPerDay}
-                  onChange={(e) => setHoursPerDay(e.target.value)}
-                  style={styles.select}
-                >
-                  {['1','2','3','4','5','6'].map((h) => (
-                    <option key={h} value={h}>{h} hours</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Days Per Week</label>
-                <select
-                  value={daysPerWeek}
-                  onChange={(e) => setDaysPerWeek(e.target.value)}
-                  style={styles.select}
-                >
-                  {['3','4','5','6','7'].map((d) => (
-                    <option key={d} value={d}>{d} days</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <button
-              style={loading ? styles.loadingBtn : styles.planBtn}
-              onClick={generatePlan}
-              disabled={loading}
-            >
-              {loading ? '📅 Generating Plan...' : '📅 Generate Study Plan'}
-            </button>
-          </div>
-
-          {/* RESULT */}
-          <div style={styles.resultPanel}>
-            {!plan && !loading && (
-              <div style={styles.emptyState}>
-                <div style={{ fontSize: '56px', marginBottom: '16px' }}>📅</div>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: '700', color: '#f1f5f9' }}>
-                  AI Study Planner
-                </h3>
-                <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.7' }}>
-                  Get a personalized weekly study schedule based on your goals,
-                  available time, and current skill level.
-                </p>
-              </div>
-            )}
-
-            {loading && (
-              <div style={styles.emptyState}>
-                <div style={{ fontSize: '56px', marginBottom: '16px' }}>🤖</div>
-                <p style={{ color: '#94a3b8', fontSize: '16px' }}>Creating your personalized plan...</p>
-              </div>
-            )}
-
-            {plan && (
-              <div style={{ padding: '24px' }}>
-                <div style={styles.planHeader}>
-                  <div>
-                    <h3 style={styles.planTitle}>{plan.title}</h3>
-                    <p style={styles.planMeta}>
-                      ⏱ {plan.totalDuration} &nbsp;|&nbsp;
-                      📚 {hoursPerDay} hrs/day &nbsp;|&nbsp;
-                      📅 {daysPerWeek} days/week
-                    </p>
+          {plan && (
+            <div className="stack-lg fade-in" style={{ opacity: loading ? 0.6 : 1, transition: 'opacity var(--dur)' }}>
+              <Card>
+                <div className="row-between row-wrap" style={{ alignItems: 'flex-start' }}>
+                  <div className="grow">
+                    <h2 style={{ fontSize: 18 }}>{plan.title}</h2>
+                    <div className="row row-wrap mt-1" style={{ gap: 6 }}>
+                      {plan.totalDuration && <Badge><Icon name="clock" size={11} /> {plan.totalDuration}</Badge>}
+                      <Badge>{form.hoursPerDay}h × {form.daysPerWeek} days / week</Badge>
+                      {totalTasks > 0 && <Badge tone={doneTasks === totalTasks ? 'success' : 'accent'}>{doneTasks}/{totalTasks} done this week</Badge>}
+                    </div>
+                  </div>
+                  <div className="row no-print" style={{ gap: 6 }}>
+                    <Button size="sm" icon="copy" onClick={copy}>Copy</Button>
+                    <Button size="sm" icon="print" onClick={() => window.print()}>Print</Button>
                   </div>
                 </div>
+                {plan.overview && <p className="mt-2">{plan.overview}</p>}
+              </Card>
 
-                {plan.overview && (
-                  <p style={styles.overview}>{plan.overview}</p>
-                )}
-
-                <h4 style={styles.weeklyTitle}>Weekly Schedule</h4>
-                <div style={styles.weekGrid}>
-                  {(plan.weeklySchedule || []).map((day, i) => (
-                    <div key={i} style={{
-                      ...styles.dayCard,
-                      borderTop: '3px solid ' + dayColors[i % dayColors.length],
-                    }}>
-                      <p style={{
-                        ...styles.dayName,
-                        color: dayColors[i % dayColors.length],
-                      }}>
-                        {day.day}
-                      </p>
-                      <p style={styles.dayTopic}>{day.topic}</p>
-                      <p style={styles.dayTime}>{day.duration}</p>
-                      {day.tasks && (
-                        <ul style={styles.dayTasks}>
-                          {day.tasks.map((task, j) => (
-                            <li key={j} style={styles.dayTask}>{task}</li>
-                          ))}
-                        </ul>
-                      )}
+              <Card title="Weekly schedule" description="Tick tasks off as you go — progress is saved on this device." pad={false}>
+                <div className="list">
+                  {(plan.weeklySchedule || []).map((d, i) => (
+                    <div key={i} className="list-row" style={{ alignItems: 'flex-start', padding: '16px 20px' }}>
+                      <div style={{ width: 92, flex: 'none' }}>
+                        <div style={{ fontWeight: 600 }}>{d.day}</div>
+                        <div className="tiny subtle">{d.duration}</div>
+                      </div>
+                      <div className="grow">
+                        <div style={{ fontWeight: 500 }}>{d.topic}</div>
+                        <div className="stack-sm mt-1">
+                          {(d.tasks || []).map((t, j) => {
+                            const key = `${i}-${j}`;
+                            return (
+                              <label key={key} className="checkbox small" style={{ color: done[key] ? 'var(--text-3)' : 'var(--text-2)', textDecoration: done[key] ? 'line-through' : 'none' }}>
+                                <input type="checkbox" checked={!!done[key]} onChange={() => toggle(key)} /> {t}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
+              </Card>
 
-                {plan.tips && (
-                  <div style={styles.tipsBox}>
-                    <h4 style={styles.tipsTitle}>💡 Study Tips</h4>
-                    <p style={styles.tipsText}>{plan.tips}</p>
+              {plan.milestones?.length > 0 && (
+                <Card title="Milestones">
+                  <div className="steps">
+                    {plan.milestones.map((m, i) => (
+                      <div key={i} className="step"><div className="step-num">{i + 1}</div><div><div className="tiny subtle">{m.week}</div><div style={{ color: 'var(--text)' }}>{m.goal}</div></div></div>
+                    ))}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                </Card>
+              )}
+
+              {tips.length > 0 && (
+                <Card title="Tips">
+                  <ul className="stack-sm" style={{ listStyle: 'none' }}>
+                    {tips.map((t, i) => <li key={i} className="row small" style={{ alignItems: 'flex-start', color: 'var(--text)' }}><Icon name="sparkles" size={14} className="text-accent" style={{ marginTop: 3 }} /> {t}</li>)}
+                  </ul>
+                </Card>
+              )}
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#0f172a',
-    fontFamily: "'Segoe UI', sans-serif",
-    color: '#e2e8f0',
-  },
-  topNav: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '14px 28px',
-    background: '#1e293b',
-    borderBottom: '1px solid #334155',
-    position: 'sticky',
-    top: 0,
-    zIndex: 100,
-  },
-  navTitle: {
-    margin: 0,
-    fontSize: '20px',
-    fontWeight: '700',
-    color: '#f1f5f9',
-  },
-  backBtn: {
-    background: 'transparent',
-    border: '1px solid #475569',
-    color: '#94a3b8',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-  },
-  container: {
-    padding: '32px 28px',
-    maxWidth: '1200px',
-    margin: '0 auto',
-  },
-  layout: {
-    display: 'grid',
-    gridTemplateColumns: '340px 1fr',
-    gap: '24px',
-  },
-  inputPanel: {
-    background: '#1e293b',
-    borderRadius: '14px',
-    padding: '24px',
-    border: '1px solid #334155',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-    height: 'fit-content',
-  },
-  panelTitle: {
-    margin: 0,
-    fontSize: '16px',
-    fontWeight: '700',
-    color: '#f1f5f9',
-  },
-    formGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-  },
-  label: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#94a3b8',
-  },
-  textarea: {
-    background: '#0f172a',
-    border: '1px solid #334155',
-    borderRadius: '8px',
-    padding: '10px 14px',
-    color: '#f1f5f9',
-    fontSize: '14px',
-    resize: 'vertical',
-    fontFamily: "'Segoe UI', sans-serif",
-    lineHeight: '1.6',
-  },
-  select: {
-    background: '#0f172a',
-    border: '1px solid #334155',
-    borderRadius: '8px',
-    padding: '10px 14px',
-    color: '#f1f5f9',
-    fontSize: '14px',
-    width: '100%',
-  },
-  row: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '12px',
-  },
-  planBtn: {
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    border: 'none',
-    color: '#fff',
-    padding: '12px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '15px',
-    fontWeight: '600',
-  },
-  loadingBtn: {
-    background: '#475569',
-    border: 'none',
-    color: '#fff',
-    padding: '12px',
-    borderRadius: '8px',
-    cursor: 'not-allowed',
-    fontSize: '15px',
-    fontWeight: '600',
-  },
-  resultPanel: {
-    background: '#1e293b',
-    borderRadius: '14px',
-    border: '1px solid #334155',
-    overflow: 'hidden',
-    minHeight: '400px',
-  },
-  emptyState: {
-    padding: '48px 32px',
-    textAlign: 'center',
-  },
-  planHeader: {
-    background: 'linear-gradient(135deg, #1e293b, #334155)',
-    borderRadius: '10px',
-    padding: '20px',
-    marginBottom: '16px',
-    border: '1px solid #475569',
-  },
-  planTitle: {
-    margin: '0 0 6px 0',
-    fontSize: '18px',
-    fontWeight: '800',
-    color: '#f1f5f9',
-  },
-  planMeta: {
-    margin: 0,
-    fontSize: '13px',
-    color: '#64748b',
-  },
-  overview: {
-    fontSize: '14px',
-    color: '#94a3b8',
-    lineHeight: '1.7',
-    margin: '0 0 20px 0',
-    padding: '14px',
-    background: '#0f172a',
-    borderRadius: '8px',
-    border: '1px solid #334155',
-  },
-  weeklyTitle: {
-    margin: '0 0 14px 0',
-    fontSize: '15px',
-    fontWeight: '700',
-    color: '#f1f5f9',
-  },
-  weekGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-    gap: '12px',
-    marginBottom: '20px',
-  },
-  dayCard: {
-    background: '#0f172a',
-    borderRadius: '10px',
-    padding: '14px',
-    border: '1px solid #334155',
-  },
-  dayName: {
-    margin: '0 0 6px 0',
-    fontSize: '13px',
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-  },
-  dayTopic: {
-    margin: '0 0 4px 0',
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#f1f5f9',
-    lineHeight: '1.4',
-  },
-  dayTime: {
-    margin: '0 0 8px 0',
-    fontSize: '11px',
-    color: '#64748b',
-  },
-  dayTasks: {
-    margin: 0,
-    paddingLeft: '16px',
-  },
-  dayTask: {
-    fontSize: '11px',
-    color: '#94a3b8',
-    marginBottom: '3px',
-    lineHeight: '1.4',
-  },
-  tipsBox: {
-    background: 'rgba(99,102,241,0.1)',
-    borderRadius: '10px',
-    padding: '16px',
-    border: '1px solid rgba(99,102,241,0.3)',
-  },
-  tipsTitle: {
-    margin: '0 0 8px 0',
-    fontSize: '14px',
-    fontWeight: '700',
-    color: '#a5b4fc',
-  },
-  tipsText: {
-    margin: 0,
-    fontSize: '13px',
-    color: '#94a3b8',
-    lineHeight: '1.7',
-  },
-};
+export default StudyPlanner;
