@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api, { errorMessage, getUser } from '../lib/api';
 import { PageHeader, Button, Icon, Avatar, Prose, Textarea } from '../components/ui';
 
@@ -21,6 +22,8 @@ function Chat() {
   const [loading, setLoading] = useState(false);
   const logRef = useRef(null);
   const inputRef = useRef(null);
+  const [params, setParams] = useSearchParams();
+  const sentQ = useRef(false);
 
   useEffect(() => {
     try { sessionStorage.setItem(STORE_KEY, JSON.stringify(messages.slice(-40))); } catch {}
@@ -53,6 +56,17 @@ function Chat() {
       inputRef.current?.focus();
     }
   };
+
+  // Start a conversation passed from another page (?q=…), once.
+  useEffect(() => {
+    const q = params.get('q');
+    if (q && !sentQ.current) {
+      sentQ.current = true;
+      setParams({}, { replace: true });
+      send(q);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onKey = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }

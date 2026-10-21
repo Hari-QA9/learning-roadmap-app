@@ -1,29 +1,39 @@
-// Insert a task. Some databases have a tasks.roadmap_id column and some don't,
-// so try with it first and fall back without it.
+// Insert a task. Optional columns (roadmap_id, task_type, est_minutes, details)
+// may not exist in every database, so any that are missing are dropped and the
+// insert is retried. What's learned is remembered for later inserts.
 const db = require('../db');
 
-let hasRoadmapId = null; // learned on first insert
+const missing = new Set();
 
-async function insertTask({ userId, roadmapId, moduleId, title, description = '', status = 'pending', dueDate = null, priority = 'medium', position = 0 }) {
-  const q = db.promise();
-  if (hasRoadmapId !== false && roadmapId) {
+async function insertTask({
+  userId, roadmapId, moduleId, title, description = '', status = 'pending', dueDate = null,
+  priority = 'medium', position = 0, taskType = null, estMinutes = null, details = null,
+}) {
+  const optional = {
+    roadmap_id: roadmapId || null,
+    task_type: taskType,
+    est_minutes: estMinutes,
+    details: details ? (typeof details === 'string' ? details : JSON.stringify(details)) : null,
+  };
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const cols = ['user_id', 'module_id', 'title', 'description', 'status', 'due_date', 'priority', 'position'];
+    const vals = [userId, moduleId, title, description, status, dueDate, priority, position];
+    for (const [c, v] of Object.entries(optional)) {
+      if (v !== null && v !== undefined && !missing.has(c)) { cols.push(c); vals.push(v); }
+    }
     try {
-      const [r] = await q.query(
-        'INSERT INTO tasks (user_id, roadmap_id, module_id, title, description, status, due_date, priority, position) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [userId, roadmapId, moduleId, title, description, status, dueDate, priority, position]
+      const [r] = await db.promise().query(
+        `INSERT INTO tasks (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
+        vals
       );
-      hasRoadmapId = true;
       return r;
     } catch (err) {
-      if (!/roadmap_id/i.test(err.message)) throw err;
-      hasRoadmapId = false;
+      const col = Object.keys(optional).find((c) => new RegExp(`\\b${c}\\b`, 'i').test(err.message));
+      if (!col || missing.has(col)) throw err;
+      missing.add(col);
     }
   }
-  const [r] = await q.query(
-    'INSERT INTO tasks (user_id, module_id, title, description, status, due_date, priority, position) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [userId, moduleId, title, description, status, dueDate, priority, position]
-  );
-  return r;
+  throw new Error('Could not insert task');
 }
 
 module.exports = { insertTask };

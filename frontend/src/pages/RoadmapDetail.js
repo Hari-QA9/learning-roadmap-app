@@ -4,8 +4,30 @@ import api, { errorMessage } from '../lib/api';
 import { useToast } from '../components/Toast';
 import {
   PageHeader, Button, Card, Badge, Icon, Input, Select, Tabs, Ring, Progress, EmptyState, Loading,
-  ConfirmDialog, Dropdown, Modal, Field, Textarea, Alert, formatDate,
+  ConfirmDialog, Dropdown, Modal, Field, Textarea, Alert, formatDate, parseDetails, formatMinutes,
 } from '../components/ui';
+import TaskDetail from '../components/TaskDetail';
+
+const TYPE_META = {
+  learn: { label: 'Learn', icon: 'book' },
+  practice: { label: 'Practice', icon: 'target' },
+  build: { label: 'Build', icon: 'wand' },
+  review: { label: 'Review', icon: 'refresh' },
+};
+
+function Collapsible({ title, icon, children, defaultOpen }) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  return (
+    <div style={{ borderTop: '1px solid var(--border)' }}>
+      <button onClick={() => setOpen((o) => !o)} className="row" style={{ width: '100%', padding: '12px 20px', background: 'none', border: 0, cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text)', fontSize: 13.5, fontWeight: 500 }}>
+        <Icon name={icon} size={15} style={{ color: 'var(--text-3)' }} />
+        <span className="grow" style={{ textAlign: 'left' }}>{title}</span>
+        <Icon name="chevronDown" size={15} style={{ color: 'var(--text-3)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform var(--dur)' }} />
+      </button>
+      {open && <div className="fade-in" style={{ padding: '0 20px 16px' }}>{children}</div>}
+    </div>
+  );
+}
 
 const NEXT_STATUS = { pending: 'in_progress', in_progress: 'done', done: 'pending' };
 const STATUS_LABEL = { pending: 'To do', in_progress: 'In progress', done: 'Done' };
@@ -82,6 +104,7 @@ function RoadmapDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [collapsed, setCollapsed] = useState({});
+  const [openTask, setOpenTask] = useState(null);
 
   const [showModule, setShowModule] = useState(false);
   const [moduleForm, setModuleForm] = useState({ title: '', description: '' });
@@ -133,6 +156,8 @@ function RoadmapDetail() {
   const isUnlocked = (i) => i === 0 || passed[modules[i - 1]?.id] === true;
   const moduleDone = (m) => { const t = tasks[m.id] || []; return t.length > 0 && t.every((x) => x.status === 'done'); };
   const allComplete = modules.length > 0 && modules.every((m) => moduleDone(m) && passed[m.id]);
+  const info = parseDetails(roadmap?.details);
+  const remainingMin = allTasks.filter((t) => t.status !== 'done').reduce((n, t) => n + (Number(t.est_minutes) || 0), 0);
 
   /* ---------- actions ---------- */
   const addModule = async (e) => {
@@ -267,6 +292,8 @@ function RoadmapDetail() {
               <div><div className="tiny subtle">Modules</div><div style={{ fontWeight: 600, fontSize: 18 }}>{modules.length}</div></div>
               <div><div className="tiny subtle">Tasks done</div><div style={{ fontWeight: 600, fontSize: 18 }}>{doneCount}<span className="subtle" style={{ fontWeight: 400 }}> / {allTasks.length}</span></div></div>
               <div><div className="tiny subtle">Assessments passed</div><div style={{ fontWeight: 600, fontSize: 18 }}>{modules.filter((m) => passed[m.id]).length}<span className="subtle" style={{ fontWeight: 400 }}> / {modules.length}</span></div></div>
+              {info.total_hours > 0 && <div><div className="tiny subtle">Total effort</div><div style={{ fontWeight: 600, fontSize: 18 }}>{info.total_hours}h{info.hours_per_week ? <span className="subtle" style={{ fontWeight: 400, fontSize: 13 }}> · {info.hours_per_week}h/week</span> : null}</div></div>}
+              {remainingMin > 0 && <div><div className="tiny subtle">Time left</div><div style={{ fontWeight: 600, fontSize: 18 }}>{formatMinutes(remainingMin)}</div></div>}
             </div>
             {(roadmap.goal || roadmap.duration) && (
               <div className="row row-wrap mt-2" style={{ gap: 8 }}>
@@ -296,6 +323,26 @@ function RoadmapDetail() {
         </div>
       </div>
 
+      {(info.outcomes?.length > 0 || info.prerequisites?.length > 0) && (
+        <div className="grid-2 mb-3" style={{ gridTemplateColumns: info.prerequisites?.length ? undefined : 'minmax(0, 1fr)' }}>
+          {info.outcomes?.length > 0 && (
+            <Card title="What you’ll be able to do">
+              <ul className="check-list">
+                {info.outcomes.map((o, i) => <li key={i}><Icon name="checkCircle" size={14} className="text-success" />{o}</li>)}
+              </ul>
+            </Card>
+          )}
+          {info.prerequisites?.length > 0 && (
+            <Card title="Before you start">
+              <ul className="check-list">
+                {info.prerequisites.map((o, i) => <li key={i}><Icon name="info" size={14} className="subtle" />{o}</li>)}
+              </ul>
+              {info.profile?.goal && <p className="small mt-2">Built for your goal: <strong>{info.profile.goal}</strong></p>}
+            </Card>
+          )}
+        </div>
+      )}
+
       {allComplete && (
         <div className="mb-3">
           <Alert tone="success">
@@ -307,7 +354,11 @@ function RoadmapDetail() {
       <Tabs
         value={tab}
         onChange={setTab}
-        tabs={[{ value: 'modules', label: `Modules (${modules.length})` }, { value: 'resources', label: `Resources (${resources.length})` }]}
+        tabs={[
+          { value: 'modules', label: `Modules (${modules.length})` },
+          ...(info.capstone ? [{ value: 'capstone', label: 'Capstone project' }] : []),
+          { value: 'resources', label: `Resources (${resources.length})` },
+        ]}
       />
 
       {tab === 'modules' && (
@@ -331,7 +382,11 @@ function RoadmapDetail() {
                   <div className="row grow" style={{ gap: 12 }}>
                     <Icon name="chevronDown" size={16} style={{ color: 'var(--text-3)', transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform var(--dur) var(--ease)' }} />
                     <div className="grow">
-                      <div className="tiny subtle">Module {i + 1}</div>
+                      <div className="tiny subtle">
+                        Module {i + 1}
+                        {parseDetails(m.details).week && <> · {parseDetails(m.details).week}</>}
+                        {parseDetails(m.details).est_hours && <> · ~{parseDetails(m.details).est_hours}h</>}
+                      </div>
                       <h2 className="truncate">{m.title}</h2>
                     </div>
                   </div>
@@ -355,17 +410,43 @@ function RoadmapDetail() {
                       </div>
                     )}
                     {m.description && <p className="small" style={{ padding: '12px 20px 0' }}>{m.description}</p>}
+                    {(() => {
+                      const md = parseDetails(m.details);
+                      if (!md.outcome && !md.objectives?.length && !md.key_concepts?.length) return null;
+                      return (
+                        <div style={{ padding: '12px 20px 4px' }} className="stack-sm">
+                          {md.outcome && <div className="small" style={{ color: 'var(--text)' }}><Icon name="target" size={13} className="text-accent" style={{ verticalAlign: '-2px' }} /> <strong>Outcome:</strong> {md.outcome}</div>}
+                          {md.objectives?.length > 0 && (
+                            <ul className="check-list" style={{ marginTop: 4 }}>
+                              {md.objectives.map((o, k) => <li key={k} className="small"><Icon name="check" size={13} className="subtle" />{o}</li>)}
+                            </ul>
+                          )}
+                          {md.key_concepts?.length > 0 && (
+                            <div className="chip-row" style={{ marginTop: 4 }}>
+                              {md.key_concepts.map((c, k) => <span key={k} className="badge">{c}</span>)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {list.length === 0 ? (
                       <p className="small subtle" style={{ padding: '16px 20px' }}>No tasks yet{unlocked ? ' — add one below.' : '.'}</p>
                     ) : (
                       <div className="list" style={{ marginTop: 8 }}>
-                        {list.map((t) => (
-                          <div key={t.id} className="list-row task-row" style={{ padding: '10px 20px' }}>
-                            <StatusButton status={t.status} disabled={!unlocked} onClick={() => cycleStatus(t, m.id)} />
+                        {list.map((t) => {
+                          const isOpen = openTask === t.id;
+                          const meta = TYPE_META[t.task_type];
+                          const hasMore = !!(t.description || t.details);
+                          return (
+                          <React.Fragment key={t.id}>
+                          <div className={`list-row task-row ${isOpen ? 'open' : ''}`} style={{ padding: '10px 20px', cursor: 'pointer' }} onClick={() => setOpenTask(isOpen ? null : t.id)}>
+                            <span onClick={(e) => e.stopPropagation()}><StatusButton status={t.status} disabled={!unlocked} onClick={() => cycleStatus(t, m.id)} /></span>
                             <div className="grow">
                               <div style={{ color: t.status === 'done' ? 'var(--text-3)' : 'var(--text)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>{t.title}</div>
                               <div className="row row-wrap tiny mt-1" style={{ gap: 8 }}>
+                                {meta && <span className={`type-${t.task_type}`}><Icon name={meta.icon} size={11} style={{ verticalAlign: '-1px' }} /> {meta.label}</span>}
+                                {t.est_minutes > 0 && <span className="subtle"><Icon name="clock" size={11} style={{ verticalAlign: '-1px' }} /> {formatMinutes(t.est_minutes)}</span>}
                                 {t.status === 'in_progress' && <span className="text-warning">In progress</span>}
                                 {t.due_date && (
                                   <span className={isOverdue(t.due_date, t.status) ? 'text-danger' : 'subtle'}>
@@ -375,13 +456,48 @@ function RoadmapDetail() {
                               </div>
                             </div>
                             {t.priority && t.priority !== 'medium' && <Badge tone={PRIORITY_TONE[t.priority]}>{t.priority === 'high' ? 'High' : 'Low'}</Badge>}
-                            <Button variant="ghost" size="sm" icon="trash" aria-label="Delete task" onClick={() => setConfirm({ kind: 'task', item: t, moduleId: m.id })} />
+                            <Button variant="ghost" size="sm" icon="trash" aria-label="Delete task" onClick={(e) => { e.stopPropagation(); setConfirm({ kind: 'task', item: t, moduleId: m.id }); }} />
+                            <Icon name="chevronDown" size={15} style={{ color: hasMore ? 'var(--text-3)' : 'transparent', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform var(--dur)' }} />
                           </div>
-                        ))}
+                          {isOpen && (
+                            <TaskDetail
+                              task={t}
+                              onExplained={(taskId, explanation) => setTasks((p) => ({ ...p, [m.id]: (p[m.id] || []).map((x) => (x.id === taskId ? { ...x, details: JSON.stringify({ ...parseDetails(x.details), explanation }) } : x)) }))}
+                            />
+                          )}
+                          </React.Fragment>
+                          );
+                        })}
                       </div>
                     )}
 
                     {unlocked && <AddTaskRow onAdd={(d) => addTask(m.id, d)} />}
+
+                    {(() => {
+                      const md = parseDetails(m.details);
+                      return (
+                        <>
+                          {md.project && (
+                            <Collapsible title={`Mini-project: ${md.project.title}`} icon="wand" defaultOpen={complete && !ok}>
+                              <p className="small" style={{ color: 'var(--text)' }}>{md.project.brief}</p>
+                              {md.project.requirements?.length > 0 && (<><div className="tiny subtle mt-2 mb-1" style={{ fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' }}>Requirements</div><ul className="check-list">{md.project.requirements.map((r, k) => <li key={k}><Icon name="check" size={13} className="text-success" />{r}</li>)}</ul></>)}
+                              {md.project.stretch?.length > 0 && (<><div className="tiny subtle mt-2 mb-1" style={{ fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' }}>Stretch goals</div><ul className="check-list">{md.project.stretch.map((r, k) => <li key={k}><Icon name="sparkles" size={13} className="text-accent" />{r}</li>)}</ul></>)}
+                            </Collapsible>
+                          )}
+                          {md.interview_questions?.length > 0 && (
+                            <Collapsible title="Interview questions" icon="briefcase">
+                              <ol className="small" style={{ paddingLeft: 18, color: 'var(--text)' }}>{md.interview_questions.map((q, k) => <li key={k} style={{ margin: '4px 0' }}>{q}</li>)}</ol>
+                              <Button size="sm" icon="message" className="mt-2" onClick={() => navigate(`/chat?q=${encodeURIComponent(`Give me model answers to these interview questions about ${m.title}:\n${md.interview_questions.join('\n')}`)}`)}>Get model answers</Button>
+                            </Collapsible>
+                          )}
+                          {md.common_mistakes?.length > 0 && (
+                            <Collapsible title="Common mistakes to avoid" icon="alert">
+                              <ul className="check-list">{md.common_mistakes.map((c, k) => <li key={k}><Icon name="x" size={13} className="text-danger" />{c}</li>)}</ul>
+                            </Collapsible>
+                          )}
+                        </>
+                      );
+                    })()}
 
                     {unlocked && complete && !ok && (
                       <div className="card-foot" style={{ justifyContent: 'space-between' }}>
@@ -397,6 +513,30 @@ function RoadmapDetail() {
             );
           })}
         </div>
+      )}
+
+      {tab === 'capstone' && info.capstone && (
+        <Card title={info.capstone.title} description="Your portfolio project — it proves you’ve met the goal.">
+          <p style={{ color: 'var(--text)', fontSize: 15, lineHeight: 1.65 }}>{info.capstone.brief}</p>
+          <div className="grid-2 mt-3">
+            {info.capstone.features?.length > 0 && (
+              <div className="callout">
+                <div className="label mb-2">Must-have features</div>
+                <ul className="check-list">{info.capstone.features.map((f, k) => <li key={k}><Icon name="check" size={13} className="text-success" />{f}</li>)}</ul>
+              </div>
+            )}
+            {info.capstone.stretch?.length > 0 && (
+              <div className="callout">
+                <div className="label mb-2">Stretch goals</div>
+                <ul className="check-list">{info.capstone.stretch.map((f, k) => <li key={k}><Icon name="sparkles" size={13} className="text-accent" />{f}</li>)}</ul>
+              </div>
+            )}
+          </div>
+          {info.capstone.showcase && <div className="mt-3"><Alert tone="info"><strong>Show it off:</strong> {info.capstone.showcase}</Alert></div>}
+          <div className="row mt-3">
+            <Button icon="message" onClick={() => navigate(`/chat?q=${encodeURIComponent(`Help me plan the architecture and first steps for my capstone project: ${info.capstone.title}. ${info.capstone.brief}`)}`)}>Plan it with AI</Button>
+          </div>
+        </Card>
       )}
 
       {tab === 'resources' && (

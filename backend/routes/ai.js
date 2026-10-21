@@ -4,67 +4,93 @@ const db = require('../db');
 const auth = require('../middleware/auth');
 const { generateJSON, getModel, sendAIError } = require('../lib/gemini');
 const { insertTask } = require('../lib/tasks');
+const { generateRoadmap } = require('../lib/roadmapAI');
 
 const q = () => db.promise();
 const soft = (p) => p.catch((e) => console.log('[ai] skipped:', e.message));
 
-// GENERATE ROADMAP — creates the roadmap, modules, tasks and resources
-router.post('/generate', auth, async (req, res) => {
-  const { topic, duration, level } = req.body;
-  if (!topic || !topic.trim()) return res.status(400).json({ message: 'Topic is required' });
+// Insert a row; if an optional column doesn't exist in this database yet, retry without it.
+async function insertOptional(table, base, optional) {
+  const cols = { ...base, ...optional };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const keys = Object.keys(cols);
+    try {
+      const [r] = await q().query(`INSERT INTO ${table} (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`, keys.map((k) => cols[k]));
+      return r;
+    } catch (err) {
+      const bad = Object.keys(optional).find((k) => k in cols && new RegExp(`\\b${k}\\b`, 'i').test(err.message));
+      if (!bad) throw err;
+      delete cols[bad];
+    }
+  }
+  throw new Error(`Could not insert into ${table}`);
+}
 
-  let data;
+// GENERATE ROADMAP — personalised, two-pass, saved with full details
+router.post('/generate', auth, async (req, res) => {
+  const b = req.body || {};
+  const topic = String(b.topic || '').trim();
+  if (!topic) return res.status(400).json({ message: 'Topic is required' });
+  const profile = {
+    topic,
+    goal: String(b.goal || '').trim(),
+    level: b.level || 'beginner',
+    background: String(b.background || '').trim(),
+    hoursPerWeek: Math.min(60, Math.max(1, parseInt(b.hoursPerWeek, 10) || 6)),
+    duration: b.duration || '4 weeks',
+    style: b.style || '',
+  };
+
+  let result;
   try {
-    data = await generateJSON(`Create a practical learning roadmap for "${topic.trim()}".
-Duration: ${duration || '4 weeks'}. Learner level: ${level || 'beginner'}.
-Use 4-7 modules, each with 3-5 concrete tasks. Include 4-8 genuinely free resources with real, well-known URLs
-(official docs, freeCodeCamp, MDN, YouTube channels, Coursera audit, etc.).
-Return JSON with exactly this shape:
-{
-  "title": "string",
-  "description": "one or two sentences",
-  "goal": "one sentence outcome",
-  "modules": [ { "title": "string", "description": "string", "tasks": [ { "title": "string", "description": "string" } ] } ],
-  "resources": [ { "title": "string", "url": "https://...", "type": "video|article|course|docs" } ]
-}`);
+    result = await generateRoadmap(profile);
   } catch (err) {
     return sendAIError(res, err, 'Could not generate the roadmap. Please try again.');
   }
 
+  const { plan, details } = result;
   try {
-    const modules = Array.isArray(data.modules) ? data.modules : [];
-    const resources = Array.isArray(data.resources) ? data.resources : [];
-
-    const [r] = await q().query(
-      'INSERT INTO roadmaps (user_id, title, description, goal, duration, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [req.user.id, data.title || `${topic} roadmap`, data.description || '', data.goal || '', duration || '4 weeks', 'active']
+    const totalHours = plan.modules.reduce((n, m) => n + (m.est_hours || 0), 0);
+    const r = await insertOptional('roadmaps',
+      { user_id: req.user.id, title: plan.title, description: plan.description, goal: plan.goal, duration: profile.duration, status: 'active' },
+      { details: JSON.stringify({
+        version: 2, profile, outcomes: plan.outcomes, prerequisites: plan.prerequisites,
+        capstone: plan.capstone, total_hours: totalHours, hours_per_week: profile.hoursPerWeek,
+      }) }
     );
     const roadmapId = r.insertId;
 
-    for (let i = 0; i < modules.length; i++) {
-      const mod = modules[i] || {};
-      const [m] = await q().query(
-        'INSERT INTO modules (roadmap_id, title, description, order_index, position) VALUES (?, ?, ?, ?, ?)',
-        [roadmapId, mod.title || `Module ${i + 1}`, mod.description || '', i, i]
+    for (let i = 0; i < plan.modules.length; i++) {
+      const mod = plan.modules[i];
+      const d = details[i] || { tasks: [] };
+      const m = await insertOptional('modules',
+        { roadmap_id: roadmapId, title: mod.title, description: mod.summary, order_index: i, position: i },
+        { details: JSON.stringify({
+          outcome: mod.outcome, est_hours: mod.est_hours, week: mod.week,
+          objectives: d.objectives, key_concepts: d.key_concepts, project: d.project,
+          interview_questions: d.interview_questions, common_mistakes: d.common_mistakes,
+        }) }
       );
-      const tasks = Array.isArray(mod.tasks) ? mod.tasks : [];
-      for (let j = 0; j < tasks.length; j++) {
-        const t = typeof tasks[j] === 'string' ? { title: tasks[j] } : tasks[j] || {};
-        await insertTask({ userId: req.user.id, roadmapId, moduleId: m.insertId, title: t.title || `Task ${j + 1}`, description: t.description || '', position: j });
+      for (let j = 0; j < d.tasks.length; j++) {
+        const t = d.tasks[j];
+        await insertTask({
+          userId: req.user.id, roadmapId, moduleId: m.insertId, title: t.title, description: t.instructions,
+          position: j, taskType: t.type, estMinutes: t.est_minutes,
+          details: { steps: t.steps, done_when: t.done_when, resources: t.resources },
+        });
       }
     }
 
-    for (let k = 0; k < resources.length; k++) {
-      const res0 = resources[k] || {};
+    for (const res0 of plan.resources) {
       await soft(q().query(
         'INSERT INTO resources (roadmap_id, title, url, type, is_free) VALUES (?, ?, ?, ?, ?)',
-        [roadmapId, res0.title || `Resource ${k + 1}`, res0.url || '', res0.type || 'article', 1]
+        [roadmapId, res0.title, res0.url, res0.type, 1]
       ));
     }
 
     await soft(q().query('UPDATE user_stats SET xp_points = xp_points + 30 WHERE user_id = ?', [req.user.id]));
     await soft(q().query('INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)', [req.user.id, 'AI Generated Roadmap', `Generated roadmap for: ${topic}`]));
-    await soft(q().query('INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)', [req.user.id, 'Roadmap ready', `Your AI roadmap for ${topic} is ready.`]));
+    await soft(q().query('INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)', [req.user.id, 'Roadmap ready', `Your AI roadmap “${plan.title}” is ready.`]));
     for (const badgeId of [1, 3]) {
       await soft((async () => {
         const [has] = await q().query('SELECT id FROM user_badges WHERE user_id = ? AND badge_id = ?', [req.user.id, badgeId]);
@@ -72,10 +98,67 @@ Return JSON with exactly this shape:
       })());
     }
 
-    res.json({ message: 'Roadmap generated successfully', roadmapId, data });
+    res.json({
+      message: 'Roadmap generated successfully',
+      roadmapId,
+      data: {
+        title: plan.title, description: plan.description, goal: plan.goal, outcomes: plan.outcomes,
+        total_hours: totalHours, capstone: plan.capstone,
+        modules: plan.modules.map((m, i) => ({ ...m, tasks: (details[i]?.tasks || []).map((t) => ({ title: t.title, type: t.type, est_minutes: t.est_minutes })) })),
+        resources: plan.resources,
+      },
+    });
   } catch (err) {
     console.error('AI roadmap save error:', err.message);
     res.status(500).json({ message: 'The roadmap was generated but could not be saved.' });
+  }
+});
+
+// EXPLAIN A TASK — a mini lesson for one task, cached on the task
+router.post('/explain-task/:taskId', auth, async (req, res) => {
+  try {
+    const [rows] = await q().query(
+      `SELECT t.*, m.title AS module_title, r.title AS roadmap_title, r.details AS roadmap_details
+       FROM tasks t JOIN modules m ON m.id = t.module_id JOIN roadmaps r ON r.id = m.roadmap_id
+       WHERE t.id = ? AND r.user_id = ?`,
+      [req.params.taskId, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ message: 'Task not found' });
+    const t = rows[0];
+    let details = {};
+    try { details = t.details ? JSON.parse(t.details) : {}; } catch (e) { details = {}; }
+    if (details.explanation && !req.body?.refresh) return res.json({ explanation: details.explanation, cached: true });
+
+    let level = 'beginner';
+    try { level = JSON.parse(t.roadmap_details || '{}').profile?.level || level; } catch (e) { /* ignore */ }
+
+    const explanation = (await getModel({
+      system: 'You are a patient senior engineer teaching one concept at a time. Use clear headings, short paragraphs, bullet lists and small code blocks where useful. Be concrete and accurate.',
+    }).generateContent(`Teach me this task from my learning roadmap.
+
+Roadmap: ${t.roadmap_title}
+Module: ${t.module_title}
+Task: ${t.title}
+${t.description ? `Details: ${t.description}` : ''}
+My level: ${level}
+
+Structure your answer exactly like this:
+## The idea
+(plain-language explanation, 1-2 short paragraphs)
+## Example
+(a small, realistic worked example — code if relevant)
+## Try it yourself
+(one practice exercise with a hint)
+## Common mistakes
+(2-4 bullets)
+## Check your understanding
+(2-3 quick questions)`)).response.text();
+
+    details.explanation = explanation;
+    await soft(q().query('UPDATE tasks SET details = ? WHERE id = ?', [JSON.stringify(details), t.id]));
+    res.json({ explanation });
+  } catch (err) {
+    sendAIError(res, err, 'Could not explain this task right now. Please try again.');
   }
 });
 

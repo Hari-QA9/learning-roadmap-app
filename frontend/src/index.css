@@ -516,6 +516,27 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 20px 0; }
 .prose p { color: var(--text); margin: 8px 0; }
 .prose ul, .prose ol { padding-left: 20px; margin: 8px 0; }
 .prose li { margin: 4px 0; }
+.prose h3:first-child { margin-top: 0; }
+.inline-code { font-family: var(--font-mono); font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 5px; }
+.code-block { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 10px 0; white-space: pre; }
+.msg.user .inline-code { background: rgba(255,255,255,.15); border-color: transparent; }
+
+/* ---------- Roadmap task details ---------- */
+.task-row.open { background: var(--surface-2); }
+.task-detail { padding: 4px 20px 18px 54px; background: var(--surface-2); border-top: 0; }
+.task-detail .section-label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); margin: 14px 0 6px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.type-learn { color: var(--accent-text); }
+.type-practice { color: var(--warning); }
+.type-build { color: var(--success); }
+.type-review { color: var(--text-2); }
+.kv { display: flex; gap: 20px; flex-wrap: wrap; }
+.kv > div .tiny { margin-bottom: 2px; }
+.check-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.check-list li { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; color: var(--text); }
+.check-list li svg { margin-top: 3px; flex: none; }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius); padding: 14px 16px; }
+@media (max-width: 620px) { .task-detail { padding-left: 20px; } }
 
 /* ---------- Timeline / steps ---------- */
 .steps { display: flex; flex-direction: column; }
