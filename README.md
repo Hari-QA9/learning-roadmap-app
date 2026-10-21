@@ -229,3 +229,14 @@ Create or use a personal feature branch (for example, feature/mission, feature/u
 Edit the README.md to contribute content, formatting, or references.
 
 Use clear commit messages such as Added target users section or Refined EPIC features.
+## Job board
+
+LearnMap pulls real job postings from free public APIs (Remotive, Arbeitnow, The Muse, and company boards on Greenhouse and Lever) every few hours. No API keys are needed.
+
+- **Matching:** each member sets target roles and skills (or they are read from their resume). Every job shows a match score, the skills you have, and the skills to learn.
+- **AI fit analysis:** an honest verdict, must-have gaps with how to close each one, and talking points.
+- **Application kit:** a tailored cover letter, resume bullets, ATS keywords and answers to common questions, written only from the member's real experience.
+- **Gap roadmap:** one click builds a 4-week roadmap for exactly the missing skills.
+- **Tracker:** Saved → Applied → Interviewing → Offer / Closed.
+
+Members always apply on the employer's own site; nothing is submitted automatically. Configure sources in `backend/.env` (see `.env.example`). AI features are rate-limited per member.

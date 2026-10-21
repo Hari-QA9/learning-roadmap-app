@@ -700,3 +700,57 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 20px 0; }
   .content { padding: 0 !important; max-width: none !important; }
   body { background: #fff !important; }
 }
+
+/* ---------- Job board ---------- */
+.section-label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); margin: 14px 0 6px; }
+.job-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.job-toolbar .input { min-width: 200px; flex: 1; }
+.job-row { padding: 14px 20px; align-items: flex-start; }
+.job-logo {
+  width: 38px; height: 38px; flex: none; border-radius: 10px; display: grid; place-items: center;
+  background: var(--surface-2); border: 1px solid var(--border); font-weight: 600; font-size: 15px; color: var(--text-2);
+}
+.job-title { font-weight: 500; color: var(--text); letter-spacing: -0.01em; }
+.match-pill {
+  flex: none; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  background: var(--surface-2); color: var(--text-2); font-variant-numeric: tabular-nums;
+}
+.match-pill span { font-weight: 400; opacity: .75; }
+.match-pill.success { background: var(--success-soft); color: var(--success); }
+.match-pill.accent { background: var(--accent-soft); color: var(--accent-text); }
+.match-pill.warning { background: var(--warning-soft); color: var(--warning); }
+.skill {
+  display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; line-height: 1; padding: 4px 8px; border-radius: 999px;
+  border: 1px solid var(--border); color: var(--text-2); background: var(--surface);
+}
+.skill.have { color: var(--success); border-color: color-mix(in srgb, var(--success) 30%, transparent); background: var(--success-soft); }
+.skill.gap { border-style: dashed; }
+.job-desc { white-space: pre-wrap; font-size: 14px; line-height: 1.65; color: var(--text); overflow-wrap: anywhere; }
+.job-desc.clamped { max-height: 360px; overflow: hidden; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+.job-desc.letter { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+.gap-item { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface); }
+.agent-cta { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.agent-cta p { max-width: 420px; }
+.steps-plain { list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 10px; }
+.steps-plain li { counter-increment: s; display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-2); }
+.steps-plain li::before {
+  content: counter(s); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  font-size: 11px; font-weight: 600; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2);
+}
+.steps-plain li.done { color: var(--text); }
+.steps-plain li.done::before { content: '✓'; background: var(--success); border-color: var(--success); color: #fff; }
+.kanban { display: grid; grid-template-columns: repeat(5, minmax(170px, 1fr)); gap: 14px; overflow-x: auto; padding-bottom: 6px; align-items: start; }
+.kanban-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.kanban-head { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; padding: 0 4px; }
+.kanban-card { padding: 12px 14px; }
+.kanban-empty { text-align: center; padding: 18px 0; border: 1px dashed var(--border); border-radius: 12px; }
+.select-sm { height: 30px; font-size: 12.5px; padding-top: 0; padding-bottom: 0; }
+.link-like { cursor: pointer; }
+.link-like:hover { color: var(--accent-text); }
+.clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 900px) { .kanban { grid-template-columns: repeat(5, minmax(220px, 80vw)); } }
+@media (max-width: 620px) {
+  .job-toolbar .input { flex: 1 1 100%; min-width: 0; }
+  .job-toolbar .select { max-width: none !important; flex: 1 1 0; min-width: 0; }
+  .job-row { padding: 14px 16px; }
+}

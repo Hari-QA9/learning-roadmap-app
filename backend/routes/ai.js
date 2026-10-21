@@ -5,6 +5,9 @@ const auth = require('../middleware/auth');
 const { generateJSON, getModel, sendAIError } = require('../lib/gemini');
 const { insertTask } = require('../lib/tasks');
 const { generateRoadmap } = require('../lib/roadmapAI');
+const rateLimit = require('../lib/rateLimit');
+const roadmapLimit = rateLimit({ max: 10, name: 'roadmaps' });
+const aiLimit = rateLimit({ max: 60, name: 'requests' });
 
 const q = () => db.promise();
 const soft = (p) => p.catch((e) => console.log('[ai] skipped:', e.message));
@@ -27,7 +30,7 @@ async function insertOptional(table, base, optional) {
 }
 
 // GENERATE ROADMAP — personalised, two-pass, saved with full details
-router.post('/generate', auth, async (req, res) => {
+router.post('/generate', auth, roadmapLimit, async (req, res) => {
   const b = req.body || {};
   const topic = String(b.topic || '').trim();
   if (!topic) return res.status(400).json({ message: 'Topic is required' });
@@ -115,7 +118,7 @@ router.post('/generate', auth, async (req, res) => {
 });
 
 // EXPLAIN A TASK — a mini lesson for one task, cached on the task
-router.post('/explain-task/:taskId', auth, async (req, res) => {
+router.post('/explain-task/:taskId', auth, aiLimit, async (req, res) => {
   try {
     const [rows] = await q().query(
       `SELECT t.*, m.title AS module_title, r.title AS roadmap_title, r.details AS roadmap_details
@@ -163,7 +166,7 @@ Structure your answer exactly like this:
 });
 
 // AI CHAT — accepts optional history: [{ role: 'user'|'assistant', content }]
-router.post('/chat', auth, async (req, res) => {
+router.post('/chat', auth, aiLimit, async (req, res) => {
   const { message, history } = req.body;
   if (!message || !message.trim()) return res.status(400).json({ message: 'Message is required' });
 
@@ -186,7 +189,7 @@ router.post('/chat', auth, async (req, res) => {
 });
 
 // CAREER ADVICE
-router.post('/career-advice', auth, async (req, res) => {
+router.post('/career-advice', auth, aiLimit, async (req, res) => {
   const { skills, experience, interests, education, location } = req.body;
   if (!skills || !skills.trim()) return res.status(400).json({ message: 'Please list at least one skill.' });
 
@@ -216,7 +219,7 @@ Give 3-5 roles sorted by match, 4-6 skill gaps, 5-8 companies, 3-5 next steps.`)
 });
 
 // STUDY PLAN
-router.post('/study-plan', auth, async (req, res) => {
+router.post('/study-plan', auth, aiLimit, async (req, res) => {
   const { goal, hoursPerDay, daysPerWeek, currentLevel, skills, weeks } = req.body;
   if (!goal || !goal.trim()) return res.status(400).json({ message: 'Please describe your goal.' });
   const days = Math.min(7, Math.max(1, parseInt(daysPerWeek, 10) || 5));

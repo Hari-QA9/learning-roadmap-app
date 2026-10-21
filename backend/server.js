@@ -25,6 +25,8 @@ const commentsRoutes = require('./routes/comments');
 const resumeRoutes = require('./routes/resume');
 const templateRoutes = require('./routes/templates');
 const evaluationRoutes = require('./routes/evaluation');
+const jobsRoutes = require('./routes/jobs');
+const applicationsRoutes = require('./routes/applications');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/roadmaps', roadmapRoutes);
@@ -43,6 +45,8 @@ app.use('/api/comments', commentsRoutes);
 app.use('/api/resume', resumeRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/evaluation', evaluationRoutes);
+app.use('/api/jobs', jobsRoutes);
+app.use('/api/applications', applicationsRoutes);
 
 app.get('/', (req, res) => res.send('Learning Roadmap API Running'));
 
@@ -52,4 +56,6 @@ app.listen(PORT, () => {
   // Add any new columns the app needs (only adds; never removes data).
   require('./lib/migrate')().catch((e) => console.warn('[migrate] skipped:', e.message));
   require('./lib/mailer').verifyMail();
+  // Keep the job board fresh (pulls public job APIs every few hours).
+  require('./lib/jobSources').scheduleJobRefresh();
 });

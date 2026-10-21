@@ -31,13 +31,16 @@ export const StudyPlanner = lazyPage(() => import('../pages/StudyPlanner'));
 export const ModuleEvaluation = lazyPage(() => import('../pages/ModuleEvaluation'));
 export const RoadmapEvaluation = lazyPage(() => import('../pages/RoadmapEvaluation'));
 export const Certificate = lazyPage(() => import('../pages/Certificate'));
+export const Jobs = lazyPage(() => import('../pages/Jobs'));
+export const JobDetail = lazyPage(() => import('../pages/JobDetail'));
+export const Applications = lazyPage(() => import('../pages/Applications'));
 
 // Path → page, used to preload on hover.
 export const PRELOAD = {
   '/dashboard': Dashboard, '/roadmaps': Roadmaps, '/templates': Templates, '/study-planner': StudyPlanner,
   '/quiz': Quiz, '/quiz-performance': QuizPerformance, '/certificates': Certificate, '/career-advisor': CareerAdvisor,
   '/resume-builder': ResumeBuilder, '/ai-generator': AIGenerator, '/chat': Chat, '/profile': Profile,
-  '/notifications': Notifications, '/feedback': Feedback, '/login': Login, '/signup': Signup,
+  '/notifications': Notifications, '/jobs': Jobs, '/applications': Applications, '/feedback': Feedback, '/login': Login, '/signup': Signup,
 };
 
 export function preload(path) {
@@ -47,7 +50,7 @@ export function preload(path) {
 
 /** After the first screen is up, quietly fetch every page so later clicks are instant. */
 export function preloadAllWhenIdle() {
-  const run = () => Object.values(PRELOAD).concat([RoadmapDetail]).forEach((p) => p.preload().catch(() => {}));
+  const run = () => Object.values(PRELOAD).concat([RoadmapDetail, JobDetail]).forEach((p) => p.preload().catch(() => {}));
   if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 4000 });
   else setTimeout(run, 2000);
 }
