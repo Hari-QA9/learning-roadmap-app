@@ -24,7 +24,6 @@ const LIBRARY = [
   R('scitable', 'Nature Scitable: genetics & cell biology', 'https://www.nature.com/scitable/', 'article', 'Nature', 'biology, genetics, cell biology, molecular biology, ecology'),
   R('ibiology', 'iBiology: talks by leading scientists', 'https://www.ibiology.org/', 'video', 'iBiology', 'biology, research, cell biology, microscopy, career in science'),
   R('amoeba', 'Amoeba Sisters (YouTube)', 'https://www.youtube.com/@AmoebaSisters', 'video', 'YouTube', 'biology, cell biology, genetics, microbiology'),
-  R('bozeman', 'Bozeman Science (YouTube)', 'https://www.youtube.com/@bozemanscience', 'video', 'YouTube', 'biology, chemistry, environmental science, ap'),
   R('addgene', 'Addgene protocols (molecular biology)', 'https://www.addgene.org/protocols/', 'docs', 'Addgene', 'pcr, cloning, plasmid, transfection, molecular biology, lab techniques, crispr, gel electrophoresis'),
   R('protocols-io', 'protocols.io: step-by-step lab protocols', 'https://www.protocols.io/', 'docs', 'protocols.io', 'lab techniques, lab protocols, cell culture, western blot, elisa, pcr, microscopy, research'),
   R('ncbi-books', 'NCBI Bookshelf (free biomedical textbooks)', 'https://www.ncbi.nlm.nih.gov/books/', 'book', 'NIH / NCBI', 'biology, biochemistry, molecular biology, medicine, genetics, immunology'),
