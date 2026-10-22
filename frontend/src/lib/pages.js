@@ -35,13 +35,15 @@ export const Jobs = lazyPage(() => import('../pages/Jobs'));
 export const JobDetail = lazyPage(() => import('../pages/JobDetail'));
 export const Applications = lazyPage(() => import('../pages/Applications'));
 export const Welcome = lazyPage(() => import('../pages/Welcome'));
+export const Interview = lazyPage(() => import('../pages/Interview'));
+export const InterviewSession = lazyPage(() => import('../pages/InterviewSession'));
 
 // Path → page, used to preload on hover.
 export const PRELOAD = {
   '/dashboard': Dashboard, '/roadmaps': Roadmaps, '/templates': Templates, '/study-planner': StudyPlanner,
   '/quiz': Quiz, '/quiz-performance': QuizPerformance, '/certificates': Certificate, '/career-advisor': CareerAdvisor,
   '/resume-builder': ResumeBuilder, '/ai-generator': AIGenerator, '/chat': Chat, '/profile': Profile,
-  '/notifications': Notifications, '/jobs': Jobs, '/applications': Applications, '/feedback': Feedback, '/login': Login, '/signup': Signup,
+  '/notifications': Notifications, '/jobs': Jobs, '/applications': Applications, '/interview': Interview, '/feedback': Feedback, '/login': Login, '/signup': Signup,
 };
 
 export function preload(path) {

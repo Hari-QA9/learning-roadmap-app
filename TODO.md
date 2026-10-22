@@ -93,6 +93,13 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Interviews & calendar
+- [ ] 🟠 Voice mock interviews: the AI reads questions aloud and you answer out loud (today: typed, or browser speech-to-text in Chrome/Edge/Safari).
+- [ ] 🟢 Two-way Google/Outlook calendar sync (today: a subscribe link + "Add to calendar" buttons).
+- [ ] 🟢 Thank-you email draft after an interview (AI, from the tracker).
+
+---
+
 ## Engagement (reminders & notifications)
 - [ ] 🔴 Set up email sending in production (SMTP or a provider like Postmark/SendGrid/Resend) and set `PUBLIC_API_URL` so unsubscribe links work — reminders and job alerts are in-app only until then.
 - [ ] 🟠 Push notifications to phones (needs the installable app from PR C + web push keys).
@@ -116,3 +123,4 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Resume builder v2: structured sections, live recruiter/ATS score, AI bullet rewrites, import, tailor-to-job versions, text-based PDF (PR #8)
 - [x] Works for every field: skills, job searches, templates, resume sections & Academic CV, field-aware AI, verified resource library (PR #9)
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
+- [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)

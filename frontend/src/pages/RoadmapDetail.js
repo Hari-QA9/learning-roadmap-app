@@ -208,6 +208,17 @@ function RoadmapDetail() {
     }
   };
 
+  const setDue = async (task, moduleId, due) => {
+    setTasks((p) => ({ ...p, [moduleId]: (p[moduleId] || []).map((t) => (t.id === task.id ? { ...t, due_date: due } : t)) }));
+    try {
+      await api.put(`/tasks/${task.id}`, { title: task.title, description: task.description || '', status: task.status, due_date: due, priority: task.priority || 'medium' });
+      if (due) toast.success('Due date set — you’ll get a reminder');
+    } catch (err) {
+      setTasks((p) => ({ ...p, [moduleId]: (p[moduleId] || []).map((t) => (t.id === task.id ? task : t)) }));
+      toast.error(errorMessage(err, 'Could not set the due date'));
+    }
+  };
+
   const addResource = async (e) => {
     e.preventDefault();
     if (!resourceForm.title.trim()) return;
@@ -464,6 +475,7 @@ function RoadmapDetail() {
                           {isOpen && (
                             <TaskDetail
                               task={t}
+                              onDueChange={(task, due) => setDue(task, m.id, due)}
                               onExplained={(taskId, explanation) => setTasks((p) => ({ ...p, [m.id]: (p[m.id] || []).map((x) => (x.id === taskId ? { ...x, details: JSON.stringify({ ...parseDetails(x.details), explanation }) } : x)) }))}
                             />
                           )}

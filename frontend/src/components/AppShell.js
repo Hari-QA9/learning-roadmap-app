@@ -23,6 +23,7 @@ export const NAV = [
     items: [
       { to: '/jobs', label: 'Job board', icon: 'briefcase' },
       { to: '/applications', label: 'Applications', icon: 'list' },
+      { to: '/interview', label: 'Mock interview', icon: 'message' },
       { to: '/career-advisor', label: 'Career advisor', icon: 'compass' },
       { to: '/resume-builder', label: 'Resume builder', icon: 'file' },
     ],

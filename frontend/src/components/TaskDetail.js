@@ -8,7 +8,7 @@ const RES_ICON = { video: 'video', docs: 'book', course: 'grad', practice: 'targ
 const isSearch = (r) => r.kind === 'search' || /google\.com\/search|youtube\.com\/results/.test(r.url || '');
 
 /** Expanded panel under a task: instructions, steps, done-when, resources, notes, AI explain. */
-export default function TaskDetail({ task, onExplained }) {
+export default function TaskDetail({ task, onExplained, onDueChange }) {
   const toast = useToast();
   const navigate = useNavigate();
   const d = parseDetails(task.details);
@@ -79,6 +79,12 @@ export default function TaskDetail({ task, onExplained }) {
       <div className="row row-wrap mt-2" style={{ gap: 8 }}>
         <Button size="sm" variant="primary" icon="sparkles" onClick={() => explain(false)}>Explain this</Button>
         <Button size="sm" icon="message" onClick={() => navigate(`/chat?q=${encodeURIComponent(`Help me with this task from my roadmap: ${task.title}. ${task.description || ''}`)}`)}>Ask AI</Button>
+        {onDueChange && (
+          <label className="due-input" title="Due date — you'll get a reminder, and it shows in your calendar">
+            <Icon name="calendar" size={13} />
+            <input type="date" value={task.due_date ? String(task.due_date).slice(0, 10) : ''} onChange={(e) => onDueChange(task, e.target.value || null)} aria-label="Due date" />
+          </label>
+        )}
       </div>
 
       {steps.length > 0 && (

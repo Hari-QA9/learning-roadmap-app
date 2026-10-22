@@ -9,7 +9,7 @@ import AppShell from './components/AppShell';
 import {
   Landing, Login, Signup, ForgotPassword, ResetPassword, Dashboard, Roadmaps, RoadmapDetail, AIGenerator,
   Profile, Notifications, Quiz, QuizPerformance, Feedback, Chat, ResumeBuilder, Templates, CareerAdvisor,
-  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, preloadAllWhenIdle,
+  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, Interview, InterviewSession, preloadAllWhenIdle,
 } from './lib/pages';
 
 function PrivateRoute({ children }) {
@@ -63,6 +63,8 @@ function App() {
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:id" element={<JobDetail />} />
               <Route path="/applications" element={<Applications />} />
+              <Route path="/interview" element={<Interview />} />
+              <Route path="/interview/:id" element={<InterviewSession />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

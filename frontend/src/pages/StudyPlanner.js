@@ -1,7 +1,8 @@
+import { downloadICS, studyPlanEvents } from '../lib/calendar';
 import React, { useState } from 'react';
 import api, { errorMessage } from '../lib/api';
 import { useToast } from '../components/Toast';
-import { PageHeader, Button, Card, Field, Input, Textarea, Select, Alert, Badge, Icon, EmptyState, Spinner, Segmented } from '../components/ui';
+import { PageHeader, Button, Card, Field, Input, Textarea, Select, Alert, Badge, Icon, EmptyState, Spinner, Segmented, Modal } from '../components/ui';
 
 const STORE = 'learnmap.studyplan';
 const load = () => { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } };
@@ -20,6 +21,8 @@ function planToText(plan) {
 function StudyPlanner() {
   const toast = useToast();
   const saved = load();
+  const [calOpen, setCalOpen] = useState(false);
+  const [calTime, setCalTime] = useState('19:00');
   const [form, setForm] = useState(saved.form || { goal: '', skills: '', currentLevel: 'beginner', hoursPerDay: '2', daysPerWeek: '5', weeks: '' });
   const [plan, setPlan] = useState(saved.plan || null);
   const [loading, setLoading] = useState(false);
@@ -115,6 +118,7 @@ function StudyPlanner() {
                     </div>
                   </div>
                   <div className="row no-print" style={{ gap: 6 }}>
+                    <Button size="sm" icon="calendar" onClick={() => setCalOpen(true)}>Add to calendar</Button>
                     <Button size="sm" icon="copy" onClick={copy}>Copy</Button>
                     <Button size="sm" icon="print" onClick={() => window.print()}>Print</Button>
                   </div>
@@ -169,6 +173,18 @@ function StudyPlanner() {
           )}
         </div>
       </div>
+      <Modal open={calOpen} onClose={() => setCalOpen(false)} title="Add study sessions to your calendar"
+        description="Each study day repeats weekly, with a reminder 15 minutes before."
+        footer={<><Button variant="ghost" onClick={() => setCalOpen(false)}>Cancel</Button><Button variant="primary" icon="download" onClick={() => {
+          const ev = studyPlanEvents(plan, { time: calTime, weeks: parseInt(form.weeks, 10) || parseInt(plan?.totalDuration, 10) || 8, hours: form.hoursPerDay });
+          downloadICS('learnmap-study-plan', ev, plan?.title || 'Study plan');
+          setCalOpen(false);
+        }}>Download calendar file</Button></>}>
+        <div className="stack">
+          <Field label="Start time"><Input type="time" value={calTime} onChange={(e) => setCalTime(e.target.value)} /></Field>
+          <p className="tiny subtle">Open the downloaded file to add it to Outlook or Apple Calendar. For Google Calendar: Settings → Import & export → Import, then pick the file.</p>
+        </div>
+      </Modal>
     </>
   );
 }

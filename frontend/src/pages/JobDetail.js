@@ -311,6 +311,7 @@ function JobDetail() {
               <li className={['applied', 'interviewing', 'offer'].includes(job.status) ? 'done' : ''}>Apply on the company site</li>
               <li className={['interviewing', 'offer'].includes(job.status) ? 'done' : ''}>Track it until you hear back</li>
             </ol>
+            <Button size="sm" className="mt-2" icon="message" onClick={() => navigate(`/interview?job=${job.id}`)}>Practice the interview</Button>
             <Button size="sm" variant="ghost" className="mt-2" iconRight="arrowRight" onClick={() => navigate('/applications')}>Open tracker</Button>
           </Card>
         </div>

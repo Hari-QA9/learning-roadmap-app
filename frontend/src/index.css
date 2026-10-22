@@ -887,3 +887,18 @@ label.setting-row { cursor: pointer; }
 .week-bar em { font-style: normal; font-size: 10px; color: var(--text-3); }
 .due-row { font: inherit; display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: 0; padding: 6px 0; cursor: pointer; border-top: 1px solid var(--border); }
 .due-row:first-child { border-top: 0; }
+
+/* ---------- Interviews ---------- */
+.interview-steps { display: flex; gap: 6px; flex-wrap: wrap; }
+.iv-step { font: inherit; font-size: 12px; font-weight: 600; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); cursor: pointer; display: grid; place-items: center; transition: all 150ms; }
+.iv-step.done { background: var(--success-soft); color: var(--success); border-color: transparent; }
+.iv-step.active { border-color: var(--accent); color: var(--accent-text); box-shadow: 0 0 0 3px var(--accent-soft); }
+.iv-question { font-size: 21px; line-height: 1.35; letter-spacing: -0.01em; margin-top: 12px; }
+.stars { color: #f5a623; letter-spacing: 1px; font-size: 15px; }
+.interview-chip { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 5px; font-size: 11.5px; line-height: 1.35; color: var(--accent-text); background: var(--accent-soft); border-radius: 8px; padding: 6px 8px; }
+.interview-chip .grow { flex: 1; min-width: 0; }
+.interview-chip .dropdown { flex-basis: 100%; padding-left: 17px; }
+.chip-btn { font: inherit; font-size: 11px; background: none; border: 0; color: var(--accent-text); text-decoration: underline; cursor: pointer; padding: 0; white-space: nowrap; }
+.link-btn { font-family: inherit; line-height: 1.4; text-align: left; background: none; border: 0; padding: 0; color: var(--accent-text); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.due-input { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font-size: 12.5px; cursor: pointer; }
+.due-input input { font: inherit; font-size: 12.5px; border: 0; background: transparent; color: var(--text); outline: none; }
