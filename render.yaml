@@ -20,8 +20,8 @@ services:
         value: "true"
       - key: APP_URL             # your Vercel site, e.g. https://learnmap.vercel.app
         sync: false
-      - key: PUBLIC_API_URL      # this service + /api, e.g. https://learnmap-api.onrender.com/api
-        sync: false
+      # PUBLIC_API_URL is optional on Render: the backend uses Render's own address automatically.
+      # Set it only if you put the API on a custom domain (e.g. https://api.learnmap.app/api).
       - key: GEMINI_API_KEY
         sync: false
       - key: BREVO_API_KEY

@@ -6,7 +6,11 @@ const db = require('../db');
 
 const q = () => db.promise();
 const APP_URL = () => (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
-const API_URL = () => (process.env.PUBLIC_API_URL || `http://localhost:${process.env.PORT || 5000}/api`).replace(/\/$/, '');
+const { publicApiUrl, isProd } = require('./security');
+// Signs unsubscribe links. Production always has JWT_SECRET (the server won't start without it);
+// the fallback only exists so local development works before .env is filled in.
+const signingKey = () => process.env.JWT_SECRET || (isProd() ? (() => { throw new Error('JWT_SECRET missing'); })() : 'local-dev-only');
+const API_URL = publicApiUrl;
 
 /* ---------- Settings ---------- */
 const DEFAULTS = {
@@ -89,7 +93,7 @@ async function notify(userId, { title, message, link = null, type = null }) {
 }
 
 /* ---------- Email unsubscribe links ---------- */
-const sign = (userId, type) => crypto.createHmac('sha256', process.env.JWT_SECRET || 'learnmap').update(`${userId}:${type}`).digest('hex').slice(0, 32);
+const sign = (userId, type) => crypto.createHmac('sha256', signingKey()).update(`${userId}:${type}`).digest('hex').slice(0, 32);
 const unsubscribeUrl = (userId, type) => `${API_URL()}/settings/unsubscribe?u=${userId}&t=${encodeURIComponent(type)}&k=${sign(userId, type)}`;
 const validUnsubscribe = (userId, type, key) => EMAIL_TYPES.includes(type) && typeof key === 'string' && key.length === 32 && crypto.timingSafeEqual(Buffer.from(sign(userId, type)), Buffer.from(key));
 

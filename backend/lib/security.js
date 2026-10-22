@@ -38,6 +38,15 @@ function corsMiddleware() {
   });
 }
 
+/**
+ * The backend's public address + /api, used in emails (unsubscribe links) and the calendar feed.
+ * PUBLIC_API_URL wins; on Render, its automatic RENDER_EXTERNAL_URL is used if that's not set.
+ */
+function publicApiUrl() {
+  const fromRender = process.env.RENDER_EXTERNAL_URL ? `${process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '')}/api` : '';
+  return (process.env.PUBLIC_API_URL || fromRender || `http://localhost:${process.env.PORT || 5000}/api`).replace(/\/$/, '');
+}
+
 /** Stop with a clear message if production is missing settings it can't run safely without. */
 function checkProductionConfig() {
   if (!isProd()) {
@@ -52,8 +61,8 @@ function checkProductionConfig() {
     console.error(`\n[config] The backend can't start in production yet:\n - ${problems.join('\n - ')}\n`);
     process.exit(1);
   }
-  if (!process.env.PUBLIC_API_URL) console.warn('[config] PUBLIC_API_URL is not set — email unsubscribe links and the calendar feed will point at localhost.');
+  if (!process.env.PUBLIC_API_URL && !process.env.RENDER_EXTERNAL_URL) console.warn('[config] PUBLIC_API_URL is not set — email unsubscribe links and the calendar feed will point at localhost.');
   if (!process.env.GEMINI_API_KEY) console.warn('[config] GEMINI_API_KEY is not set — AI features will not work.');
 }
 
-module.exports = { securityHeaders, corsMiddleware, checkProductionConfig, isProd };
+module.exports = { securityHeaders, corsMiddleware, checkProductionConfig, isProd, publicApiUrl };
