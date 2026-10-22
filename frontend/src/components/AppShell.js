@@ -4,6 +4,7 @@ import api, { getUser, logout } from '../lib/api';
 import { useTheme } from '../lib/theme';
 import { Icon, Dropdown, Avatar, Button, SkeletonRows } from './ui';
 import { preload } from '../lib/pages';
+import useInstall from '../lib/useInstall';
 
 export const NAV = [
   {
@@ -61,6 +62,13 @@ export default function AppShell() {
   const user = getUser() || {};
   const title = useTitle(pathname);
 
+  const [me, setMe] = useState(null);
+  const [resent, setResent] = useState(false);
+  const [iosHelp, setIosHelp] = useState(false);
+  const install = useInstall();
+  useEffect(() => { api.get('/auth/me', { noCache: true }).then((r) => setMe(r.data)).catch(() => {}); }, []);
+  const resend = () => api.post('/auth/resend-verification').then(() => setResent(true)).catch(() => setResent(true));
+
   const lastSeen = useRef(null);
   // Live bell: check every 30s while the tab is open (and right away when you come back to it).
   // If something new arrives while you're in another tab, show a browser notification (when allowed).
@@ -71,10 +79,14 @@ export default function AppShell() {
         setUnread(n || 0);
         if (latest && lastSeen.current !== null && latest.id > lastSeen.current && !latest.is_read && document.hidden
           && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          try {
-            const note = new Notification(latest.title, { body: latest.message || '', icon: '/logo192.png', tag: `lm-${latest.id}` });
+          const opts = { body: latest.message || '', icon: '/logo192.png', badge: '/logo192.png', tag: `lm-${latest.id}`, data: { url: latest.link || '/notifications' } };
+          // Installed app / Android: show it through the service worker; otherwise a normal page notification.
+          (navigator.serviceWorker?.getRegistration?.() || Promise.resolve(null)).then((reg) => {
+            if (reg && reg.showNotification) return reg.showNotification(latest.title, opts);
+            const note = new Notification(latest.title, opts);
             note.onclick = () => { window.focus(); navigate(latest.link || '/notifications'); note.close(); };
-          } catch { /* some browsers only allow notifications from a service worker */ }
+            return null;
+          }).catch(() => {});
         }
         if (latest) lastSeen.current = Math.max(lastSeen.current || 0, latest.id);
         else if (lastSeen.current === null) lastSeen.current = 0;
@@ -155,6 +167,10 @@ export default function AppShell() {
               <div className="menu-sep" />
               <Link to="/profile" className="menu-item"><Icon name="user" size={15} /> Profile</Link>
               <Link to="/notifications" className="menu-item"><Icon name="bell" size={15} /> Notifications</Link>
+              {me?.isAdmin && <Link to="/admin" className="menu-item"><Icon name="chart" size={15} /> Admin dashboard</Link>}
+              {!install.installed && (install.canPrompt || install.ios) && (
+                <button className="menu-item" onClick={() => (install.canPrompt ? install.install() : setIosHelp(true))}><Icon name="download" size={15} /> Install app</button>
+              )}
               <button className="menu-item" onClick={toggleTheme}>
                 <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} /> {theme === 'dark' ? 'Light mode' : 'Dark mode'}
               </button>
@@ -163,6 +179,20 @@ export default function AppShell() {
             </Dropdown>
           </div>
         </header>
+        {me && me.email_verified === false && (
+          <div className="verify-banner">
+            <Icon name="mail" size={15} />
+            <span className="grow">{resent ? `New link sent to ${me.email}. Check your inbox (and spam).` : `Please confirm your email — we sent a link to ${me.email}.`}</span>
+            {!resent && <button type="button" className="link-btn small" onClick={resend}>Resend link</button>}
+          </div>
+        )}
+        {iosHelp && (
+          <div className="verify-banner">
+            <Icon name="download" size={15} />
+            <span className="grow">On iPhone or iPad: tap <strong>Share</strong> in Safari, then <strong>Add to Home Screen</strong>.</span>
+            <button type="button" className="link-btn small" onClick={() => setIosHelp(false)}>Got it</button>
+          </div>
+        )}
         <main className="content page-enter" key={pathname}>
           <Suspense fallback={<div className="card" style={{ marginTop: 8 }}><SkeletonRows rows={4} /></div>}>
             <Outlet context={{ refreshUnread }} />

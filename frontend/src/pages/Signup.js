@@ -4,6 +4,7 @@ import api, { errorMessage, setSession } from '../lib/api';
 import { Button, Field, Input, Alert } from '../components/ui';
 import { PasswordField, StrengthMeter, scorePassword } from '../components/PasswordField';
 import AuthLayout from './AuthLayout';
+import GoogleButton from '../components/GoogleButton';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -54,6 +55,7 @@ function Signup() {
 
       {error && <div className="mb-2"><Alert tone="danger">{error}</Alert></div>}
 
+      <GoogleButton text="signup_with" />
       <form onSubmit={onSubmit}>
         <Field label="Full name">
           <Input name="name" value={form.name} onChange={onChange} placeholder="Your name" autoComplete="name" required autoFocus />

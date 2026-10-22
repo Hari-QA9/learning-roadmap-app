@@ -46,6 +46,22 @@ function signToken(user, remember) {
   );
 }
 
+/* ---------- Email verification ---------- */
+async function sendVerification(user) {
+  const token = crypto.randomBytes(32).toString('hex');
+  await q().query('UPDATE email_verifications SET used = 1 WHERE user_id = ? AND used = 0', [user.id]);
+  await q().query('INSERT INTO email_verifications (user_id, token_hash, expires_at) VALUES (?, ?, ?)', [user.id, sha256(token), new Date(Date.now() + 48 * 3600000)]);
+  const link = `${APP_URL}/verify-email?token=${token}`;
+  const { emailLayout } = require('../lib/engagement');
+  const { text, html } = emailLayout({
+    heading: 'Confirm your email',
+    intro: `Hi ${user.name || ''}, welcome to LearnMap! Please confirm this is your email so we can send reminders and job alerts. The link works for 48 hours.`,
+    cta: { label: 'Confirm my email', url: link },
+    footerNote: 'If you didn’t create a LearnMap account, you can ignore this email.',
+  });
+  return sendMail({ to: user.email, subject: 'Confirm your LearnMap email', text, html });
+}
+
 // REGISTER
 router.post('/register', async (req, res) => {
   const name = String(req.body.name || '').trim();
@@ -66,6 +82,9 @@ router.post('/register', async (req, res) => {
       [name, email, hashed]
     );
     await q().query('INSERT INTO user_stats (user_id) VALUES (?)', [result.insertId]).catch(() => {});
+    // New accounts confirm their email (existing accounts were marked confirmed when this was added).
+    await q().query('UPDATE users SET email_verified = 0 WHERE id = ?', [result.insertId]).catch(() => {});
+    sendVerification({ id: result.insertId, name, email }).catch((e) => console.error('[auth] verification email:', e.message));
     res.json({ message: 'User registered successfully' });
   } catch (err) {
     console.error(err);
@@ -205,6 +224,93 @@ router.post('/change-password', auth, async (req, res) => {
   } catch (err) {
     console.error('Change password error:', err.message);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// CONFIRM EMAIL (from the emailed link)
+router.post('/verify-email', async (req, res) => {
+  const token = String(req.body.token || '');
+  if (!/^[a-f0-9]{64}$/.test(token)) return res.status(400).json({ message: 'This confirmation link is invalid.' });
+  try {
+    const [rows] = await q().query('SELECT * FROM email_verifications WHERE token_hash = ? AND used = 0', [sha256(token)]);
+    const row = rows[0];
+    if (!row || new Date(row.expires_at) < new Date()) return res.status(400).json({ message: 'This confirmation link has expired or was already used. Log in and send a new one.' });
+    await q().query('UPDATE users SET email_verified = 1 WHERE id = ?', [row.user_id]);
+    await q().query('UPDATE email_verifications SET used = 1 WHERE user_id = ?', [row.user_id]);
+    res.json({ message: 'Email confirmed — thank you!' });
+  } catch (err) {
+    console.error('[auth] verify', err.message);
+    res.status(500).json({ message: 'Could not confirm your email. Please try again.' });
+  }
+});
+
+const resends = new Map(); // userId -> [timestamps]
+router.post('/resend-verification', auth, async (req, res) => {
+  const recent = (resends.get(req.user.id) || []).filter((t) => t > Date.now() - 3600000);
+  if (recent.length >= 3) return res.status(429).json({ message: 'We’ve sent a few links already. Check your spam folder, or try again in an hour.' });
+  try {
+    const [u] = await q().query('SELECT id, name, email, email_verified FROM users WHERE id = ?', [req.user.id]);
+    if (!u.length) return res.status(404).json({ message: 'Account not found.' });
+    if (Number(u[0].email_verified)) return res.json({ message: 'Your email is already confirmed.' });
+    await sendVerification(u[0]);
+    resends.set(req.user.id, [...recent, Date.now()]);
+    res.json({ message: `We sent a new link to ${u[0].email}.` });
+  } catch (err) {
+    console.error('[auth] resend', err.message);
+    res.status(500).json({ message: 'Could not send the email. Please try again.' });
+  }
+});
+
+// WHO AM I (verification status, admin flag)
+const adminEmails = () => String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+router.get('/me', auth, async (req, res) => {
+  try {
+    const [u] = await q().query('SELECT id, name, email, email_verified FROM users WHERE id = ?', [req.user.id]);
+    if (!u.length) return res.status(404).json({ message: 'Account not found.' });
+    res.json({ id: u[0].id, name: u[0].name, email: u[0].email, email_verified: u[0].email_verified === undefined ? true : !!Number(u[0].email_verified), isAdmin: adminEmails().includes(String(u[0].email).toLowerCase()) });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load your account.' });
+  }
+});
+
+// PUBLIC CONFIG for the login page
+router.get('/config', (req, res) => {
+  res.json({ googleClientId: (process.env.GOOGLE_CLIENT_ID || '').trim() || null });
+});
+
+// SIGN IN WITH GOOGLE — the browser gets a Google ID token; we verify it with Google.
+router.post('/google', async (req, res) => {
+  const clientId = (process.env.GOOGLE_CLIENT_ID || '').trim();
+  const credential = String(req.body.credential || '');
+  if (!clientId) return res.status(400).json({ message: 'Google sign-in isn’t set up on this server.' });
+  if (!credential) return res.status(400).json({ message: 'Missing Google credential.' });
+  try {
+    const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
+    const info = await r.json();
+    const validIssuer = ['accounts.google.com', 'https://accounts.google.com'].includes(info.iss);
+    if (!r.ok || info.aud !== clientId || !validIssuer || Number(info.exp) * 1000 < Date.now()) {
+      return res.status(401).json({ message: 'Google sign-in failed. Please try again.' });
+    }
+    if (String(info.email_verified) !== 'true') return res.status(401).json({ message: 'Your Google email isn’t verified.' });
+    const email = normEmail(info.email);
+    let [users] = await q().query('SELECT * FROM users WHERE LOWER(email) = ?', [email]);
+    let isNew = false;
+    if (!users.length) {
+      const randomPassword = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10);
+      const name = String(info.name || email.split('@')[0]).slice(0, 255);
+      const [ins] = await q().query('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', [name, email, randomPassword]);
+      await q().query('INSERT INTO user_stats (user_id) VALUES (?)', [ins.insertId]).catch(() => {});
+      [users] = await q().query('SELECT * FROM users WHERE id = ?', [ins.insertId]);
+      isNew = true;
+    }
+    const user = users[0];
+    // Google already confirmed this email.
+    await q().query('UPDATE users SET email_verified = 1 WHERE id = ?', [user.id]).catch(() => {});
+    await q().query('UPDATE user_stats SET last_active = CURDATE() WHERE user_id = ?', [user.id]).catch(() => {});
+    res.json({ token: signToken(user, true), user: { id: user.id, name: user.name, email: user.email }, isNew });
+  } catch (err) {
+    console.error('[auth] google', err.message);
+    res.status(500).json({ message: 'Google sign-in failed. Please try again.' });
   }
 });
 

@@ -20,7 +20,8 @@ Work we decided to hold for later, so nothing gets lost. Tick items off (`[x]`) 
 - [ ] Hosting: frontend, backend and MySQL, plus a domain name.
 - [ ] Transactional email provider for password resets (Gmail App Password is fine for testing only).
 - [ ] Paid or higher-quota Gemini key, with spending alerts.
-- [ ] Error monitoring (e.g. Sentry) and daily database backups.
+- [ ] Error monitoring (e.g. Sentry) and daily database backups. (The admin dashboard shows recent errors since the last restart — a start, not a replacement.)
+- [ ] Create `database/schema.sql` (tables only, no user data) so a fresh production database can be set up — needed before `database_backup.sql` is removed.
 - [ ] Move the rate limiter to a shared store (e.g. Redis) if we ever run more than one backend server.
 
 ---
@@ -53,6 +54,14 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
   2. **APIs & Services → Library** → search **YouTube Data API v3** → **Enable**.
   3. **APIs & Services → Credentials → Create credentials → API key** → copy it.
   4. In `backend/.env` set `YOUTUBE_API_KEY=…`. New roadmaps will use it (free quota is plenty for normal use).
+
+- [ ] 🟠 **Sign in with Google** (free)
+  1. Go to console.cloud.google.com → pick your project → **APIs & Services → OAuth consent screen** → External → fill in app name (LearnMap), support email → Save.
+  2. **Credentials → Create credentials → OAuth client ID** → type **Web application**.
+  3. Under **Authorized JavaScript origins** add `http://localhost:3000` (and your real site address once it's online).
+  4. Copy the **Client ID** into `backend/.env` as `GOOGLE_CLIENT_ID=…` and restart the backend — the Google button appears on the login and sign-up pages.
+
+- [ ] 🟠 **Admin dashboard:** put your own email in `backend/.env` as `ADMIN_EMAILS=you@gmail.com`, restart, then open the account menu → **Admin dashboard**.
 
 - [ ] After adding any key: save `.env`, restart the backend (Ctrl+C, then `npm start`), and check the terminal for `[jobs] Refreshed: … adzuna: N, usajobs: N, jsearch: N`. If you see `error: HTTP 401`, the key was pasted wrong (look for extra spaces).
 
@@ -108,6 +117,13 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Platform
+- [ ] 🟠 Publish the installable app to the Google Play Store (a "Trusted Web Activity" wraps the web app) once LearnMap is online.
+- [ ] 🟢 Web push notifications to phones when the app is closed (needs the site online over HTTPS + push keys).
+- [ ] 🟢 More admin tools: deactivate a member, resend their verification, export members as CSV.
+
+---
+
 ## Quality
 - [ ] 🟠 Move the end-to-end browser tests into the repo and run them on every pull request (GitHub Actions).
 - [ ] 🟢 Lighthouse pass for speed and accessibility on the main pages.
@@ -124,3 +140,4 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Works for every field: skills, job searches, templates, resume sections & Academic CV, field-aware AI, verified resource library (PR #9)
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
 - [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)
+- [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)

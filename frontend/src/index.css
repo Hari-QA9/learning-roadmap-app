@@ -902,3 +902,15 @@ label.setting-row { cursor: pointer; }
 .link-btn { font-family: inherit; line-height: 1.4; text-align: left; background: none; border: 0; padding: 0; color: var(--accent-text); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
 .due-input { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font-size: 12.5px; cursor: pointer; }
 .due-input input { font: inherit; font-size: 12.5px; border: 0; background: transparent; color: var(--text); outline: none; }
+
+/* ---------- Trust & platform ---------- */
+.verify-banner { display: flex; align-items: center; gap: 10px; margin: 12px 32px 0; padding: 10px 14px; border-radius: 12px; background: var(--warning-soft); color: var(--text); font-size: 13px; }
+.verify-banner svg { color: var(--warning); flex: none; }
+@media (max-width: 760px) { .verify-banner { margin: 10px 16px 0; } }
+.google-btn { display: flex; justify-content: center; min-height: 44px; }
+.or-divider { display: flex; align-items: center; gap: 12px; color: var(--text-3); font-size: 12px; margin: 16px 0; }
+.or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.admin-bars { display: grid; grid-template-columns: repeat(14, 1fr); gap: 6px; height: 110px; align-items: end; }
+.admin-bar { display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+.admin-bar span { width: 100%; max-width: 22px; background: var(--accent); border-radius: 5px; min-height: 3px; }
+.admin-bar em { font-style: normal; font-size: 10px; color: var(--text-3); }

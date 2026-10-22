@@ -21,6 +21,7 @@ const COLUMNS = [
   ['notifications', 'type', 'VARCHAR(30) NULL'],
   ['job_applications', 'followup_sent_at', 'TIMESTAMP NULL'],
   // Interview time is stored as an ISO string with time zone (e.g. 2026-10-25T18:00:00.000Z)
+  ['users', 'email_verified', 'TINYINT DEFAULT 1'],
   ['job_applications', 'interview_at', 'VARCHAR(40) NULL'],
   ['job_applications', 'interview_reminded_at', 'TIMESTAMP NULL'],
   ['job_applications', 'contact_name', 'VARCHAR(120) NULL'],
@@ -29,6 +30,21 @@ const COLUMNS = [
 ];
 
 const TABLES = [
+  `CREATE TABLE IF NOT EXISTS email_verifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token_hash VARCHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    used TINYINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
+  // One row per AI request (for the admin dashboard and cost tracking)
+  `CREATE TABLE IF NOT EXISTS ai_usage (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    kind VARCHAR(40) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
   `CREATE TABLE IF NOT EXISTS interview_sessions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
