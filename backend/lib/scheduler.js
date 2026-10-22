@@ -20,7 +20,7 @@ const HOURS = (n) => sqlTime(new Date(Date.now() - n * 3600000));
 const older = (ts, hours) => !ts || new Date(ts).getTime() < Date.now() - hours * 3600000;
 
 async function email(user, type, subject, layout) {
-  if (!emailConfigured() || !user.email) return false;
+  if (!emailConfigured() || !user.email || Number(user.email_verified) === 0) return false;
   const { text, html } = E.emailLayout({ ...layout, unsubscribe: E.unsubscribeUrl(user.id, type) });
   try {
     const r = await sendMail({ to: user.email, subject, text, html });
@@ -32,7 +32,7 @@ async function email(user, type, subject, layout) {
 }
 
 async function usersWithSettings() {
-  const [users] = await q().query('SELECT id, name, email, created_at FROM users');
+  const [users] = await q().query('SELECT id, name, email, created_at, email_verified FROM users');
   const [settings] = await q().query('SELECT * FROM user_settings');
   const byId = new Map(settings.map((s) => [s.user_id, s]));
   return users.map((u) => ({ ...u, settings: { email_weekly: 1, email_reminders: 1, email_job_alerts: 1, email_followups: 1, daily_goal: 1, timezone: 'America/New_York', ...(byId.get(u.id) || {}) } }));

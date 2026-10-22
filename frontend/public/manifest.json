@@ -1,25 +1,24 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
-  "icons": [
-    {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "logo192.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "logo512.png",
-      "type": "image/png",
-      "sizes": "512x512"
-    }
-  ],
-  "start_url": ".",
+  "short_name": "LearnMap",
+  "name": "LearnMap — learn, plan and land the job",
+  "description": "Personal learning roadmaps, an AI tutor, job matching, resume builder and mock interviews.",
+  "id": "/",
+  "start_url": "/dashboard?source=app",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "any",
+  "theme_color": "#f5f5f7",
+  "background_color": "#f5f5f7",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "favicon.ico", "sizes": "64x64 48x48 32x32 16x16", "type": "image/x-icon" },
+    { "src": "logo192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "logo512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "maskable512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Today", "url": "/dashboard?source=app", "icons": [{ "src": "logo192.png", "sizes": "192x192" }] },
+    { "name": "Job board", "url": "/jobs?source=app", "icons": [{ "src": "logo192.png", "sizes": "192x192" }] },
+    { "name": "Mock interview", "url": "/interview?source=app", "icons": [{ "src": "logo192.png", "sizes": "192x192" }] }
+  ]
 }

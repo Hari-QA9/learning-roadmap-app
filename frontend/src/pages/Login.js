@@ -4,6 +4,7 @@ import api, { errorMessage, setSession } from '../lib/api';
 import { Button, Field, Input, Alert } from '../components/ui';
 import { PasswordField } from '../components/PasswordField';
 import AuthLayout from './AuthLayout';
+import GoogleButton from '../components/GoogleButton';
 
 const LAST_EMAIL = 'learnmap.lastEmail';
 
@@ -66,6 +67,7 @@ function Login() {
         </div>
       )}
 
+      <GoogleButton text="signin_with" redirectTo={from || '/dashboard'} />
       <form onSubmit={onSubmit} noValidate={false}>
         <Field label="Email">
           <Input type="email" name="email" value={form.email} onChange={onChange} placeholder="you@example.com" autoComplete="email" required autoFocus={!form.email} />

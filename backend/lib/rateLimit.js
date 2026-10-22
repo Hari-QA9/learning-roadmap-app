@@ -20,6 +20,10 @@ function rateLimit({ windowMs = 60 * 60 * 1000, max = 40, name = 'requests' } = 
     }
     list.push(now);
     hits.set(key, list);
+    // Record the request for the admin dashboard (never blocks the request).
+    try {
+      require('../db').promise().query('INSERT INTO ai_usage (user_id, kind) VALUES (?, ?)', [(req.user && req.user.id) || null, String(name).slice(0, 40)]).catch(() => {});
+    } catch { /* ignore */ }
     next();
   };
 }
