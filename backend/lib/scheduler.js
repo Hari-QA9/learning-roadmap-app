@@ -170,6 +170,34 @@ async function followUps(users) {
   return sent;
 }
 
+/* ---------- Interviews coming up ---------- */
+async function interviewReminders(users) {
+  let sent = 0;
+  for (const u of users) {
+    const [apps] = await q().query(
+      `SELECT id, job_title, company, interview_at, job_id FROM job_applications
+       WHERE user_id = ? AND interview_at IS NOT NULL AND interview_reminded_at IS NULL`, [u.id]
+    );
+    const soon = apps.filter((a) => { const t = new Date(a.interview_at).getTime(); return t > Date.now() && t - Date.now() <= 26 * 3600000; });
+    for (const a of soon) {
+      const when = new Date(a.interview_at).toLocaleString('en-US', { timeZone: E.validTz(u.settings.timezone) ? u.settings.timezone : 'UTC', weekday: 'short', hour: 'numeric', minute: '2-digit' });
+      const practice = a.job_id ? `/interview?job=${a.job_id}` : '/interview';
+      await E.notify(u.id, { title: `Interview ${when}`, message: `${a.job_title}${a.company ? ` at ${a.company}` : ''}. A 10-minute mock interview now is the best prep.`, link: practice, type: 'interview' });
+      if (u.settings.email_reminders) {
+        await email(u, 'email_reminders', `Your interview for ${a.job_title} is ${when}`, {
+          heading: `Interview ${when}`,
+          intro: `Good luck with ${a.job_title}${a.company ? ` at ${a.company}` : ''}! Warm up with a quick mock interview tailored to this job.`,
+          items: [{ title: 'Practice with an AI mock interview', meta: '5 questions · feedback on every answer', url: `${E.APP_URL()}${practice}` }],
+          cta: { label: 'Practice now', url: `${E.APP_URL()}${practice}` },
+        });
+      }
+      await q().query('UPDATE job_applications SET interview_reminded_at = CURRENT_TIMESTAMP WHERE id = ?', [a.id]);
+      sent++;
+    }
+  }
+  return sent;
+}
+
 /* ---------- Weekly summary ---------- */
 async function weeklyDigests(users, { force = false } = {}) {
   let sent = 0;
@@ -209,7 +237,7 @@ async function runScheduler(opts = {}) {
   const out = {};
   try {
     const users = await usersWithSettings();
-    for (const [name, fn] of Object.entries({ due: dueTaskReminders, nudges: inactivityNudges, jobAlerts, followUps, digests: (us) => weeklyDigests(us, opts) })) {
+    for (const [name, fn] of Object.entries({ due: dueTaskReminders, interviews: interviewReminders, nudges: inactivityNudges, jobAlerts, followUps, digests: (us) => weeklyDigests(us, opts) })) {
       try { out[name] = await fn(users); } catch (err) { out[name] = `error: ${err.message}`; console.warn(`[scheduler] ${name}: ${err.message}`); }
     }
     const total = Object.values(out).filter((v) => typeof v === 'number').reduce((a, b) => a + b, 0);

@@ -28,6 +28,8 @@ const evaluationRoutes = require('./routes/evaluation');
 const jobsRoutes = require('./routes/jobs');
 const applicationsRoutes = require('./routes/applications');
 const settingsRoutes = require('./routes/settings');
+const interviewRoutes = require('./routes/interviews');
+const calendarRoutes = require('./routes/calendar');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/roadmaps', roadmapRoutes);
@@ -49,6 +51,8 @@ app.use('/api/evaluation', evaluationRoutes);
 app.use('/api/jobs', jobsRoutes);
 app.use('/api/applications', applicationsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/interviews', interviewRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 app.get('/', (req, res) => res.send('Learning Roadmap API Running'));
 

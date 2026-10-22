@@ -20,9 +20,28 @@ const COLUMNS = [
   ['notifications', 'link', 'VARCHAR(500) NULL'],
   ['notifications', 'type', 'VARCHAR(30) NULL'],
   ['job_applications', 'followup_sent_at', 'TIMESTAMP NULL'],
+  // Interview time is stored as an ISO string with time zone (e.g. 2026-10-25T18:00:00.000Z)
+  ['job_applications', 'interview_at', 'VARCHAR(40) NULL'],
+  ['job_applications', 'interview_reminded_at', 'TIMESTAMP NULL'],
+  ['job_applications', 'contact_name', 'VARCHAR(120) NULL'],
+  ['job_applications', 'contact_email', 'VARCHAR(200) NULL'],
+  ['job_applications', 'next_step', 'VARCHAR(255) NULL'],
 ];
 
 const TABLES = [
+  `CREATE TABLE IF NOT EXISTS interview_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    job_id INT NULL,
+    role VARCHAR(255) NOT NULL,
+    company VARCHAR(255) NULL,
+    type VARCHAR(20) DEFAULT 'mixed',
+    questions MEDIUMTEXT NULL,
+    answers MEDIUMTEXT NULL,
+    feedback MEDIUMTEXT NULL,
+    report MEDIUMTEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
   // Email preferences, daily goal, time zone, onboarding
   `CREATE TABLE IF NOT EXISTS user_settings (
     user_id INT PRIMARY KEY,

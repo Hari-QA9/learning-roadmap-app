@@ -1,4 +1,5 @@
 import NotificationSettings from '../components/NotificationSettings';
+import CalendarCard from '../components/CalendarCard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { errorMessage, updateUser } from '../lib/api';
@@ -168,6 +169,7 @@ function Profile() {
           </Card>
 
           <NotificationSettings />
+          <CalendarCard />
 
           <Card title="Appearance">
             <Segmented value={theme} onChange={setTheme} options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
