@@ -15,9 +15,38 @@ const COLUMNS = [
   ['job_applications', 'materials', 'MEDIUMTEXT NULL'],
   ['job_applications', 'updated_at', 'TIMESTAMP NULL'],
   ['jobs', 'publisher', 'VARCHAR(80) NULL'],
+  ['tasks', 'completed_at', 'TIMESTAMP NULL'],
+  ['tasks', 'reminded_at', 'TIMESTAMP NULL'],
+  ['notifications', 'link', 'VARCHAR(500) NULL'],
+  ['notifications', 'type', 'VARCHAR(30) NULL'],
+  ['job_applications', 'followup_sent_at', 'TIMESTAMP NULL'],
 ];
 
 const TABLES = [
+  // Email preferences, daily goal, time zone, onboarding
+  `CREATE TABLE IF NOT EXISTS user_settings (
+    user_id INT PRIMARY KEY,
+    email_weekly TINYINT DEFAULT 1,
+    email_reminders TINYINT DEFAULT 1,
+    email_job_alerts TINYINT DEFAULT 1,
+    email_followups TINYINT DEFAULT 1,
+    daily_goal INT DEFAULT 1,
+    timezone VARCHAR(64) DEFAULT 'America/New_York',
+    onboarded TINYINT DEFAULT 0,
+    field VARCHAR(60) NULL,
+    calendar_token VARCHAR(64) NULL,
+    last_digest_at TIMESTAMP NULL,
+    last_nudge_at TIMESTAMP NULL,
+    last_job_alert_at TIMESTAMP NULL
+  )`,
+  // Tasks finished per day — powers the learning streak and daily goal
+  `CREATE TABLE IF NOT EXISTS activity_days (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    day DATE NOT NULL,
+    tasks_done INT DEFAULT 0,
+    UNIQUE (user_id, day)
+  )`,
   `CREATE TABLE IF NOT EXISTS user_resumes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,

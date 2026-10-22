@@ -16,6 +16,17 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// GET /notifications/summary — unread count + newest, for the live bell (polled every 30s)
+router.get('/summary', auth, async (req, res) => {
+  try {
+    const [[{ unread }]] = await db.promise().query('SELECT COUNT(*) AS unread FROM notifications WHERE user_id = ? AND is_read = 0', [req.user.id]);
+    const [latest] = await db.promise().query('SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 1', [req.user.id]);
+    res.json({ unread: Number(unread) || 0, latest: latest[0] || null });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // MARK as read
 router.put('/:id/read', auth, async (req, res) => {
   try {

@@ -28,7 +28,9 @@ router.get('/dashboard', verifyToken, (req, res) => {
     runQuery(`SELECT COUNT(*) as count FROM quiz_results WHERE user_id = ?`, [userId]),
     runQuery(`SELECT streak_days as count FROM user_stats WHERE user_id = ?`, [userId]),
   ])
-    .then(([totalRoadmaps, completedTasks, pendingTasks, badges, quizzesTaken, streak]) => {
+    .then(async ([totalRoadmaps, completedTasks, pendingTasks, badges, quizzesTaken]) => {
+      let streak = 0;
+      try { streak = (await require('../lib/engagement').learningSummary(userId)).streak; } catch { /* activity table not ready */ }
       res.json({
         totalRoadmaps,
         completedTasks,

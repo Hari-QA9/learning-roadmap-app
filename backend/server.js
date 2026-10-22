@@ -27,6 +27,7 @@ const templateRoutes = require('./routes/templates');
 const evaluationRoutes = require('./routes/evaluation');
 const jobsRoutes = require('./routes/jobs');
 const applicationsRoutes = require('./routes/applications');
+const settingsRoutes = require('./routes/settings');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/roadmaps', roadmapRoutes);
@@ -47,6 +48,7 @@ app.use('/api/templates', templateRoutes);
 app.use('/api/evaluation', evaluationRoutes);
 app.use('/api/jobs', jobsRoutes);
 app.use('/api/applications', applicationsRoutes);
+app.use('/api/settings', settingsRoutes);
 
 app.get('/', (req, res) => res.send('Learning Roadmap API Running'));
 
@@ -58,4 +60,6 @@ app.listen(PORT, () => {
   require('./lib/mailer').verifyMail();
   // Keep the job board fresh (pulls public job APIs every few hours).
   require('./lib/jobSources').scheduleJobRefresh();
+  // Reminders, weekly summaries, job alerts and follow-ups (hourly).
+  require('./lib/scheduler').startScheduler();
 });

@@ -1,4 +1,4 @@
-import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { NavLink, Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import api, { getUser, logout } from '../lib/api';
 import { useTheme } from '../lib/theme';
@@ -60,11 +60,34 @@ export default function AppShell() {
   const user = getUser() || {};
   const title = useTitle(pathname);
 
+  const lastSeen = useRef(null);
+  // Live bell: check every 30s while the tab is open (and right away when you come back to it).
+  // If something new arrives while you're in another tab, show a browser notification (when allowed).
   const refreshUnread = useCallback(() => {
-    api.get('/notifications')
-      .then((r) => setUnread((r.data || []).filter((n) => !n.is_read).length))
+    api.get('/notifications/summary', { noCache: true })
+      .then((r) => {
+        const { unread: n, latest } = r.data || {};
+        setUnread(n || 0);
+        if (latest && lastSeen.current !== null && latest.id > lastSeen.current && !latest.is_read && document.hidden
+          && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          try {
+            const note = new Notification(latest.title, { body: latest.message || '', icon: '/logo192.png', tag: `lm-${latest.id}` });
+            note.onclick = () => { window.focus(); navigate(latest.link || '/notifications'); note.close(); };
+          } catch { /* some browsers only allow notifications from a service worker */ }
+        }
+        if (latest) lastSeen.current = Math.max(lastSeen.current || 0, latest.id);
+        else if (lastSeen.current === null) lastSeen.current = 0;
+      })
       .catch(() => {});
-  }, []);
+  }, [navigate]);
+
+  useEffect(() => {
+    const tick = () => { if (!document.hidden || (typeof Notification !== 'undefined' && Notification.permission === 'granted')) refreshUnread(); };
+    const id = setInterval(tick, 30000);
+    const onVisible = () => { if (!document.hidden) refreshUnread(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
+  }, [refreshUnread]);
 
   useEffect(() => { setOpen(false); window.scrollTo(0, 0); }, [pathname]);
   useEffect(() => { refreshUnread(); }, [pathname, refreshUnread]);

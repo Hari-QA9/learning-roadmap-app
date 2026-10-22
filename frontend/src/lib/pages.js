@@ -34,6 +34,7 @@ export const Certificate = lazyPage(() => import('../pages/Certificate'));
 export const Jobs = lazyPage(() => import('../pages/Jobs'));
 export const JobDetail = lazyPage(() => import('../pages/JobDetail'));
 export const Applications = lazyPage(() => import('../pages/Applications'));
+export const Welcome = lazyPage(() => import('../pages/Welcome'));
 
 // Path → page, used to preload on hover.
 export const PRELOAD = {
