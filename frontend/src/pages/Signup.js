@@ -84,6 +84,7 @@ function Signup() {
           {loading ? 'Creating account…' : 'Create account'}
         </Button>
         {valid && !strong && <p className="tiny subtle center mt-1">Tip: a stronger password keeps your account safer.</p>}
+        <p className="tiny subtle center mt-2">By creating an account you agree to the <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy Policy</Link>.</p>
       </form>
 
       <p className="mt-3 small center">

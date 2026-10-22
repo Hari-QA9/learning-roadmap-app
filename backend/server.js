@@ -1,13 +1,19 @@
 const express = require('express');
-const cors = require('cors');
 require('dotenv').config();
 // Keep recent errors for the admin dashboard.
 require('./lib/errorLog').installErrorLog();
+const { securityHeaders, corsMiddleware, checkProductionConfig } = require('./lib/security');
+
+checkProductionConfig();
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.disable('x-powered-by');
+// Hosting providers (Render, Railway…) sit in front of the app; trust their forwarded HTTPS/IP headers.
+app.set('trust proxy', 1);
+app.use(securityHeaders);
+app.use(corsMiddleware());
+app.use(express.json({ limit: '1mb' }));
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -33,6 +39,7 @@ const settingsRoutes = require('./routes/settings');
 const interviewRoutes = require('./routes/interviews');
 const calendarRoutes = require('./routes/calendar');
 const adminRoutes = require('./routes/admin');
+const accountRoutes = require('./routes/account');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/roadmaps', roadmapRoutes);
@@ -57,8 +64,28 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/interviews', interviewRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/account', accountRoutes);
 
 app.get('/', (req, res) => res.send('Learning Roadmap API Running'));
+// Health check for the hosting provider (also confirms the database answers).
+app.get('/api/health', async (req, res) => {
+  try {
+    await require('./db').promise().query('SELECT 1');
+    res.json({ ok: true });
+  } catch {
+    res.status(503).json({ ok: false, message: 'Database unavailable' });
+  }
+});
+
+// Unknown API routes and unexpected errors return JSON instead of an HTML error page.
+app.use('/api', (req, res) => res.status(404).json({ message: 'Not found' }));
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (err?.type === 'entity.too.large') return res.status(413).json({ message: 'That request is too large.' });
+  if (err?.type === 'entity.parse.failed') return res.status(400).json({ message: 'Invalid request.' });
+  console.error('Unhandled error:', err?.message || err);
+  res.status(500).json({ message: 'Something went wrong. Please try again.' });
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

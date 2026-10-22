@@ -2,6 +2,8 @@
 Project Name: Learning Roadmap & Resource Organizer
 Group Name: Nephilims
 
+> **Putting the app online:** see [DEPLOY.md](DEPLOY.md). **Planned work:** see [TODO.md](TODO.md).
+
 Students Name:
 
 Karthikeya Reddy Maddikuntla

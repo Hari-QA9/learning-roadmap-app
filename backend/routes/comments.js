@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { ownModule } = require('../lib/ownership');
 
 // GET comments for a module
 router.get('/:moduleId', auth, async (req, res) => {
   try {
+    if (!(await ownModule(req.params.moduleId, req.user.id))) return res.status(404).json({ message: 'Module not found' });
     const [rows] = await db.promise().query(
       `SELECT c.*, u.name as user_name 
        FROM comments c
@@ -24,6 +26,7 @@ router.get('/:moduleId', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   const { module_id, content } = req.body;
   try {
+    if (!(await ownModule(module_id, req.user.id))) return res.status(404).json({ message: 'Module not found' });
     const [result] = await db.promise().query(
       'INSERT INTO comments (user_id, module_id, content) VALUES (?, ?, ?)',
       [req.user.id, module_id, content]

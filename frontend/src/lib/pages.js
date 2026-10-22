@@ -39,6 +39,7 @@ export const Interview = lazyPage(() => import('../pages/Interview'));
 export const VerifyEmail = lazyPage(() => import('../pages/VerifyEmail'));
 export const Admin = lazyPage(() => import('../pages/Admin'));
 export const InterviewSession = lazyPage(() => import('../pages/InterviewSession'));
+export const Legal = lazyPage(() => import('../pages/Legal'));
 
 // Path → page, used to preload on hover.
 export const PRELOAD = {

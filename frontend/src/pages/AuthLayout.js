@@ -20,7 +20,11 @@ export default function AuthLayout({ children }) {
             <span className="row" style={{ gap: 6 }}><Icon name="award" size={14} /> Certificates</span>
           </div>
         </div>
-        <div className="small subtle">© {new Date().getFullYear()} LearnMap</div>
+        <div className="small subtle row" style={{ gap: 14 }}>
+          <span>© {new Date().getFullYear()} LearnMap</span>
+          <Link to="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
+          <Link to="/terms" style={{ color: 'inherit' }}>Terms</Link>
+        </div>
       </aside>
       <main className="auth-main">
         <div style={{ position: 'fixed', top: 16, right: 16 }}>

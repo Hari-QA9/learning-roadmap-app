@@ -1,0 +1,32 @@
+# Render Blueprint for the LearnMap backend (render.com → New → Blueprint → pick this repo).
+# Values marked "sync: false" are asked for once in Render's dashboard — they never live in GitHub.
+services:
+  - type: web
+    name: learnmap-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL        # from Aiven: Service URI (mysql://…)
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: APP_URL             # your Vercel site, e.g. https://learnmap.vercel.app
+        sync: false
+      - key: PUBLIC_API_URL      # this service + /api, e.g. https://learnmap-api.onrender.com/api
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_FROM           # e.g. LearnMap <you@gmail.com> (verified in Brevo)
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false

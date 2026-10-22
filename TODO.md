@@ -9,19 +9,21 @@ Work we decided to hold for later, so nothing gets lost. Tick items off (`[x]`) 
 ## 🔴 Before going live
 
 ### Security & privacy
-- [ ] **Remove `database_backup.sql` from the public repo.** The repo is public, and the dump contains real user rows (names, emails and password hashes). Delete the file, scrub it from git history, and have those users change their passwords.
-- [ ] **Ownership checks (IDOR fix).** Some routes (modules, notes, comments — tasks and resources are done) don't check that the item belongs to the logged-in member, so someone who guesses an ID could read or edit another member's data.
-- [ ] Production security headers (`helmet`), CORS limited to the real site address, HTTPS only.
-- [ ] Privacy policy and terms pages.
-- [ ] Account deletion and "download my data" in Profile.
+- [x] Removed `database_backup.sql` from the repo (PR #15). `*.sql` dumps are now ignored by git.
+- [ ] **Scrub `database_backup.sql` from git history** (it's still in old commits) — or make the repo private — and have the people in that dump change their passwords. Needs a force-push, so only with your OK.
+- [x] Ownership checks everywhere: modules, notes, comments, quizzes, module/roadmap results (certificates can only be issued for your own roadmap) (PR #15).
+- [x] Security headers, CORS limited to the real site in production, HTTPS-only header, start-up checks that refuse a weak `JWT_SECRET` (PR #15).
+- [x] Privacy policy and terms pages (PR #15). 🟠 Have someone knowledgeable review the wording before a big launch.
+- [x] Account deletion and "download my data" in Profile (PR #15).
 
 ### Production setup
-- [ ] Database settings from environment variables, with a connection pool (not hard-coded localhost).
-- [ ] Hosting: frontend, backend and MySQL, plus a domain name.
-- [ ] Transactional email provider for password resets (Gmail App Password is fine for testing only).
+- [x] Database settings from environment variables, with a connection pool (PR #15).
+- [ ] **Hosting:** Aiven (MySQL) + Render (backend) + Vercel (frontend) — follow [DEPLOY.md](DEPLOY.md). Domain name later.
+- [x] Email that works when hosted: Brevo API support (PR #15). Set it up in DEPLOY.md step 5.
+- [ ] 🟠 Render Starter plan ($7/month) once real people use it — the free backend sleeps after 15 minutes, which delays reminder emails.
 - [ ] Paid or higher-quota Gemini key, with spending alerts.
 - [ ] Error monitoring (e.g. Sentry) and daily database backups. (The admin dashboard shows recent errors since the last restart — a start, not a replacement.)
-- [ ] Create `database/schema.sql` (tables only, no user data) so a fresh production database can be set up — needed before `database_backup.sql` is removed.
+- [x] `backend/database/schema.sql` (tables only, no member data). The backend creates the tables automatically on a fresh database (PR #15).
 - [ ] Move the rate limiter to a shared store (e.g. Redis) if we ever run more than one backend server.
 
 ---
@@ -98,7 +100,6 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [ ] 🟠 Use AI to pick out skills the built-in list doesn't know, for fields we haven't covered yet (today those still match if the member types them in).
 - [ ] 🟢 Let members rate resources (👍/👎) so the best ones rise to the top.
 - [ ] 🟢 Add field-specific job boards where public APIs exist (e.g. HigherEdJobs for academia, health-system career sites).
-- [ ] 🟢 Ownership checks are now in place for resources; tasks, modules, notes and comments still need them (see "Security & privacy").
 
 ---
 
@@ -110,7 +111,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 ---
 
 ## Engagement (reminders & notifications)
-- [ ] 🔴 Set up email sending in production (SMTP or a provider like Postmark/SendGrid/Resend) and set `PUBLIC_API_URL` so unsubscribe links work — reminders and job alerts are in-app only until then.
+- [ ] 🔴 Set up email in production — Brevo (DEPLOY.md step 5) — and set `PUBLIC_API_URL` so unsubscribe links work. Reminders and job alerts are in-app only until then.
 - [ ] 🟠 Push notifications to phones (needs the installable app from PR C + web push keys).
 - [ ] 🟢 Let members pick the day/time of their weekly summary (today: Monday 9am their time).
 - [ ] 🟢 Weekly summary for mentors/parents (optional sharing).
@@ -141,3 +142,4 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
 - [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)
 - [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)
+- [x] Launch-ready: env-based database pool, auto-created tables, ownership checks, security headers & CORS, Privacy/Terms, download & delete account, Brevo email, Render/Vercel config + DEPLOY.md (PR #15)

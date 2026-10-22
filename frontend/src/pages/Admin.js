@@ -101,7 +101,7 @@ export default function Admin() {
         <div className="stack-lg">
           <Card title="System">
             <div className="stack-sm">
-              <Check on={d.system.email} label="Email sending (SMTP)" />
+              <Check on={d.system.email} label="Email sending" />
               <Check on={d.system.scheduler} label="Reminders & alerts scheduler" />
               <Check on={d.system.googleSignIn} label="Sign in with Google" />
               <Check on={d.system.adzuna} label="Adzuna jobs" />

@@ -161,8 +161,8 @@ router.get('/my-performance', auth, async (req, res) => {
 router.get('/:roadmapId', auth, async (req, res) => {
   try {
     const [rows] = await db.promise().query(
-      'SELECT * FROM quizzes WHERE roadmap_id = ?',
-      [req.params.roadmapId]
+      'SELECT q.* FROM quizzes q JOIN roadmaps r ON r.id = q.roadmap_id WHERE q.roadmap_id = ? AND r.user_id = ?',
+      [req.params.roadmapId, req.user.id]
     );
     res.json(rows);
   } catch (err) {

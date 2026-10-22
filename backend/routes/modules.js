@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { ownRoadmap, ownModule } = require('../lib/ownership');
 
 // GET a single module (with its roadmap) — used by module assessments
 router.get('/item/:id', auth, async (req, res) => {
@@ -22,6 +23,7 @@ router.get('/item/:id', auth, async (req, res) => {
 
 router.get('/:roadmapId', auth, async (req, res) => {
   try {
+    if (!(await ownRoadmap(req.params.roadmapId, req.user.id))) return res.status(404).json({ message: 'Roadmap not found' });
     const [rows] = await db.promise().query(
       'SELECT * FROM modules WHERE roadmap_id = ? ORDER BY order_index',
       [req.params.roadmapId]
@@ -35,6 +37,7 @@ router.get('/:roadmapId', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   const { roadmap_id, title, description, order_index } = req.body;
   try {
+    if (!(await ownRoadmap(roadmap_id, req.user.id))) return res.status(404).json({ message: 'Roadmap not found' });
     const [result] = await db.promise().query(
       'INSERT INTO modules (roadmap_id, title, description, order_index) VALUES (?, ?, ?, ?)',
       [roadmap_id, title, description, order_index || 0]
@@ -52,6 +55,7 @@ router.post('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   const { title, description } = req.body;
   try {
+    if (!(await ownModule(req.params.id, req.user.id))) return res.status(404).json({ message: 'Module not found' });
     await db.promise().query(
       'UPDATE modules SET title=?, description=? WHERE id=?',
       [title, description, req.params.id]
@@ -64,6 +68,7 @@ router.put('/:id', auth, async (req, res) => {
 
 router.delete('/:id', auth, async (req, res) => {
   try {
+    if (!(await ownModule(req.params.id, req.user.id))) return res.status(404).json({ message: 'Module not found' });
     await db.promise().query('DELETE FROM tasks WHERE module_id=?', [req.params.id]);
     await db.promise().query('DELETE FROM modules WHERE id=?', [req.params.id]);
     res.json({ message: 'Module deleted' });

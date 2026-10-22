@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
+const { ownTask } = require('../lib/ownership');
 
 // GET notes for a task
 router.get('/:taskId', auth, async (req, res) => {
@@ -20,6 +21,7 @@ router.get('/:taskId', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   const { task_id, content } = req.body;
   try {
+    if (!(await ownTask(task_id, req.user.id))) return res.status(404).json({ message: 'Task not found' });
     const [result] = await db.promise().query(
       'INSERT INTO notes (task_id, user_id, content) VALUES (?, ?, ?)',
       [task_id, req.user.id, content]

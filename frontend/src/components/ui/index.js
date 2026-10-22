@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import Icon from './Icon';
 
@@ -223,7 +224,9 @@ export function Modal({ open, onClose, title, description, children, footer, siz
     return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
   }, [open, onClose]);
   if (!open) return null;
-  return (
+  // Rendered at the end of <body> so it always covers the whole screen, even when the
+  // component that opens it sits inside an animated (transformed) card or column.
+  return createPortal(
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
       <div className={cx('modal', size === 'lg' && 'modal-lg')} role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : undefined}>
         <div className="modal-head">
@@ -236,7 +239,8 @@ export function Modal({ open, onClose, title, description, children, footer, siz
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

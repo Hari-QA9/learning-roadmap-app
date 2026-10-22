@@ -1,8 +1,15 @@
 import axios from 'axios';
 
-// One API client for the whole app. Set REACT_APP_API_URL in frontend/.env
-// to point at a deployed backend; defaults to the local dev server.
-export const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// One API client for the whole app. Set REACT_APP_API_URL (frontend/.env locally, or the
+// hosting provider's settings) to point at the deployed backend, e.g. https://learnmap-api.onrender.com/api.
+// Without it, the backend is assumed to run on port 5000 of the same computer the page came from —
+// so http://localhost:3000 talks to localhost:5000, and a phone opening http://192.168.x.x:3000
+// on your Wi-Fi talks to 192.168.x.x:5000 automatically.
+const localApi = () => {
+  if (typeof window === 'undefined' || !window.location?.hostname) return 'http://localhost:5000/api';
+  return `${window.location.protocol === 'https:' ? 'https:' : 'http:'}//${window.location.hostname}:5000/api`;
+};
+export const API_URL = (process.env.REACT_APP_API_URL || localApi()).replace(/\/$/, '');
 
 const api = axios.create({ baseURL: API_URL, timeout: 90000 });
 

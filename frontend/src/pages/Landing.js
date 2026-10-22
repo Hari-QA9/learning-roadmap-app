@@ -171,7 +171,10 @@ function Landing() {
       </section>
 
       <footer className="lp-footer">
-        <div>© {new Date().getFullYear()} LearnMap · Learning Roadmap & Resource Organizer</div>
+        <div className="row row-wrap" style={{ justifyContent: 'space-between', gap: 12 }}>
+          <span>© {new Date().getFullYear()} LearnMap · Learning Roadmap & Resource Organizer</span>
+          <span className="row" style={{ gap: 16 }}><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link></span>
+        </div>
       </footer>
     </div>
   );

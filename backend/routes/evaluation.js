@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
+const { ownRoadmap, ownModule } = require('../lib/ownership');
 
 // Make AI quiz output safe to render: 4 string options and a valid index.
 function normalizeQuestions(list) {
@@ -79,14 +80,16 @@ Generate exactly 10 questions covering all modules. Only respond with valid JSON
 
 // Save module evaluation result
 router.post('/module-result', verifyToken, async (req, res) => {
-  const { module_id, roadmap_id, score, total } = req.body;
+  const { module_id, score, total } = req.body;
   const userId = req.user.id;
   const passed = score / total >= 0.7 ? 1 : 0;
 
   try {
+    const mod = await ownModule(module_id, userId);
+    if (!mod) return res.status(404).json({ message: 'Module not found' });
     await db.promise().query(
       'INSERT INTO module_evaluations (user_id, module_id, roadmap_id, score, total, passed) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, module_id, roadmap_id, score, total, passed]
+      [userId, module_id, mod.roadmap_id, score, total, passed]
     );
     res.json({ passed, score, total, message: passed ? 'Module passed!' : 'Try again' });
   } catch (err) {
@@ -110,11 +113,15 @@ router.get('/module-status/:moduleId', verifyToken, async (req, res) => {
 
 // Save roadmap evaluation and issue certificate
 router.post('/roadmap-result', verifyToken, async (req, res) => {
-  const { roadmap_id, roadmap_title, score, total } = req.body;
+  const { roadmap_id, score, total } = req.body;
   const userId = req.user.id;
   const passed = score / total >= 0.7 ? 1 : 0;
 
   try {
+    // Certificates are only issued for the member's own roadmap, with its real title.
+    const roadmap = await ownRoadmap(roadmap_id, userId);
+    if (!roadmap) return res.status(404).json({ message: 'Roadmap not found' });
+    const roadmap_title = roadmap.title;
     await db.promise().query(
       'INSERT INTO roadmap_evaluations (user_id, roadmap_id, score, total, passed) VALUES (?, ?, ?, ?, ?)',
       [userId, roadmap_id, score, total, passed]
