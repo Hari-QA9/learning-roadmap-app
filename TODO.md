@@ -13,6 +13,10 @@ Work we decided to hold for later, so nothing gets lost. Tick items off (`[x]`) 
 - [ ] **Scrub `database_backup.sql` from git history** (it's still in old commits) — or make the repo private — and have the people in that dump change their passwords. Needs a force-push, so only with your OK.
 - [x] Ownership checks everywhere: modules, notes, comments, quizzes, module/roadmap results (certificates can only be issued for your own roadmap) (PR #15).
 - [x] Security headers, CORS limited to the real site in production, HTTPS-only header, start-up checks that refuse a weak `JWT_SECRET` (PR #15).
+- [ ] 🟠 GitHub → Settings → **Code security**: turn on **Dependabot alerts** and **Dependabot security updates** (warns when a package we use has a known security hole).
+- [ ] 🟢 GitHub → Settings → **Branches**: protect `main` (no force-pushes or deletion). Keep it off until the history scrub above is done, since that needs one force-push.
+- [x] Secret scan of the whole git history: no real keys or passwords were ever committed — only placeholders in `.env.example`. GitHub secret scanning + push protection are on (PR #16).
+- [x] Removed unused packages (`mysql`, `bcrypt`, `openai`) and the last hard-coded fallback secret (PR #16).
 - [x] Privacy policy and terms pages (PR #15). 🟠 Have someone knowledgeable review the wording before a big launch.
 - [x] Account deletion and "download my data" in Profile (PR #15).
 

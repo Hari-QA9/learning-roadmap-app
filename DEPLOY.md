@@ -36,7 +36,7 @@ You don't need to create any tables. The backend builds them automatically the f
    |---|---|
    | `DATABASE_URL` | the Aiven Service URI from Step 1 |
    | `APP_URL` | `https://placeholder.vercel.app` for now (you'll fix it in Step 4) |
-   | `PUBLIC_API_URL` | leave empty for now |
+   | `PUBLIC_API_URL` | leave empty (Render fills in its own address automatically) |
    | `GEMINI_API_KEY` | your Gemini key (same as in your local `backend/.env`) |
    | `BREVO_API_KEY`, `MAIL_FROM` | leave empty for now (Step 5) |
    | `ADMIN_EMAILS` | your own email |
@@ -44,8 +44,7 @@ You don't need to create any tables. The backend builds them automatically the f
    `JWT_SECRET` is generated for you automatically, so leave it alone.
 4. **Apply**. Wait for the first deploy to finish (about 3–5 min). The log should show `Connected to MySQL database` and `Server running on port …`.
 5. Copy your backend address from the top of the page, for example `https://learnmap-api.onrender.com`.
-6. In the service → **Environment**, set `PUBLIC_API_URL` to that address + `/api` (for example `https://learnmap-api.onrender.com/api`) → **Save changes**.
-7. Check it works: open `https://<your-backend>/api/health` in a browser. You should see `{"ok":true}`.
+6. Check it works: open `https://<your-backend>/api/health` in a browser. You should see `{"ok":true}`.
 
 ## Step 3: Frontend on Vercel (about 5 min)
 
