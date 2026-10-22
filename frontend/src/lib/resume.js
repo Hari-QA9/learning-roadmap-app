@@ -10,12 +10,23 @@ export const SECTION_LABELS = {
   projects: 'Projects',
   education: 'Education',
   certifications: 'Certifications',
+  research: 'Research Experience',
+  publications: 'Publications & Presentations',
+  volunteer: 'Volunteer & Leadership',
+  awards: 'Awards & Honors',
 };
 export const DEFAULT_ORDER = ['summary', 'skills', 'experience', 'projects', 'education', 'certifications'];
+// Optional sections a member can add (research CVs, nursing, teaching, students…)
+export const EXTRA_SECTIONS = ['research', 'publications', 'volunteer', 'awards'];
+export const ENTRY_KINDS = ['experience', 'research', 'volunteer', 'projects'];
 
 export const emptyEntry = (kind) => {
   switch (kind) {
-    case 'experience': return { id: uid(), title: '', company: '', location: '', start: '', end: '', current: false, bullets: [''] };
+    case 'experience':
+    case 'research':
+    case 'volunteer': return { id: uid(), title: '', company: '', location: '', start: '', end: '', current: false, bullets: [''] };
+    case 'publications': return { id: uid(), citation: '', link: '', year: '' };
+    case 'awards': return { id: uid(), name: '', issuer: '', date: '' };
     case 'projects': return { id: uid(), name: '', tech: '', link: '', start: '', end: '', bullets: [''] };
     case 'education': return { id: uid(), degree: '', school: '', location: '', start: '', end: '', details: '' };
     case 'certifications': return { id: uid(), name: '', issuer: '', date: '', link: '' };
@@ -32,6 +43,11 @@ export const EMPTY_RESUME = () => ({
   projects: [],
   education: [],
   certifications: [],
+  research: [],
+  publications: [],
+  volunteer: [],
+  awards: [],
+  kind: 'resume', // or 'cv' (academic CV: longer is fine, publications matter)
   order: [...DEFAULT_ORDER],
   hidden: [],
   template: 'classic',
@@ -104,6 +120,10 @@ export function resumeText(r) {
     ...r.projects.map((p) => [p.name, p.tech, ...cleanBullets(p)].join(' ')),
     ...r.education.map((e) => [e.degree, e.school, e.details].join(' ')),
     ...r.certifications.map((c) => [c.name, c.issuer].join(' ')),
+    ...r.research.map((e) => [e.title, e.company, ...cleanBullets(e)].join(' ')),
+    ...r.volunteer.map((e) => [e.title, e.company, ...cleanBullets(e)].join(' ')),
+    ...r.publications.map((x) => x.citation),
+    ...r.awards.map((x) => [x.name, x.issuer].join(' ')),
   ].filter(Boolean).join('\n');
 }
 
@@ -123,6 +143,20 @@ export function toPlainText(r, learnMapCerts = []) {
     if (s === 'experience' && r.experience.length) {
       H('Experience');
       r.experience.forEach((e) => { out.push([[e.title, e.company].filter(Boolean).join(', '), e.location, dateRange(e)].filter(Boolean).join(' | ')); cleanBullets(e).forEach((b) => out.push(`- ${b}`)); out.push(''); });
+    }
+    if ((s === 'research' || s === 'volunteer') && r[s].length) {
+      H(s === 'research' ? 'Research Experience' : 'Volunteer & Leadership');
+      r[s].forEach((e) => { out.push([[e.title, e.company].filter(Boolean).join(', '), e.location, dateRange(e)].filter(Boolean).join(' | ')); cleanBullets(e).forEach((b) => out.push(`- ${b}`)); out.push(''); });
+    }
+    if (s === 'publications' && r.publications.length) {
+      H('Publications & Presentations');
+      r.publications.filter((x) => x.citation.trim()).forEach((x) => out.push([x.citation.trim(), x.link].filter(Boolean).join(' ')));
+      out.push('');
+    }
+    if (s === 'awards' && r.awards.length) {
+      H('Awards & Honors');
+      r.awards.forEach((x) => out.push([x.name, x.issuer, x.date].filter(Boolean).join(' | ')));
+      out.push('');
     }
     if (s === 'projects' && r.projects.length) {
       H('Projects');
@@ -153,7 +187,12 @@ monitored negotiated optimized orchestrated organized overhauled oversaw partner
 prioritized produced programmed proposed prototyped published raised rebuilt redesigned reduced refactored reengineered resolved
 restructured revamped reviewed saved scaled scheduled secured shipped simplified solved spearheaded standardized streamlined
 strengthened supervised supported surveyed tested trained transformed tripled troubleshot unified upgraded validated verified wrote
-calculated drafted estimated modeled coached handled operated processed tracked ran owned`.split(/\s+/));
+calculated drafted estimated modeled coached handled operated processed tracked ran owned
+assayed cultured sequenced isolated purified synthesized characterized extracted quantified cloned transfected imaged screened
+measured recorded collected observed assessed administered educated counseled triaged charted taught tutored instructed advised
+reconciled forecasted budgeted sold closed pitched edited illustrated volunteered conducted compiled interviewed curated translated
+served cared examined treated diagnosed dispensed sampled titrated calibrated maintained presented co-authored authored
+organized hosted fundraised recruited onboarded greeted restocked counted ordered`.split(/\s+/));
 const PRESENT_VERBS = /^(build|lead|manage|develop|design|create|maintain|write|test|automate|analyze|improve|own|run|deliver|implement)s?\b/i;
 const WEAK_STARTS = /^(responsible for|worked on|helped|assisted|duties included|tasked with|involved in|participated in|in charge of)\b/i;
 const CLICHES = ['hard-working', 'hardworking', 'team player', 'detail-oriented', 'detail oriented', 'go-getter', 'results-driven', 'self-starter', 'think outside the box', 'synergy', 'dynamic individual', 'passionate about'];
@@ -188,8 +227,9 @@ export function analyzeResume(r, { pages = 1, jobSkills = null, learnMapCerts = 
   add('skills', 2, skills.length >= 8 && skills.length <= 30, '8–30 relevant skills', skills.length < 8 ? `You list ${skills.length}. ATS match on keywords — add the tools and languages you actually use.` : skills.length > 30 ? `You list ${skills.length}. Keep the 30 most relevant so the important ones stand out.` : `${skills.length} skills listed.`, 'skills', skills.length < 3 ? 'error' : 'warn');
 
   // Experience / projects
-  const entries = [...(show('experience') ? r.experience : []), ...(show('projects') ? r.projects : [])];
-  add('entries', 3, entries.length > 0, 'Experience or projects', entries.length ? `${r.experience.length} role${r.experience.length === 1 ? '' : 's'}, ${r.projects.length} project${r.projects.length === 1 ? '' : 's'}.` : 'Add at least one job or project — students should list 2–3 strong projects.', 'experience', 'error');
+  const cv = r.kind === 'cv';
+  const entries = ['experience', 'research', 'volunteer', 'projects'].filter((k) => r.order.includes(k) && show(k)).flatMap((k) => r[k] || []);
+  add('entries', 3, entries.length > 0, 'Experience, research or projects', entries.length ? `${entries.length} entr${entries.length === 1 ? 'y' : 'ies'} with details.` : 'Add at least one job, research position, volunteer role or project — students should list 2–3 strong ones.', 'experience', 'error');
 
   const bullets = entries.flatMap((e) => cleanBullets(e).map((b) => ({ b, e })));
   if (bullets.length) {
@@ -201,7 +241,7 @@ export function analyzeResume(r, { pages = 1, jobSkills = null, learnMapCerts = 
 
     const quantified = bullets.filter(({ b }) => HAS_NUMBER.test(b)).length;
     const pct = Math.round((quantified / bullets.length) * 100);
-    add('metrics', 3, pct >= 50, 'At least half of bullets show numbers', `${quantified} of ${bullets.length} bullets (${pct}%) have a number, %, $ or count. Recruiters trust impact they can measure — e.g. “cut test time by 40%”.`, 'experience');
+    add('metrics', 3, pct >= (cv ? 25 : 50), cv ? 'Some bullets show scale or results' : 'At least half of bullets show numbers', `${quantified} of ${bullets.length} bullets (${pct}%) have a number, %, $ or count. Recruiters trust impact they can measure — e.g. “cut test time by 40%”.`, 'experience');
 
     const long = bullets.filter(({ b }) => words(b).length > 32);
     const short = bullets.filter(({ b }) => words(b).length < 6);
@@ -215,7 +255,7 @@ export function analyzeResume(r, { pages = 1, jobSkills = null, learnMapCerts = 
     const tense = ended.flatMap((e) => cleanBullets(e)).filter((b) => PRESENT_VERBS.test(b));
     add('tense', 1, !tense.length, 'Past tense for past roles', tense.length ? `${tense.length} bullet${tense.length > 1 ? 's in finished roles use' : ' in a finished role uses'} present tense (“${words(tense[0]).slice(0, 3).join(' ')}…”). Use past tense: Built, Led…` : 'Tense is consistent.', 'experience');
 
-    const perRole = r.experience.filter((e) => cleanBullets(e).length < 2 || cleanBullets(e).length > 6);
+    const perRole = r.experience.filter((e) => cleanBullets(e).length < (cv ? 1 : 2) || cleanBullets(e).length > (cv ? 8 : 6));
     add('bulletcount', 1, !perRole.length, '2–6 bullets per role', perRole.length ? `“${perRole[0].title || 'A role'}” has ${cleanBullets(perRole[0]).length} bullet${cleanBullets(perRole[0]).length === 1 ? '' : 's'} — aim for 2–6.` : 'Each role has a healthy number of bullets.', 'experience');
   }
 
@@ -241,11 +281,16 @@ export function analyzeResume(r, { pages = 1, jobSkills = null, learnMapCerts = 
     const f = e.current ? new Date().getFullYear() : parseInt(String(e.end).match(/\d{4}/)?.[0], 10);
     return s && f && f >= s ? n + (f - s) : n;
   }, 0);
-  const maxPages = years >= 10 ? 2 : 1;
-  add('pages', 3, pages <= maxPages + 0.05, `Fits on ${maxPages} page${maxPages > 1 ? 's' : ''}`, pages <= maxPages + 0.05 ? `About ${pages.toFixed(1)} page${pages >= 1.5 ? 's' : ''}.` : `About ${pages.toFixed(1)} pages. With under 10 years of experience, recruiters expect 1 page — trim older bullets or try the Compact template.`, 'layout', 'error');
+  const maxPages = cv ? 99 : years >= 10 ? 2 : 1;
+  if (!cv) add('pages', 3, pages <= maxPages + 0.05, `Fits on ${maxPages} page${maxPages > 1 ? 's' : ''}`, pages <= maxPages + 0.05 ? `About ${pages.toFixed(1)} page${pages >= 1.5 ? 's' : ''}.` : `About ${pages.toFixed(1)} pages. With under 10 years of experience, recruiters expect 1 page — trim older bullets or try the Compact template.`, 'layout', 'error');
+
+  if (cv) {
+    add('pubs', 1, r.order.includes('publications') && r.publications.some((x) => x.citation.trim()), 'Publications & presentations',
+      r.publications.length ? 'Listed — use one citation style throughout (e.g. APA).' : 'Academic CVs list papers, posters and talks — add the Publications section (posters and class presentations count).', 'publications', 'info');
+  }
 
   // Certifications (light nudge only)
-  if (!r.certifications.length && !learnMapCerts) add('certs', 0.5, false, 'Certifications (optional)', 'A relevant certificate (AWS, ISTQB, a finished LearnMap roadmap…) can help you pass filters.', 'certifications', 'info');
+  if (!r.certifications.length && !learnMapCerts) add('certs', 0.5, false, 'Certifications (optional)', 'A relevant certificate can help you pass filters — e.g. BLS, CITI/GCP, Google Analytics, AWS, or a finished LearnMap roadmap.', 'certifications', 'info');
 
   // Job keywords
   if (jobSkills && jobSkills.length) {

@@ -4,7 +4,8 @@ import api, { errorMessage } from '../lib/api';
 import { useToast } from './Toast';
 import { Button, Icon, Modal, Prose, Spinner, Textarea, parseDetails, timeAgo } from './ui';
 
-const RES_ICON = { video: 'video', docs: 'book', course: 'grad', practice: 'target', article: 'file' };
+const RES_ICON = { video: 'video', docs: 'book', course: 'grad', practice: 'target', article: 'file', book: 'book', tool: 'settings' };
+const isSearch = (r) => r.kind === 'search' || /google\.com\/search|youtube\.com\/results/.test(r.url || '');
 
 /** Expanded panel under a task: instructions, steps, done-when, resources, notes, AI explain. */
 export default function TaskDetail({ task, onExplained }) {
@@ -110,11 +111,15 @@ export default function TaskDetail({ task, onExplained }) {
           <div className="section-label">Resources</div>
           <div className="stack-sm">
             {resources.map((r, i) => (
-              <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="row small" style={{ gap: 8, color: 'var(--text)' }}>
-                <span className="list-icon" style={{ width: 26, height: 26 }}><Icon name={RES_ICON[r.type] || 'link'} size={13} /></span>
-                <span className="grow truncate">{r.title}</span>
-                {r.source && <span className="tiny subtle nowrap">{r.source}</span>}
-                <Icon name="external" size={13} style={{ color: 'var(--text-3)' }} />
+              <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="res-link" title={r.note || r.title}>
+                <span className="list-icon" style={{ width: 26, height: 26 }}><Icon name={isSearch(r) ? 'search' : RES_ICON[r.type] || 'link'} size={13} /></span>
+                <span className="grow" style={{ minWidth: 0 }}>
+                  <span className="truncate" style={{ display: 'block' }}>{r.title}</span>
+                  {r.note && <span className="tiny subtle truncate" style={{ display: 'block' }}>{r.note}</span>}
+                </span>
+                {isSearch(r) ? <span className="res-tag">Search</span> : r.free !== false && <span className="res-tag free">Free</span>}
+                {r.source && <span className="tiny subtle nowrap res-source">{r.source}</span>}
+                <Icon name="external" size={13} style={{ color: 'var(--text-3)', flex: 'none' }} />
               </a>
             ))}
           </div>

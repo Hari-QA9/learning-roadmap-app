@@ -199,7 +199,7 @@ function Jobs() {
       >
         <form className="stack" onSubmit={addCustom}>
           <div className="grid-2">
-            <Field label="Job title"><Input value={custom.title} onChange={(e) => setCustom({ ...custom, title: e.target.value })} placeholder="QA Automation Engineer" /></Field>
+            <Field label="Job title"><Input value={custom.title} onChange={(e) => setCustom({ ...custom, title: e.target.value })} placeholder="Research Associate" /></Field>
             <Field label="Company" optional><Input value={custom.company} onChange={(e) => setCustom({ ...custom, company: e.target.value })} /></Field>
           </div>
           <div className="grid-2">

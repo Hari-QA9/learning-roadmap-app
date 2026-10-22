@@ -4,7 +4,7 @@ const db = require('../db');
 const auth = require('../middleware/auth');
 const rateLimit = require('../lib/rateLimit');
 const { generateJSON, sendAIError } = require('../lib/gemini');
-const { extractSkills, normaliseSkills, matchJob } = require('../lib/skills');
+const { extractSkills, normaliseSkills, matchJob, customSkills, mentions } = require('../lib/skills');
 const { refreshJobs, stripHtml } = require('../lib/jobSources');
 const { generateRoadmap } = require('../lib/roadmapAI');
 const { insertTask } = require('../lib/tasks');
@@ -39,7 +39,11 @@ async function loadProfile(userId) {
 }
 
 function shapeJob(row, profile, extra = {}) {
-  const skills = parse(row.skills, []);
+  let skills = parse(row.skills, []);
+  // Member skills the dictionary doesn't know (e.g. "patch clamp") count when the posting mentions them.
+  const custom = customSkills(profile.skills);
+  const hits = custom.filter((k, i) => (row.description != null ? mentions(`${row.title}\n${row.description}`, k) : !!Number(row[`cs${i}`])));
+  if (hits.length) skills = [...skills, ...hits.filter((k) => !skills.some((x) => x.toLowerCase() === k.toLowerCase()))];
   const m = matchJob({ title: row.title, skills }, profile);
   return {
     id: row.id, source: row.source, title: row.title, company: row.company, location: row.location,
@@ -99,8 +103,12 @@ router.get('/', auth, async (req, res) => {
     if (req.query.source) { where.push('j.source = ?'); params.push(String(req.query.source)); }
     if (req.query.saved === '1') where.push('a.id IS NOT NULL');
 
+    const custom = customSkills(profile.skills);
+    const csSql = custom.map((_, i) => `, (LOWER(j.description) LIKE ? OR LOWER(j.title) LIKE ?) AS cs${i}`).join('');
+    const csParams = custom.flatMap((k) => [`%${k.toLowerCase()}%`, `%${k.toLowerCase()}%`]);
+    params.unshift(...csParams);
     const [rows] = await q().query(
-      `SELECT j.id, j.source, j.user_id, j.title, j.company, j.location, j.remote, j.url, j.salary, j.job_type, j.skills, j.posted_at, j.publisher,
+      `SELECT j.id, j.source, j.user_id, j.title, j.company, j.location, j.remote, j.url, j.salary, j.job_type, j.skills, j.posted_at, j.publisher${csSql},
               a.status AS app_status, a.id AS app_id
        FROM jobs j
        LEFT JOIN job_applications a ON a.job_id = j.id AND a.user_id = ?
@@ -253,7 +261,9 @@ Skills: ${profile.skills.join(', ') || resume.skills || 'not set'}
 Resume headline: ${resume.headline || 'not provided'}
 Resume summary: ${resume.summary || 'not provided'}
 Experience: ${String(resume.experience || 'not provided').slice(0, 2500)}
+Research: ${String(resume.research || 'none').slice(0, 1500)}
 Projects: ${String(resume.projects || 'none').slice(0, 1500)}
+Publications: ${String(resume.publications || 'none').slice(0, 600)}
 Education: ${String(resume.education || 'not provided').slice(0, 800)}
 Certifications: ${String(resume.certifications || 'none').slice(0, 400)}`;
 

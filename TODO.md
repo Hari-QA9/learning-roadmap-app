@@ -10,7 +10,7 @@ Work we decided to hold for later, so nothing gets lost. Tick items off (`[x]`) 
 
 ### Security & privacy
 - [ ] **Remove `database_backup.sql` from the public repo.** The repo is public, and the dump contains real user rows (names, emails and password hashes). Delete the file, scrub it from git history, and have those users change their passwords.
-- [ ] **Ownership checks (IDOR fix).** Some routes (tasks, modules, notes, resources, comments) don't check that the item belongs to the logged-in member, so someone who guesses an ID could read or edit another member's data.
+- [ ] **Ownership checks (IDOR fix).** Some routes (tasks, modules, notes, comments — resources are done) don't check that the item belongs to the logged-in member, so someone who guesses an ID could read or edit another member's data.
 - [ ] Production security headers (`helmet`), CORS limited to the real site address, HTTPS only.
 - [ ] Privacy policy and terms pages.
 - [ ] Account deletion and "download my data" in Profile.
@@ -46,7 +46,13 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
   2. **Pricing** → choose the free **Basic** plan → **Subscribe** (no card needed).
   3. **Endpoints** tab → copy the `X-RapidAPI-Key` value from the code example.
   4. In `backend/.env` set `JSEARCH_API_KEY=…`.
-  5. While on the free plan, also set `JOB_QUERIES=qa automation engineer,software engineer` and `JOB_REFRESH_HOURS=24` (keeps it to ~60 requests/month). Remove both when moving to a paid plan at launch.
+  5. While on the free plan, also set `JSEARCH_MAX_QUERIES=2` and `JOB_REFRESH_HOURS=24` (keeps it to ~60 requests/month). Raise them when moving to a paid plan at launch.
+
+- [ ] 🟢 **YouTube** (free, optional — makes video resources open a real video instead of a YouTube search)
+  1. Go to console.cloud.google.com → create a project (any name).
+  2. **APIs & Services → Library** → search **YouTube Data API v3** → **Enable**.
+  3. **APIs & Services → Credentials → Create credentials → API key** → copy it.
+  4. In `backend/.env` set `YOUTUBE_API_KEY=…`. New roadmaps will use it (free quota is plenty for normal use).
 
 - [ ] After adding any key: save `.env`, restart the backend (Ctrl+C, then `npm start`), and check the terminal for `[jobs] Refreshed: … adzuna: N, usajobs: N, jsearch: N`. If you see `error: HTTP 401`, the key was pasted wrong (look for extra spaces).
 
@@ -77,6 +83,16 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Every field (science, health, business, engineering, teaching…)
+- [ ] 🟠 Run `npm run check-resources` in `backend` every month or so — it checks every link in the resource library still works.
+- [ ] 🟠 Grow the resource library (`backend/lib/resourceLibrary.js`) with more fields: psychology, social work, law, architecture, hospitality, trades.
+- [ ] 🟠 Use AI to pick out skills the built-in list doesn't know, for fields we haven't covered yet (today those still match if the member types them in).
+- [ ] 🟢 Let members rate resources (👍/👎) so the best ones rise to the top.
+- [ ] 🟢 Add field-specific job boards where public APIs exist (e.g. HigherEdJobs for academia, health-system career sites).
+- [ ] 🟢 Ownership checks are now in place for resources; tasks, modules, notes and comments still need them (see "Security & privacy").
+
+---
+
 ## Quality
 - [ ] 🟠 Move the end-to-end browser tests into the repo and run them on every pull request (GitHub Actions).
 - [ ] 🟢 Lighthouse pass for speed and accessibility on the main pages.
@@ -90,3 +106,4 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] AI job board: matching, fit analysis, application kit, gap roadmaps, tracker (PR #6)
 - [x] More job sources: Ashby, ~55 company boards, Adzuna / USAJobs / JSearch ready to switch on (PR #7)
 - [x] Resume builder v2: structured sections, live recruiter/ATS score, AI bullet rewrites, import, tailor-to-job versions, text-based PDF (PR #8)
+- [x] Works for every field: skills, job searches, templates, resume sections & Academic CV, field-aware AI, verified resource library (PR #9)

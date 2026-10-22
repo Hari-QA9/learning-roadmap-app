@@ -58,11 +58,11 @@ export default function JobPrefsModal({ open, onClose, onSaved }) {
       }
     >
       <form className="stack" onSubmit={save} style={{ opacity: loading ? 0.5 : 1 }}>
-        <Field label="Target roles" hint="Separate with commas — e.g. QA Automation Engineer, SDET">
-          <Input value={form.target_roles} onChange={set('target_roles')} placeholder="QA Automation Engineer, Software Engineer" />
+        <Field label="Target roles" hint="Separate with commas. Any field works — science, health, business, tech, teaching…">
+          <Input value={form.target_roles} onChange={set('target_roles')} placeholder="e.g. Research Associate, Lab Technician" />
         </Field>
-        <Field label="Your skills" hint={fromResume ? 'Pre-filled from your resume — edit freely.' : 'Separate with commas. Common spellings are understood (node js, postgres, k8s…).'}>
-          <Textarea rows={3} value={form.skills} onChange={set('skills')} placeholder="Java, Selenium, SQL, Git, REST APIs" />
+        <Field label="Your skills" hint={fromResume ? 'Pre-filled from your resume — edit freely.' : 'Separate with commas. Common spellings are understood (qPCR, western blot, EHR, QuickBooks, node js…).'}>
+          <Textarea rows={3} value={form.skills} onChange={set('skills')} placeholder="e.g. Cell culture, PCR, ELISA, Excel — or Java, SQL, Git" />
         </Field>
         <div className="grid-2">
           <Field label="Level">

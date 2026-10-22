@@ -48,12 +48,13 @@ export default function TailorModal({ open, onClose, resume, initialJobId, onApp
   };
 
   const findBullet = (id) => {
-    const m = String(id || '').match(/^([EP])(\d+)\.(\d+)$/);
+    const m = String(id || '').match(/^([EPR])(\d+)\.(\d+)$/);
     if (!m) return null;
-    const list = m[1] === 'E' ? resume.experience : resume.projects;
+    const kind = { E: 'experience', P: 'projects', R: 'research' }[m[1]];
+    const list = resume[kind] || [];
     const entry = list[Number(m[2])];
     if (!entry || entry.bullets[Number(m[3])] == null) return null;
-    return { kind: m[1] === 'E' ? 'experience' : 'projects', entryIndex: Number(m[2]), bulletIndex: Number(m[3]), original: entry.bullets[Number(m[3])], where: entry.title || entry.name };
+    return { kind, entryIndex: Number(m[2]), bulletIndex: Number(m[3]), original: entry.bullets[Number(m[3])], where: entry.title || entry.name };
   };
 
   const apply = async (key, change) => {

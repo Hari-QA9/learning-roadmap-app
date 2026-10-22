@@ -45,7 +45,7 @@ function CareerAdvisor() {
           <form onSubmit={submit}>
             {error && <div className="mb-2"><Alert tone="danger" onClose={() => setError('')}>{error}</Alert></div>}
             <Field label="Skills" hint="Comma-separated is fine.">
-              <Textarea rows={3} value={form.skills} onChange={set('skills')} placeholder="Python, Selenium, SQL, Git, REST APIs" />
+              <Textarea rows={3} value={form.skills} onChange={set('skills')} placeholder="e.g. Cell culture, PCR, Excel — or Python, SQL, Git" />
             </Field>
             <Field label="Experience" optional>
               <Textarea rows={2} value={form.experience} onChange={set('experience')} placeholder="1.5 years as a test engineer" />

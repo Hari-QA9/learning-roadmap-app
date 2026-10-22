@@ -104,7 +104,7 @@ function AIGenerator() {
               autoFocus
               value={form.topic}
               onChange={set('topic')}
-              placeholder="e.g. Playwright end-to-end testing with TypeScript"
+              placeholder="e.g. Molecular biology lab techniques, NCLEX prep, financial modeling, Playwright testing"
               disabled={loading}
               style={{ height: 44, fontSize: 15 }}
             />
@@ -138,7 +138,7 @@ function AIGenerator() {
                 </Field>
               )}
               <Field label="What you already know" optional className="full" hint="The AI skips what you know and builds on it.">
-                <Textarea rows={2} value={form.background} onChange={set('background')} placeholder="e.g. 1.5 years of manual testing, basic Java, some Selenium" disabled={loading} />
+                <Textarea rows={2} value={form.background} onChange={set('background')} placeholder="e.g. BS in Biology, used PCR in class labs; or 1 year of manual testing" disabled={loading} />
               </Field>
             </div>
           </Card>

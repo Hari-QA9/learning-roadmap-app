@@ -7,11 +7,11 @@ import {
   PageHeader, Button, Card, Field, Textarea, Select, Segmented, Loading, Icon, Modal, Badge, Ring, Dropdown, Spinner, ConfirmDialog, Input,
 } from '../components/ui';
 import ResumePaper, { PrintableResume, PAPER, TEMPLATES, MARGIN_X, MARGIN_Y } from '../components/resume/ResumePaper';
-import { ContactEditor, SummaryEditor, SkillsEditor, EntriesEditor } from '../components/resume/Editors';
+import { ContactEditor, SummaryEditor, SkillsEditor, EntriesEditor, PublicationsEditor } from '../components/resume/Editors';
 import HealthPanel from '../components/resume/HealthPanel';
 import TailorModal from '../components/resume/TailorModal';
 import {
-  upgradeResume, analyzeResume, toPlainText, skillList, uid, SECTION_LABELS,
+  upgradeResume, analyzeResume, toPlainText, skillList, uid, SECTION_LABELS, EXTRA_SECTIONS,
 } from '../lib/resume';
 
 const withIds = (list = []) => list.map((x) => ({ ...x, id: x.id || uid(), ...(Array.isArray(x.bullets) ? { bullets: x.bullets.length ? x.bullets : [''] } : {}) }));
@@ -225,7 +225,12 @@ function ResumeBuilder() {
         projects: withIds(d.projects || []),
         education: withIds(d.education || []),
         certifications: withIds(d.certifications || []),
+        research: withIds(d.research || []),
+        publications: withIds((d.publications || []).filter((x) => x.citation)),
+        volunteer: withIds(d.volunteer || []),
+        awards: withIds(d.awards || []),
       });
+      EXTRA_SECTIONS.forEach((k) => { if (next[k].length && !next.order.includes(k)) next.order.push(k); });
       setR(next);
       setImportOpen(false);
       setImportText('');
@@ -308,6 +313,15 @@ function ResumeBuilder() {
     [order[i], order[j]] = [order[j], order[i]];
     update({ order });
   };
+  const addSection = (s) => {
+    if (r.order.includes(s)) return;
+    const order = [...r.order];
+    const at = s === 'research' ? Math.max(0, order.indexOf('experience') + 1) : order.length;
+    order.splice(at || order.length, 0, s);
+    update({ order, hidden: r.hidden.filter((x) => x !== s) });
+    setTimeout(() => jump(s), 60);
+  };
+  const removeSection = (s) => update({ order: r.order.filter((x) => x !== s) });
   const toggleHidden = (s) => update({ hidden: r.hidden.includes(s) ? r.hidden.filter((x) => x !== s) : [...r.hidden, s] });
 
   const analysis = useMemo(() => (r ? analyzeResume(r, { pages, jobSkills: job?.skills, learnMapCerts: shownCerts.length }) : null), [r, pages, job, shownCerts.length]);
@@ -322,6 +336,10 @@ function ResumeBuilder() {
     experience: <EntriesEditor kind="experience" value={r.experience} onChange={(v) => update({ experience: v })} context={context} />,
     projects: <EntriesEditor kind="projects" value={r.projects} onChange={(v) => update({ projects: v })} context={context} />,
     education: <EntriesEditor kind="education" value={r.education} onChange={(v) => update({ education: v })} />,
+    research: <EntriesEditor kind="research" value={r.research} onChange={(v) => update({ research: v })} context={context} />,
+    volunteer: <EntriesEditor kind="volunteer" value={r.volunteer} onChange={(v) => update({ volunteer: v })} context={context} />,
+    publications: <PublicationsEditor value={r.publications} onChange={(v) => update({ publications: v })} />,
+    awards: <EntriesEditor kind="awards" value={r.awards} onChange={(v) => update({ awards: v })} />,
     certifications: (
       <>
         <EntriesEditor kind="certifications" value={r.certifications} onChange={(v) => update({ certifications: v })} />
@@ -368,6 +386,11 @@ function ResumeBuilder() {
         </Select>
         {target.kind === 'version' && <Badge tone="accent">Tailored{job ? ` for ${job.title}` : ''}</Badge>}
         <div className="grow" />
+        <Segmented
+          value={r.kind || 'resume'}
+          onChange={(v) => update(v === 'cv' ? { kind: v, order: r.order.includes('publications') ? r.order : [...r.order, 'publications'] } : { kind: v })}
+          options={[{ value: 'resume', label: 'Resume' }, { value: 'cv', label: 'Academic CV' }]}
+        />
         <Button size="sm" variant="ghost" icon="copy" onClick={duplicate}>Duplicate</Button>
         {target.kind === 'version' && (
           <>
@@ -391,6 +414,7 @@ function ResumeBuilder() {
               className={r.hidden.includes(s) ? 'section-hidden' : ''}
               actions={
                 <div className="row" style={{ gap: 0 }}>
+                  {EXTRA_SECTIONS.includes(s) && <Button size="sm" variant="ghost" icon="trash" onClick={() => removeSection(s)} aria-label={`Remove ${SECTION_LABELS[s]}`} title="Remove section (its content is kept)" />}
                   <Button size="sm" variant="ghost" icon={r.hidden.includes(s) ? 'eyeOff' : 'eye'} onClick={() => toggleHidden(s)} aria-label={r.hidden.includes(s) ? `Show ${SECTION_LABELS[s]}` : `Hide ${SECTION_LABELS[s]}`} title={r.hidden.includes(s) ? 'Hidden from resume' : 'Shown on resume'} />
                   <Button size="sm" variant="ghost" icon="chevronDown" style={{ transform: 'rotate(180deg)' }} disabled={i === 0} onClick={() => moveSection(s, -1)} aria-label={`Move ${SECTION_LABELS[s]} up`} />
                   <Button size="sm" variant="ghost" icon="chevronDown" disabled={i === r.order.length - 1} onClick={() => moveSection(s, 1)} aria-label={`Move ${SECTION_LABELS[s]} down`} />
@@ -400,6 +424,15 @@ function ResumeBuilder() {
               {sectionBody[s]}
             </Card>
           ))}
+
+          {EXTRA_SECTIONS.some((s) => !r.order.includes(s)) && (
+            <div className="add-section">
+              <span className="small muted">Add a section:</span>
+              {EXTRA_SECTIONS.filter((s) => !r.order.includes(s)).map((s) => (
+                <button key={s} type="button" className="filter-chip" onClick={() => addSection(s)}><Icon name="plus" size={11} /> {SECTION_LABELS[s]}</button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="resume-side">

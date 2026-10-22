@@ -71,10 +71,10 @@ function StudyPlanner() {
           <form onSubmit={submit}>
             {error && <div className="mb-2"><Alert tone="danger" onClose={() => setError('')}>{error}</Alert></div>}
             <Field label="What do you want to achieve?">
-              <Textarea rows={3} value={form.goal} onChange={set('goal')} placeholder="Become job-ready in test automation with Python and Selenium" />
+              <Textarea rows={3} value={form.goal} onChange={set('goal')} placeholder="e.g. Pass the NCLEX, get a lab research job, or become job-ready in data analysis" />
             </Field>
             <Field label="What you already know" optional>
-              <Input value={form.skills} onChange={set('skills')} placeholder="Basic Python, manual testing" />
+              <Input value={form.skills} onChange={set('skills')} placeholder="e.g. Intro biology, basic Excel" />
             </Field>
             <Field label="Level">
               <Segmented value={form.currentLevel} onChange={(v) => setForm({ ...form, currentLevel: v })} options={[{ value: 'beginner', label: 'Beginner' }, { value: 'intermediate', label: 'Intermediate' }, { value: 'advanced', label: 'Advanced' }]} />
