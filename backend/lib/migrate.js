@@ -1,6 +1,27 @@
 // Adds the tables/columns newer features need. Safe to run on every start:
 // each column is only added if it doesn't exist yet. Nothing is ever removed.
+const fs = require('fs');
+const path = require('path');
 const db = require('../db');
+
+/** Creates the base tables from backend/database/schema.sql (for a brand-new, empty database). */
+async function baseSchema() {
+  const file = path.join(__dirname, '..', 'database', 'schema.sql');
+  if (!fs.existsSync(file)) return;
+  const statements = fs.readFileSync(file, 'utf8')
+    .split(/;\s*\n/)
+    .map((s) => s.replace(/^\s*--.*$/gm, '').trim())
+    .filter(Boolean);
+  // One connection, so turning foreign-key checks off applies to every statement.
+  const conn = await db.promise().getConnection();
+  try {
+    for (const sql of statements) {
+      try { await conn.query(sql); } catch (err) { console.warn(`[migrate] ${err.message}`); }
+    }
+  } finally {
+    conn.release();
+  }
+}
 
 const COLUMNS = [
   ['roadmaps', 'details', 'MEDIUMTEXT NULL'],
@@ -167,6 +188,7 @@ const CHANGES = [
 
 async function migrate() {
   const q = db.promise();
+  try { await baseSchema(); } catch (err) { console.warn(`[migrate] base schema skipped: ${err.message}`); }
   for (const sql of TABLES) {
     try { await q.query(sql); } catch (err) { console.warn(`[migrate] ${err.message}`); }
   }

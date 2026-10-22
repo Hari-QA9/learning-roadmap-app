@@ -7,3 +7,7 @@ frontend/build/
 npm-debug.log*
 .DS_Store
 Thumbs.db
+
+# Database dumps contain member data (emails, password hashes) — never commit them
+*.sql
+!backend/database/schema.sql

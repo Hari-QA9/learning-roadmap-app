@@ -1,5 +1,6 @@
 import NotificationSettings from '../components/NotificationSettings';
 import CalendarCard from '../components/CalendarCard';
+import DataCard from '../components/DataCard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { errorMessage, updateUser } from '../lib/api';
@@ -208,6 +209,8 @@ function Profile() {
               </div>
             </div>
           </Card>
+
+          <DataCard email={user.email} />
         </div>
       </div>
 
