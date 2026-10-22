@@ -69,9 +69,8 @@ const LIBRARY = [
 
   // ---------- Marketing, design & communication ----------
   R('skillshop', 'Google Skillshop (Ads & Analytics certifications)', 'https://skillshop.withgoogle.com/', 'course', 'Google', 'marketing, google ads, google analytics, ga4, digital marketing'),
-  R('hubspot-academy', 'HubSpot Academy (free marketing courses)', 'https://academy.hubspot.com/', 'course', 'HubSpot', 'marketing, content marketing, email marketing, social media, sales, inbound'),
+  R('hubspot-academy', 'HubSpot Academy (free marketing courses)', 'https://academy.hubspot.com/', 'course', 'HubSpot', 'marketing, content marketing, email marketing, social media, social media marketing, sales, inbound'),
   R('seo-guide', 'Google SEO Starter Guide', 'https://developers.google.com/search/docs/fundamentals/seo-starter-guide', 'docs', 'Google', 'seo, search engine optimization, digital marketing, content'),
-  R('meta-blueprint', 'Meta Blueprint (social ads)', 'https://www.facebook.com/business/learn', 'course', 'Meta', 'social media marketing, facebook ads, instagram, digital marketing'),
   R('nng', 'Nielsen Norman Group: UX articles', 'https://www.nngroup.com/articles/', 'article', 'NN/g', 'ux, user research, usability, ux design, wireframing'),
   R('figma-help', 'Figma Learn & Help Center', 'https://help.figma.com/', 'docs', 'Figma', 'figma, ui design, prototyping, wireframing, design systems'),
   R('lawsofux', 'Laws of UX', 'https://lawsofux.com/', 'article', 'Laws of UX', 'ux, design principles, psychology, ui design'),
