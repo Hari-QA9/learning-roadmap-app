@@ -14,29 +14,7 @@ const q = () => db.promise();
 const aiLimit = rateLimit({ max: 30, name: 'job requests' });
 const parse = (v, d) => { if (!v) return d; if (typeof v === 'object') return v; try { return JSON.parse(v); } catch { return d; } };
 
-/* ---------- Member profile used for matching ---------- */
-async function loadProfile(userId) {
-  const [rows] = await q().query('SELECT * FROM career_profiles WHERE user_id = ?', [userId]);
-  const p = rows[0] || {};
-  let skills = parse(p.skills, []);
-  let fromResume = false;
-  if (!skills.length) {
-    // Fall back to the skills in the member's saved resume.
-    const [r] = await q().query('SELECT resume_data FROM user_resumes WHERE user_id = ? LIMIT 1', [userId]).catch(() => [[]]);
-    const resume = r[0] ? resumeToText(r[0].resume_data) : {};
-    skills = normaliseSkills(resume.skills || '');
-    fromResume = skills.length > 0;
-  }
-  return {
-    target_roles: parse(p.target_roles, []),
-    skills,
-    level: p.level || '',
-    locations: parse(p.locations, []),
-    remote_only: !!Number(p.remote_only || 0),
-    exists: !!rows[0],
-    fromResume,
-  };
-}
+const { loadProfile } = require('../lib/careerProfile');
 
 function shapeJob(row, profile, extra = {}) {
   let skills = parse(row.skills, []);
@@ -152,7 +130,8 @@ router.get('/recommended', auth, async (req, res) => {
        ORDER BY COALESCE(j.posted_at, j.fetched_at) DESC LIMIT 1500`,
       [req.user.id, req.user.id, new Date(Date.now() - 30 * 86400000)]
     );
-    let jobs = rows.map((r) => shapeJob(r, profile)).filter((j) => !j.status);
+    // Only real matches — a recommendation with no overlap isn't useful.
+    let jobs = rows.map((r) => shapeJob(r, profile)).filter((j) => !j.status && (j.match || 0) >= 25);
     if (profile.remote_only) jobs = jobs.filter((j) => j.remote);
     if (profile.locations.length && !profile.remote_only) {
       const locs = profile.locations.map((l) => l.toLowerCase());

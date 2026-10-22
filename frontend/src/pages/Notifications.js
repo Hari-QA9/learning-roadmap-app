@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import api, { errorMessage } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { PageHeader, Button, Card, EmptyState, SkeletonRows, Icon, Segmented, timeAgo } from '../components/ui';
 
 function Notifications() {
   const toast = useToast();
+  const navigate = useNavigate();
   const { refreshUnread } = useOutletContext() || {};
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,16 +56,16 @@ function Notifications() {
         {loading ? (
           <SkeletonRows rows={4} />
         ) : visible.length === 0 ? (
-          <EmptyState icon="bell" title={filter === 'unread' ? 'No unread notifications' : 'No notifications yet'} description="Updates about your roadmaps and achievements will appear here." />
+          <EmptyState icon="bell" title={filter === 'unread' ? 'No unread notifications' : 'No notifications yet'} description="Reminders, job alerts, weekly summaries and achievements will appear here." />
         ) : (
           <div className="list">
             {visible.map((n) => (
-              <div key={n.id} className="list-row clickable" onClick={() => markRead(n)} style={{ alignItems: 'flex-start', padding: '14px 20px' }}>
+              <div key={n.id} className="list-row clickable" onClick={() => { markRead(n); if (n.link) navigate(n.link); }} style={{ alignItems: 'flex-start', padding: '14px 20px' }}>
                 <span style={{ width: 8, height: 8, borderRadius: 8, marginTop: 7, flex: 'none', background: n.is_read ? 'transparent' : 'var(--accent)' }} />
                 <div className="grow">
                   <div style={{ fontWeight: n.is_read ? 400 : 500, color: 'var(--text)' }}>{n.title}</div>
                   {n.message && <div className="small muted mt-1">{n.message}</div>}
-                  <div className="tiny subtle mt-1">{timeAgo(n.created_at)}</div>
+                  <div className="tiny subtle mt-1">{timeAgo(n.created_at)}{n.link ? ' · Open' : ''}</div>
                 </div>
                 <Button variant="ghost" size="sm" icon="trash" aria-label="Delete notification" onClick={(e) => { e.stopPropagation(); remove(n); }} />
               </div>

@@ -10,7 +10,7 @@ Work we decided to hold for later, so nothing gets lost. Tick items off (`[x]`) 
 
 ### Security & privacy
 - [ ] **Remove `database_backup.sql` from the public repo.** The repo is public, and the dump contains real user rows (names, emails and password hashes). Delete the file, scrub it from git history, and have those users change their passwords.
-- [ ] **Ownership checks (IDOR fix).** Some routes (tasks, modules, notes, comments — resources are done) don't check that the item belongs to the logged-in member, so someone who guesses an ID could read or edit another member's data.
+- [ ] **Ownership checks (IDOR fix).** Some routes (modules, notes, comments — tasks and resources are done) don't check that the item belongs to the logged-in member, so someone who guesses an ID could read or edit another member's data.
 - [ ] Production security headers (`helmet`), CORS limited to the real site address, HTTPS only.
 - [ ] Privacy policy and terms pages.
 - [ ] Account deletion and "download my data" in Profile.
@@ -93,6 +93,14 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Engagement (reminders & notifications)
+- [ ] 🔴 Set up email sending in production (SMTP or a provider like Postmark/SendGrid/Resend) and set `PUBLIC_API_URL` so unsubscribe links work — reminders and job alerts are in-app only until then.
+- [ ] 🟠 Push notifications to phones (needs the installable app from PR C + web push keys).
+- [ ] 🟢 Let members pick the day/time of their weekly summary (today: Monday 9am their time).
+- [ ] 🟢 Weekly summary for mentors/parents (optional sharing).
+
+---
+
 ## Quality
 - [ ] 🟠 Move the end-to-end browser tests into the repo and run them on every pull request (GitHub Actions).
 - [ ] 🟢 Lighthouse pass for speed and accessibility on the main pages.
@@ -107,3 +115,4 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] More job sources: Ashby, ~55 company boards, Adzuna / USAJobs / JSearch ready to switch on (PR #7)
 - [x] Resume builder v2: structured sections, live recruiter/ATS score, AI bullet rewrites, import, tailor-to-job versions, text-based PDF (PR #8)
 - [x] Works for every field: skills, job searches, templates, resume sections & Academic CV, field-aware AI, verified resource library (PR #9)
+- [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)

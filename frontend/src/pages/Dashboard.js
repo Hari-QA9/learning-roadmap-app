@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import JobRow from '../components/JobRow';
+import TodayCard from '../components/TodayCard';
 import api, { getUser } from '../lib/api';
 import {
   PageHeader, Stat, Card, Button, Progress, EmptyState, SkeletonRows, Icon, Badge, timeAgo,
@@ -28,6 +29,7 @@ function Dashboard() {
   const [quiz, setQuiz] = useState({ overall: null, history: [] });
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState(null);
+  const [today, setToday] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -42,11 +44,14 @@ function Dashboard() {
       if (q.status === 'fulfilled') setQuiz({ overall: q.value.data?.overall, history: (q.value.data?.quizHistory || []).slice(0, 5) });
       setLoading(false);
     });
+    // New members get a short welcome setup first.
+    api.get('/settings', { noCache: true }).then((r) => { if (alive && r.data?.needsOnboarding) navigate('/welcome', { replace: true }); }).catch(() => {});
+    api.get('/settings/today', { noCache: true }).then((r) => alive && setToday(r.data)).catch(() => {});
     api.get('/jobs/recommended', { params: { limit: 4 } })
       .then((r) => alive && setJobs(r.data))
       .catch(() => alive && setJobs({ jobs: [] }));
     return () => { alive = false; };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pct = (rm) => (rm.total_tasks > 0 ? Math.round((rm.completed_tasks / rm.total_tasks) * 100) : 0);
   const active = roadmaps.slice(0, 4);
@@ -66,7 +71,7 @@ function Dashboard() {
       <div className="grid-4 mb-3 stagger">
         <Stat label="Roadmaps" icon="map" value={stats?.totalRoadmaps ?? 0} loading={loading} />
         <Stat label="Tasks completed" icon="checkCircle" value={stats?.completedTasks ?? 0} note={totalTasks ? `${overall}% of all tasks` : undefined} loading={loading} />
-        <Stat label="Day streak" icon="flame" value={stats?.streak ?? 0} note="Log in daily to grow it" loading={loading} />
+        <Stat label="Learning streak" icon="flame" value={today ? today.streak : stats?.streak ?? 0} note="Days in a row with a finished task" loading={loading} />
         <Stat label="Quiz accuracy" icon="target" value={`${quiz.overall?.accuracy ?? 0}%`} note={`${quiz.overall?.totalAttempts ?? 0} answers`} loading={loading} />
       </div>
 
@@ -114,6 +119,7 @@ function Dashboard() {
         </Card>
 
         <div className="stack-lg">
+          <TodayCard today={today} />
           <Card
             title="Jobs for you"
             description="Best matches for your skills"

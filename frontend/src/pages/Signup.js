@@ -36,7 +36,7 @@ function Signup() {
         const res = await api.post('/auth/login', { email: payload.email, password: payload.password, remember: true });
         setSession(res.data.token, res.data.user, true);
         try { localStorage.setItem('learnmap.lastEmail', payload.email); } catch {}
-        navigate('/dashboard', { replace: true });
+        navigate('/welcome', { replace: true });
       } catch {
         navigate('/login?registered=1', { replace: true });
       }
