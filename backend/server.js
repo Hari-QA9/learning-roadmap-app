@@ -14,6 +14,8 @@ app.set('trust proxy', 1);
 app.use(securityHeaders);
 app.use(corsMiddleware());
 app.use(express.json({ limit: '1mb' }));
+// The member's language (sent by the app) — used so the AI writes in it.
+app.use(require('./lib/lang').middleware);
 
 // Routes
 const authRoutes = require('./routes/auth');

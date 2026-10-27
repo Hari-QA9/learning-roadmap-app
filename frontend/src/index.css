@@ -1061,3 +1061,10 @@ label.setting-row { cursor: pointer; }
 .class-table td, .class-table th { white-space: nowrap; }
 .assign-banner { display: flex; gap: 10px; align-items: center; padding: 10px 14px; margin: -6px 0 16px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
 .assign-banner .grow { color: var(--text-2); }
+
+/* Languages: use each device's own fonts for Telugu, Hindi and Chinese, and don't squeeze those scripts */
+:root:lang(te) { --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Nirmala UI', 'Noto Sans Telugu', 'Kohinoor Telugu', 'Telugu Sangam MN', sans-serif; --font-display: var(--font-sans); }
+:root:lang(hi) { --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Nirmala UI', 'Noto Sans Devanagari', 'Kohinoor Devanagari', sans-serif; --font-display: var(--font-sans); }
+:root:lang(zh-Hans) { --font-sans: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Segoe UI', sans-serif; --font-display: var(--font-sans); }
+:root:lang(te) *, :root:lang(hi) * { letter-spacing: normal !important; }
+:root:lang(te) .lp-title, :root:lang(hi) .lp-title { line-height: 1.25; }

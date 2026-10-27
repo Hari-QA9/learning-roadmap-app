@@ -26,7 +26,7 @@ async function getSettings(userId) {
 
 async function saveSettings(userId, patch) {
   const allowed = ['email_weekly', 'email_reminders', 'email_job_alerts', 'email_followups', 'daily_goal', 'timezone', 'onboarded', 'field',
-    'last_digest_at', 'last_nudge_at', 'last_job_alert_at', 'calendar_token'];
+    'last_digest_at', 'last_nudge_at', 'last_job_alert_at', 'calendar_token', 'language'];
   const keys = Object.keys(patch).filter((k) => allowed.includes(k));
   if (!keys.length) return getSettings(userId);
   const [has] = await q().query('SELECT user_id FROM user_settings WHERE user_id = ?', [userId]);

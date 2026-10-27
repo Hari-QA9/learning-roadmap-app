@@ -7,6 +7,7 @@ import { ToastProvider } from './components/Toast';
 import AppShell from './components/AppShell';
 import { captureInvite } from './lib/growth';
 import { FocusProvider } from './lib/focus';
+import { I18nProvider } from './lib/i18n';
 
 import {
   Landing, Login, Signup, ForgotPassword, ResetPassword, Dashboard, Roadmaps, RoadmapDetail, AIGenerator,
@@ -32,6 +33,7 @@ function PublicOnly({ children }) {
 function App() {
   useEffect(() => { preloadAllWhenIdle(); }, []);
   return (
+    <I18nProvider>
     <ThemeProvider>
       <ToastProvider>
         <FocusProvider>
@@ -106,6 +108,7 @@ function App() {
         </FocusProvider>
       </ToastProvider>
     </ThemeProvider>
+    </I18nProvider>
   );
 }
 

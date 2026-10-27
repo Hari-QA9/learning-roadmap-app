@@ -143,6 +143,14 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Languages
+- [ ] 🟠 Translate the remaining pages (roadmap details, job board, resume builder, community, career tools…). The app shell, landing, sign-up/login and Profile are translated; the AI already writes everything in the chosen language.
+- [ ] 🟠 Have a native speaker review each translation (Spanish, Hindi, Telugu, French, Chinese).
+- [ ] 🟢 Emails (reminders, weekly summary) in the member's language.
+- [ ] 🟢 Right-to-left languages (Arabic, Urdu) need layout work.
+
+---
+
 ## Classes
 - [ ] 🟠 Co-teachers (more than one teacher per class).
 - [ ] 🟢 Reminder the day before an assignment is due (today: the due date is put on the student's last task, so normal due-date reminders apply).
@@ -186,6 +194,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
 - [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)
 - [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)
+- [x] More languages: Español, हिन्दी, తెలుగు, Français, 中文 — app shell, landing, sign-up/login, Profile; the AI writes roadmaps, explanations, flashcards, quizzes, letters and interviews in the chosen language (PR #24)
 - [x] Classrooms & mentoring: classes with join code/link, assign roadmaps (each student gets a copy, late joiners too), teacher progress table + CSV, announcements, roadmap banner (PR #23)
 - [x] Phone & desktop push notifications (built-in Web Push, no extra packages; verified against the RFC 8291 test vector) (PR #22)
 - [x] Explore & import: public Explore page of listed shared roadmaps (opt-in per roadmap), import a YouTube playlist (needs YOUTUBE_API_KEY), syllabus, notes or .txt/.md file into a roadmap + flashcards (PR #21)
