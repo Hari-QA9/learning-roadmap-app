@@ -13,7 +13,7 @@ const USER_TABLES = [
   'notifications', 'user_resumes', 'resume_versions', 'job_applications', 'job_insights', 'interview_sessions',
   'notes', 'comments', 'bookmarks', 'resource_ratings', 'quiz_attempts', 'quiz_results',
   'module_evaluations', 'roadmap_evaluations', 'certificates', 'feedback', 'ai_usage',
-  'flashcards', 'study_sessions', 'review_days',
+  'flashcards', 'study_sessions', 'review_days', 'challenge_claims',
 ];
 const SECRET_TABLES = ['password_resets', 'email_verifications'];
 const HIDE = new Set(['password', 'calendar_token', 'token_hash']);
@@ -39,6 +39,9 @@ router.get('/export', auth, async (req, res) => {
       resources: await rowsOf('SELECT s.* FROM resources s JOIN roadmaps r ON r.id = s.roadmap_id WHERE r.user_id = ?', [id]),
       jobs_added: await rowsOf('SELECT * FROM jobs WHERE user_id = ?', [id]),
       public_profile: await rowsOf('SELECT * FROM public_profiles WHERE user_id = ?', [id]),
+      study_groups: await rowsOf('SELECT g.name, g.goal, gm.role, gm.joined_at FROM group_members gm JOIN study_groups g ON g.id = gm.group_id WHERE gm.user_id = ?', [id]),
+      group_messages: await rowsOf('SELECT g.name AS group_name, m.body, m.created_at FROM group_messages m JOIN study_groups g ON g.id = m.group_id WHERE m.user_id = ?', [id]),
+      buddies: await rowsOf('SELECT u.name, b.status, b.created_at FROM buddies b JOIN users u ON u.id = CASE WHEN b.requester_id = ? THEN b.addressee_id ELSE b.requester_id END WHERE b.requester_id = ? OR b.addressee_id = ?', [id, id, id]),
       people_you_invited: await rowsOf('SELECT u.name, r.created_at FROM referrals r JOIN users u ON u.id = r.invitee_id WHERE r.inviter_id = ?', [id]),
     };
     for (const t of USER_TABLES) data[t] = await rowsOf(`SELECT * FROM ${t} WHERE user_id = ?`, [id]);
@@ -72,6 +75,23 @@ router.delete('/', auth, async (req, res) => {
       await run('DELETE FROM followers WHERE follower_id = ? OR following_id = ?', [id, id]);
       await run('DELETE FROM public_profiles WHERE user_id = ?', [id]);
       await run('DELETE FROM referrals WHERE inviter_id = ? OR invitee_id = ?', [id, id]);
+      // Groups: hand owned groups to the longest-standing member (or delete them if empty)
+      try {
+        const [owned] = await conn.query('SELECT id FROM study_groups WHERE owner_id = ?', [id]);
+        for (const g of owned) {
+          const [[next]] = await conn.query('SELECT user_id FROM group_members WHERE group_id = ? AND user_id <> ? ORDER BY joined_at LIMIT 1', [g.id, id]);
+          if (next) {
+            await conn.query('UPDATE group_members SET role = ? WHERE group_id = ? AND user_id = ?', ['owner', g.id, next.user_id]);
+            await conn.query('UPDATE study_groups SET owner_id = ? WHERE id = ?', [next.user_id, g.id]);
+          } else {
+            await conn.query('DELETE FROM group_messages WHERE group_id = ?', [g.id]);
+            await conn.query('DELETE FROM study_groups WHERE id = ?', [g.id]);
+          }
+        }
+      } catch (e) { if (!/doesn't exist|no such table/i.test(e.message)) throw e; }
+      await run('DELETE FROM group_members WHERE user_id = ?', [id]);
+      await run('DELETE FROM group_messages WHERE user_id = ?', [id]);
+      await run('DELETE FROM buddies WHERE requester_id = ? OR addressee_id = ?', [id, id]);
       await run('DELETE FROM shared_roadmaps WHERE shared_by = ? OR shared_with = ?', [id, id]);
       await run('DELETE FROM jobs WHERE user_id = ?', [id]);
       // Roadmaps and everything inside them

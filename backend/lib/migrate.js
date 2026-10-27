@@ -53,9 +53,58 @@ const COLUMNS = [
   ['roadmaps', 'copies', 'INT DEFAULT 0'],
   ['roadmaps', 'copied_from', 'INT NULL'],
   ['user_settings', 'invite_code', 'VARCHAR(16) NULL'],
+  // Community pack: opt in to the public weekly leaderboard
+  ['user_settings', 'leaderboard_public', 'TINYINT DEFAULT 0'],
 ];
 
 const TABLES = [
+  // Community pack: study groups, chat, buddies, weekly challenges
+  `CREATE TABLE IF NOT EXISTS study_groups (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(80) NOT NULL,
+    goal VARCHAR(160) NULL,
+    description TEXT NULL,
+    owner_id INT NOT NULL,
+    invite_code VARCHAR(16) NOT NULL,
+    is_public TINYINT DEFAULT 0,
+    weekly_goal INT DEFAULT 20,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (invite_code)
+  )`,
+  `CREATE TABLE IF NOT EXISTS group_members (
+    group_id INT NOT NULL,
+    user_id INT NOT NULL,
+    role VARCHAR(10) DEFAULT 'member',
+    last_read_id INT DEFAULT 0,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (group_id, user_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS group_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    group_id INT NOT NULL,
+    user_id INT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY group_id (group_id, id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS buddies (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    requester_id INT NOT NULL,
+    addressee_id INT NOT NULL,
+    status VARCHAR(10) DEFAULT 'pending',
+    requester_nudged_at DATETIME NULL,
+    addressee_nudged_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    accepted_at DATETIME NULL,
+    UNIQUE (requester_id, addressee_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS challenge_claims (
+    user_id INT NOT NULL,
+    week DATE NOT NULL,
+    challenge VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, week, challenge)
+  )`,
   // Learning pack: flashcards with spaced repetition
   `CREATE TABLE IF NOT EXISTS flashcards (
     id INT AUTO_INCREMENT PRIMARY KEY,

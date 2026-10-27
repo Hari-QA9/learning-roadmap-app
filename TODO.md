@@ -129,6 +129,14 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Community
+- [ ] 🟠 Real-time chat (WebSockets) instead of checking for new messages every 8 seconds — needed if groups get busy.
+- [ ] 🟠 Report a message / member, and block a buddy (moderation before groups grow).
+- [ ] 🟢 Leagues (Bronze → Diamond) with promotion each week, like Duolingo.
+- [ ] 🟢 Group study sessions: start a focus timer together and see who's focusing right now.
+
+---
+
 ## Learning
 - [ ] 🟢 Flashcards: images and code formatting on cards; import/export Anki decks.
 - [ ] 🟢 Focus timer: optional focus sounds (rain, lo-fi) and a "do not disturb" reminder.
@@ -160,6 +168,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
 - [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)
 - [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)
+- [x] Community pack: study groups with chat and weekly group goal, invite links, public group discovery, accountability buddies with nudges/high fives, weekly challenges with XP, friends/group/public leaderboards (PR #19)
 - [x] Learning pack: placement check before AI roadmaps, AI flashcards with spaced repetition (review page, decks, keyboard shortcuts), focus timer with study time per roadmap (PR #18)
 - [x] Growth pack: public profile/portfolio pages, shareable & copyable roadmaps, verified certificate links + Add to LinkedIn, invite friends with XP and badges (PR #17)
 - [x] Launch-ready: env-based database pool, auto-created tables, ownership checks, security headers & CORS, Privacy/Terms, download & delete account, Brevo email, Render/Vercel config + DEPLOY.md (PR #15)
