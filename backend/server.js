@@ -44,6 +44,7 @@ const growthRoutes = require('./routes/growth');
 const publicRoutes = require('./routes/public');
 const learningRoutes = require('./routes/learning');
 const communityRoutes = require('./routes/community');
+const careerRoutes = require('./routes/career');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/roadmaps', roadmapRoutes);
@@ -73,6 +74,7 @@ app.use('/api/growth', growthRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/learning', learningRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/career', careerRoutes);
 
 app.get('/', (req, res) => res.send('Learning Roadmap API Running'));
 // Health check for the hosting provider (also confirms the database answers).

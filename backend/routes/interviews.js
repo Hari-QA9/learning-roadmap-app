@@ -57,7 +57,7 @@ router.post('/', auth, aiLimit, async (req, res) => {
   try {
     let role = String(b.role || '').trim();
     let company = String(b.company || '').trim();
-    let description = '';
+    let description = String(b.description || '').slice(0, 6000);
     if (b.job_id) {
       const [jobs] = await q().query('SELECT title, company, description FROM jobs WHERE id = ? AND (user_id IS NULL OR user_id = ?)', [b.job_id, req.user.id]);
       if (!jobs.length) return res.status(404).json({ message: 'Job not found.' });

@@ -58,6 +58,18 @@ const COLUMNS = [
 ];
 
 const TABLES = [
+  // Career pack: cover letters, LinkedIn reviews and interview prep sheets
+  `CREATE TABLE IF NOT EXISTS career_docs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    kind VARCHAR(20) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    job_id INT NULL,
+    data MEDIUMTEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY user_kind (user_id, kind)
+  )`,
   // Community pack: study groups, chat, buddies, weekly challenges
   `CREATE TABLE IF NOT EXISTS study_groups (
     id INT AUTO_INCREMENT PRIMARY KEY,
