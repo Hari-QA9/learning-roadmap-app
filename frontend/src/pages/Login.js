@@ -5,6 +5,7 @@ import { Button, Field, Input, Alert } from '../components/ui';
 import { PasswordField } from '../components/PasswordField';
 import AuthLayout from './AuthLayout';
 import GoogleButton from '../components/GoogleButton';
+import { peekAfterAuth, takeAfterAuth } from '../lib/growth';
 
 const LAST_EMAIL = 'learnmap.lastEmail';
 
@@ -23,7 +24,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-  const from = location.state?.from && !location.state.from.startsWith('/login') ? location.state.from : '/dashboard';
+  const from = location.state?.from && !location.state.from.startsWith('/login') ? location.state.from : (peekAfterAuth() || '/dashboard');
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -35,6 +36,7 @@ function Login() {
       const res = await api.post('/auth/login', { email, password: form.password, remember });
       setSession(res.data.token, res.data.user, remember);
       try { if (remember) localStorage.setItem(LAST_EMAIL, email); else localStorage.removeItem(LAST_EMAIL); } catch {}
+      takeAfterAuth();
       navigate(from, { replace: true });
     } catch (err) {
       setLocked(!!err.response?.data?.locked);

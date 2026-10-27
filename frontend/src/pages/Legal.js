@@ -5,7 +5,7 @@ import { Icon } from '../components/ui';
 // Plain-language Privacy Policy and Terms. Set REACT_APP_CONTACT_EMAIL in frontend/.env
 // (or the hosting settings) so members have an address to write to.
 const CONTACT = process.env.REACT_APP_CONTACT_EMAIL || '';
-const UPDATED = 'October 22, 2026';
+const UPDATED = 'October 26, 2026';
 
 const Contact = () => (CONTACT
   ? <a href={`mailto:${CONTACT}`}>{CONTACT}</a>
@@ -40,6 +40,14 @@ function Privacy() {
         <li><strong>Email delivery</strong> uses an email provider, which receives your address and the message.</li>
         <li><strong>Hosting and database</strong> providers store the app and its data on our behalf.</li>
         <li><strong>Sign in with Google</strong> (optional) is handled by Google under Google’s privacy policy.</li>
+      </ul>
+
+      <h2>Things you choose to make public</h2>
+      <ul>
+        <li><strong>Public profile:</strong> off by default. If you turn it on (Profile → Public profile), anyone with the link can see what you pick: name, headline, links, skills, roadmaps and progress, certificates, and resume sections. Never your email or phone number.</li>
+        <li><strong>Shared roadmaps:</strong> when you share a roadmap, anyone with the link can see its modules, tasks and resources and copy it. Your progress and notes stay private. You can stop sharing at any time.</li>
+        <li><strong>Certificates:</strong> anyone with a certificate ID can check it’s real and see the name and roadmap on it.</li>
+        <li><strong>Invites:</strong> if you join through a friend’s invite link, they see your first name in their list of friends who joined.</li>
       </ul>
 
       <h2>Cookies and storage</h2>

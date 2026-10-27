@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api, { errorMessage } from '../lib/api';
 import { useToast } from '../components/Toast';
+import { copyText, linkedInCertUrl, siteUrl } from '../lib/growth';
 import { PageHeader, Button, Card, EmptyState, Loading, Icon, formatDate } from '../components/ui';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -32,7 +33,7 @@ function printCertificate(cert) {
     <div class="course">${esc(cert.roadmap_title)}</div>
     <div class="foot">
       <div><b>${date}</b>Date issued</div>
-      <div style="text-align:right"><b>${esc(cert.certificate_id)}</b>Certificate ID</div>
+      <div style="text-align:right"><b>${esc(cert.certificate_id)}</b>Verify at ${esc(window.location.host)}/verify/${esc(cert.certificate_id)}</div>
     </div>
   </div>
   <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); };</script>
@@ -85,9 +86,13 @@ function Certificate() {
                     <span className="row" style={{ gap: 6 }}><Icon name="calendar" size={14} /> {formatDate(c.issued_at, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                     <span className="mono tiny">{c.certificate_id}</span>
                   </div>
-                  <Button variant={featured ? 'primary' : 'secondary'} size="sm" icon="download" onClick={() => { if (!printCertificate(c)) toast.error('Allow pop-ups to download the certificate'); }}>
-                    Download PDF
-                  </Button>
+                  <div className="row row-wrap" style={{ gap: 6 }}>
+                    <a className="btn btn-secondary btn-sm" href={linkedInCertUrl(c)} target="_blank" rel="noopener noreferrer">Add to LinkedIn</a>
+                    <Button size="sm" icon="link" onClick={async () => { if (await copyText(siteUrl(`/verify/${c.certificate_id}`))) toast.success('Verification link copied — anyone can check it’s real'); }}>Copy verify link</Button>
+                    <Button variant={featured ? 'primary' : 'secondary'} size="sm" icon="download" onClick={() => { if (!printCertificate(c)) toast.error('Allow pop-ups to download the certificate'); }}>
+                      Download PDF
+                    </Button>
+                  </div>
                 </div>
               </div>
             );

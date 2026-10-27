@@ -1,6 +1,8 @@
 import NotificationSettings from '../components/NotificationSettings';
 import CalendarCard from '../components/CalendarCard';
 import DataCard from '../components/DataCard';
+import PublicProfileCard from '../components/growth/PublicProfileCard';
+import InviteCard from '../components/growth/InviteCard';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { errorMessage, updateUser } from '../lib/api';
@@ -20,6 +22,8 @@ const BADGE_INFO = [
   { name: 'Resource Hunter', how: 'Bookmark 5 resources from your roadmaps.' },
   { name: 'Social Learner', how: 'Share a roadmap with someone.' },
   { name: 'Feedback Hero', how: 'Submit feedback through the Feedback page.' },
+  { name: 'Ambassador', how: 'A friend joins LearnMap with your invite link (Profile → Invite friends).' },
+  { name: 'Trailblazer', how: 'Share a roadmap and have someone copy it.' },
 ];
 
 function Profile() {
@@ -130,6 +134,8 @@ function Profile() {
             <Stat label="Certificates" icon="award" value={certCount} />
           </div>
 
+          <PublicProfileCard />
+
           <Card title="Recent activity" pad={false}>
             {activity.length === 0 ? (
               <EmptyState icon="clock" title="No activity yet" description="Create a roadmap or finish a task and it will show up here." />
@@ -151,6 +157,8 @@ function Profile() {
         </div>
 
         <div className="stack-lg">
+          <InviteCard />
+
           <Card title="Security" description="Change the password you use to log in.">
             {!pwOpen ? (
               <Button icon="key" onClick={() => setPwOpen(true)}>Change password</Button>

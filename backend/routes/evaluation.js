@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const verifyToken = require('../middleware/auth');
 const { ownRoadmap, ownModule } = require('../lib/ownership');
+const { randomCode } = require('../lib/growth');
 
 // Make AI quiz output safe to render: 4 string options and a valid index.
 function normalizeQuestions(list) {
@@ -134,7 +135,7 @@ router.post('/roadmap-result', verifyToken, async (req, res) => {
         'SELECT name FROM users WHERE id = ?', [userId]
       );
       const userName = userRows[0]?.name || 'Student';
-      const certId = 'CERT-' + Date.now() + '-' + userId;
+      const certId = `LM-${randomCode(10).toUpperCase()}`; // random, so certificates can't be guessed
 
       await db.promise().query(
         'INSERT INTO certificates (user_id, roadmap_id, roadmap_title, user_name, certificate_id) VALUES (?, ?, ?, ?, ?)',

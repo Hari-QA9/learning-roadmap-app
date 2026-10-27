@@ -48,9 +48,36 @@ const COLUMNS = [
   ['job_applications', 'contact_name', 'VARCHAR(120) NULL'],
   ['job_applications', 'contact_email', 'VARCHAR(200) NULL'],
   ['job_applications', 'next_step', 'VARCHAR(255) NULL'],
+  // Growth pack: shareable roadmaps and invite links
+  ['roadmaps', 'share_slug', 'VARCHAR(24) NULL'],
+  ['roadmaps', 'copies', 'INT DEFAULT 0'],
+  ['roadmaps', 'copied_from', 'INT NULL'],
+  ['user_settings', 'invite_code', 'VARCHAR(16) NULL'],
 ];
 
 const TABLES = [
+  // Public profile / portfolio page (off until the member turns it on)
+  `CREATE TABLE IF NOT EXISTS public_profiles (
+    user_id INT PRIMARY KEY,
+    username VARCHAR(40) NOT NULL,
+    is_public TINYINT DEFAULT 0,
+    headline VARCHAR(160) NULL,
+    links TEXT NULL,
+    show_roadmaps TINYINT DEFAULT 1,
+    show_certificates TINYINT DEFAULT 1,
+    show_resume TINYINT DEFAULT 1,
+    show_stats TINYINT DEFAULT 1,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (username)
+  )`,
+  // Who invited whom (one row per new member who joined through an invite link)
+  `CREATE TABLE IF NOT EXISTS referrals (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    inviter_id INT NOT NULL,
+    invitee_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (invitee_id)
+  )`,
   `CREATE TABLE IF NOT EXISTS email_verifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,

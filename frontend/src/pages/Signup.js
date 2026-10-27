@@ -5,11 +5,13 @@ import { Button, Field, Input, Alert } from '../components/ui';
 import { PasswordField, StrengthMeter, scorePassword } from '../components/PasswordField';
 import AuthLayout from './AuthLayout';
 import GoogleButton from '../components/GoogleButton';
+import { getInvite, clearInvite, takeAfterAuth } from '../lib/growth';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function Signup() {
   const navigate = useNavigate();
+  const invited = !!getInvite();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [touched, setTouched] = useState({});
   const [error, setError] = useState('');
@@ -30,14 +32,15 @@ function Signup() {
     if (!valid) { setError('Please fix the highlighted fields.'); return; }
     setError('');
     setLoading(true);
-    const payload = { name: form.name.trim(), email: form.email.trim(), password: form.password };
+    const payload = { name: form.name.trim(), email: form.email.trim(), password: form.password, invite: getInvite() };
     try {
       await api.post('/auth/register', payload);
       try {
         const res = await api.post('/auth/login', { email: payload.email, password: payload.password, remember: true });
         setSession(res.data.token, res.data.user, true);
+        clearInvite();
         try { localStorage.setItem('learnmap.lastEmail', payload.email); } catch {}
-        navigate('/welcome', { replace: true });
+        navigate(takeAfterAuth() || '/welcome', { replace: true });
       } catch {
         navigate('/login?registered=1', { replace: true });
       }
@@ -50,6 +53,7 @@ function Signup() {
 
   return (
     <AuthLayout>
+      {invited && <div className="mb-2"><Alert tone="success">A friend invited you — welcome! Create your free account below.</Alert></div>}
       <h1>Create your account</h1>
       <p className="mt-1 mb-3">Plan what you want to learn and track it to the finish.</p>
 

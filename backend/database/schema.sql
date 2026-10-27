@@ -353,6 +353,8 @@ INSERT IGNORE INTO `badges` (`id`, `name`, `description`, `icon`) VALUES
   (5, 'Quiz Champion', 'Scored 100% on a quiz', '🏆'),
   (6, 'Resource Hunter', 'Bookmarked 5 resources', '📚'),
   (7, 'Social Learner', 'Shared a roadmap with someone', '🤝'),
-  (8, 'Feedback Hero', 'Submitted feedback', '💬');
+  (8, 'Feedback Hero', 'Submitted feedback', '💬'),
+  (9, 'Ambassador', 'A friend joined LearnMap with your invite link', '📣'),
+  (10, 'Trailblazer', 'Someone copied a roadmap you shared', '🧭');
 
 SET FOREIGN_KEY_CHECKS = 1;

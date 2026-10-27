@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { errorMessage, setSession } from '../lib/api';
 import { useToast } from './Toast';
+import { getInvite, clearInvite, takeAfterAuth } from '../lib/growth';
 
 let scriptPromise = null;
 const loadGoogle = () => {
@@ -38,9 +39,11 @@ export default function GoogleButton({ text = 'continue_with', redirectTo = '/da
         client_id: clientId,
         callback: async ({ credential }) => {
           try {
-            const r = await api.post('/auth/google', { credential });
+            const r = await api.post('/auth/google', { credential, invite: getInvite() });
             setSession(r.data.token, r.data.user, true);
-            navigate(r.data.isNew ? '/welcome' : redirectTo, { replace: true });
+            clearInvite();
+            const after = takeAfterAuth();
+            navigate(after || (r.data.isNew ? '/welcome' : redirectTo), { replace: true });
           } catch (e) {
             toast.error(errorMessage(e, 'Google sign-in failed'));
           }
