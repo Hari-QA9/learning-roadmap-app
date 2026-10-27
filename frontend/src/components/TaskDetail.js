@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { errorMessage } from '../lib/api';
 import { useToast } from './Toast';
+import { useFocus } from '../lib/focus';
 import { Button, Icon, Modal, Prose, Spinner, Textarea, parseDetails, timeAgo } from './ui';
 
 const RES_ICON = { video: 'video', docs: 'book', course: 'grad', practice: 'target', article: 'file', book: 'book', tool: 'settings' };
@@ -23,6 +24,24 @@ export default function TaskDetail({ task, onExplained, onDueChange }) {
   const [notes, setNotes] = useState(null);
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const focus = useFocus();
+  const [carding, setCarding] = useState(false);
+  const [cardsMade, setCardsMade] = useState(null);
+
+  const makeCards = async () => {
+    setCarding(true);
+    try {
+      const r = await api.post('/learning/flashcards/generate', { task_id: task.id }, { timeout: 120000 });
+      setCardsMade({ n: r.data.added, deck: r.data.roadmap_id });
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not make flashcards'));
+    } finally { setCarding(false); }
+  };
+  const startFocus = () => {
+    if (focus.status !== 'idle' && focus.status !== 'ready-break') { navigate('/focus'); return; }
+    focus.start({ task_id: task.id, roadmap_id: task.roadmap_id || null, label: task.title });
+    navigate('/focus');
+  };
 
   useEffect(() => {
     let alive = true;
@@ -79,6 +98,8 @@ export default function TaskDetail({ task, onExplained, onDueChange }) {
       <div className="row row-wrap mt-2" style={{ gap: 8 }}>
         <Button size="sm" variant="primary" icon="sparkles" onClick={() => explain(false)}>Explain this</Button>
         <Button size="sm" icon="message" onClick={() => navigate(`/chat?q=${encodeURIComponent(`Help me with this task from my roadmap: ${task.title}. ${task.description || ''}`)}`)}>Ask AI</Button>
+        <Button size="sm" icon="layers" loading={carding} onClick={makeCards}>Flashcards</Button>
+        <Button size="sm" icon="clock" onClick={startFocus}>Focus</Button>
         {onDueChange && (
           <label className="due-input" title="Due date — you'll get a reminder, and it shows in your calendar">
             <Icon name="calendar" size={13} />
@@ -86,6 +107,13 @@ export default function TaskDetail({ task, onExplained, onDueChange }) {
           </label>
         )}
       </div>
+
+      {cardsMade && (
+        <div className="alert alert-success small mt-2 row" style={{ gap: 8 }}>
+          <span className="grow">{cardsMade.n} flashcards made from this task.</span>
+          <button type="button" className="link-btn small" onClick={() => navigate(`/review?start=1${cardsMade.deck ? `&deck=${cardsMade.deck}` : ''}`)}>Review now</button>
+        </div>
+      )}
 
       {steps.length > 0 && (
         <>

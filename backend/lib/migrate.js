@@ -56,6 +56,42 @@ const COLUMNS = [
 ];
 
 const TABLES = [
+  // Learning pack: flashcards with spaced repetition
+  `CREATE TABLE IF NOT EXISTS flashcards (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    roadmap_id INT NULL,
+    task_id INT NULL,
+    front TEXT NOT NULL,
+    back TEXT NOT NULL,
+    ease DOUBLE DEFAULT 2.5,
+    interval_days DOUBLE DEFAULT 0,
+    reps INT DEFAULT 0,
+    lapses INT DEFAULT 0,
+    due_at DATETIME NULL,
+    last_reviewed_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY user_due (user_id, due_at)
+  )`,
+  // One row per finished focus (Pomodoro) session
+  `CREATE TABLE IF NOT EXISTS study_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    roadmap_id INT NULL,
+    task_id INT NULL,
+    minutes INT NOT NULL,
+    day DATE NOT NULL,
+    label VARCHAR(160) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY user_day (user_id, day)
+  )`,
+  // Reviews per day (for "reviewed today" and the review streak)
+  `CREATE TABLE IF NOT EXISTS review_days (
+    user_id INT NOT NULL,
+    day DATE NOT NULL,
+    reviews INT DEFAULT 0,
+    PRIMARY KEY (user_id, day)
+  )`,
   // Public profile / portfolio page (off until the member turns it on)
   `CREATE TABLE IF NOT EXISTS public_profiles (
     user_id INT PRIMARY KEY,

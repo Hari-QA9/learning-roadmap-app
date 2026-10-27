@@ -8,6 +8,7 @@ import {
 } from '../components/ui';
 import TaskDetail from '../components/TaskDetail';
 import ShareRoadmapModal from '../components/growth/ShareRoadmapModal';
+import { useFocus } from '../lib/focus';
 
 const TYPE_META = {
   learn: { label: 'Learn', icon: 'book' },
@@ -118,6 +119,17 @@ function RoadmapDetail() {
 
   const [confirm, setConfirm] = useState(null); // { kind, item }
   const [sharing, setSharing] = useState(false);
+  const focus = useFocus();
+  const makeDeck = async () => {
+    toast.info('Making flashcards…');
+    try {
+      const r = await api.post('/learning/flashcards/generate', { roadmap_id: Number(id) }, { timeout: 120000 });
+      toast.success(`${r.data.added} flashcards added`);
+      navigate(`/review?start=1&deck=${id}`);
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not make flashcards'));
+    }
+  };
   const [busyConfirm, setBusyConfirm] = useState(false);
 
   const loadTasks = useCallback(async (moduleId) => {
@@ -292,6 +304,8 @@ function RoadmapDetail() {
             <Dropdown trigger={({ toggle }) => <Button variant="ghost" icon="more" onClick={toggle} aria-label="More actions" />}>
               <button className="menu-item" onClick={() => navigate(`/quiz?topic=${encodeURIComponent(roadmap.title)}`)}><Icon name="quiz" size={15} /> Practice quiz on this topic</button>
               <button className="menu-item" onClick={() => navigate('/study-planner')}><Icon name="calendar" size={15} /> Make a study plan</button>
+              <button className="menu-item" onClick={makeDeck}><Icon name="layers" size={15} /> Make flashcards for this roadmap</button>
+              <button className="menu-item" onClick={() => { if (focus.status === 'idle') focus.setPlan({ roadmap_id: roadmap.id, label: roadmap.title }); navigate('/focus'); }}><Icon name="clock" size={15} /> Start a focus session</button>
               <div className="menu-sep" />
               <button className="menu-item danger" onClick={() => setConfirm({ kind: 'roadmap' })}><Icon name="trash" size={15} /> Delete roadmap</button>
             </Dropdown>

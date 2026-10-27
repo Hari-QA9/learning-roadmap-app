@@ -6,11 +6,12 @@ import { isLoggedIn } from './lib/api';
 import { ToastProvider } from './components/Toast';
 import AppShell from './components/AppShell';
 import { captureInvite } from './lib/growth';
+import { FocusProvider } from './lib/focus';
 
 import {
   Landing, Login, Signup, ForgotPassword, ResetPassword, Dashboard, Roadmaps, RoadmapDetail, AIGenerator,
   Profile, Notifications, Quiz, QuizPerformance, Feedback, Chat, ResumeBuilder, Templates, CareerAdvisor,
-  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, Interview, InterviewSession, VerifyEmail, Admin, Legal, PublicProfile, SharedRoadmap, VerifyCertificate, Join, preloadAllWhenIdle,
+  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, Interview, InterviewSession, VerifyEmail, Admin, Legal, PublicProfile, SharedRoadmap, VerifyCertificate, Join, Review, Focus, preloadAllWhenIdle,
 } from './lib/pages';
 
 // Remember a friend's ?invite= code from whatever page the visitor lands on.
@@ -33,6 +34,7 @@ function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
+        <FocusProvider>
         <Router>
           <Suspense fallback={<div className="route-loading" />}>
           <Routes>
@@ -77,12 +79,15 @@ function App() {
               <Route path="/interview" element={<Interview />} />
               <Route path="/interview/:id" element={<InterviewSession />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/review" element={<Review />} />
+              <Route path="/focus" element={<Focus />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </Suspense>
         </Router>
+        </FocusProvider>
       </ToastProvider>
     </ThemeProvider>
   );

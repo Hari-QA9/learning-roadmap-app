@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../lib/api';
 import { Card, Ring, Icon, formatDate } from './ui';
 
 /** Today's goal, the last 7 days, and tasks due soon. */
 export default function TodayCard({ today }) {
   const navigate = useNavigate();
+  const [study, setStudy] = useState(null);
+  useEffect(() => {
+    Promise.allSettled([api.get('/learning/flashcards/summary', { noCache: true }), api.get('/learning/focus/summary', { noCache: true })])
+      .then(([c, f]) => setStudy({ due: c.value?.data?.due || 0, cards: c.value?.data?.total || 0, minutes: f.value?.data?.today || 0 }));
+  }, []);
   if (!today) return null;
   const pct = Math.min(100, Math.round((today.today / Math.max(1, today.goal)) * 100));
   const dayLabel = (d) => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { weekday: 'narrow' });
@@ -31,6 +37,20 @@ export default function TodayCard({ today }) {
           </div>
         </div>
       </div>
+      {study && (
+        <div className="study-chips mt-3">
+          <button type="button" className="study-chip" onClick={() => navigate('/review')}>
+            <Icon name="layers" size={14} />
+            <span className="grow">{study.due ? <><strong>{study.due}</strong> card{study.due === 1 ? '' : 's'} to review</> : study.cards ? 'Cards all reviewed' : 'Make flashcards'}</span>
+            <Icon name="chevronRight" size={13} />
+          </button>
+          <button type="button" className="study-chip" onClick={() => navigate('/focus')}>
+            <Icon name="clock" size={14} />
+            <span className="grow">{study.minutes ? <><strong>{study.minutes} min</strong> focused today</> : 'Start a focus session'}</span>
+            <Icon name="chevronRight" size={13} />
+          </button>
+        </div>
+      )}
       {today.due.length > 0 && (
         <div className="mt-3">
           <div className="section-label" style={{ marginTop: 0 }}>Due soon</div>
