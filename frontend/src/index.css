@@ -928,3 +928,49 @@ label.setting-row { cursor: pointer; }
 .legal-body li { margin: 6px 0; }
 .legal-body strong { color: var(--text); }
 .legal-updated { color: var(--text-3) !important; font-size: 13px !important; margin-bottom: 20px; }
+
+/* Public pages: profile, shared roadmap, certificate check */
+.pub { min-height: 100vh; background: var(--bg); display: flex; flex-direction: column; }
+.pub-top { max-width: 920px; width: 100%; margin: 0 auto; padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.pub-body { max-width: 920px; width: 100%; margin: 0 auto; padding: 8px 16px 48px; flex: 1; }
+.pub-foot { max-width: 920px; width: 100%; margin: 0 auto; padding: 20px 16px 28px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; font-size: 12px; color: var(--text-3); }
+.pub-foot a { color: inherit; }
+.pub-hero { display: flex; gap: 20px; align-items: flex-start; padding: 12px 0 8px; }
+.pub-hero h1, .pub-roadmap-head h1, .verify h1 { font-size: clamp(26px, 5vw, 36px); letter-spacing: -0.025em; margin: 0; line-height: 1.15; }
+.pub-headline { font-size: 17px; color: var(--text-2); margin-top: 4px; }
+.pub-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 20px 0 4px; }
+.pub-stats > div { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; }
+.pub-stats strong { font-size: 24px; letter-spacing: -0.02em; color: var(--text); }
+.pub-stats span { font-size: 12px; color: var(--text-3); }
+.pub-section { margin-top: 28px; }
+.pub-section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); font-weight: 600; margin: 0 0 10px; }
+.pub-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pub-card { padding: 16px 18px; }
+.pub-card-title { color: var(--text); line-height: 1.3; }
+.pub-prose { color: var(--text-2); line-height: 1.65; margin: 0; white-space: pre-line; }
+.pub-entry { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.pub-entry:last-child { border-bottom: 0; }
+.pub-entry ul { margin: 6px 0 0; padding-left: 18px; color: var(--text-2); font-size: 14px; line-height: 1.55; }
+.pub-cta { margin-top: 32px; padding: 18px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.pub-roadmap-head { padding: 16px 0 4px; }
+.pub-module { padding: 0; overflow: hidden; }
+.pub-module-head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: none; border: 0; color: var(--text); cursor: pointer; font: inherit; }
+.pub-module-body { padding: 0 16px 14px 56px; }
+.pub-step { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft, color-mix(in srgb, var(--accent) 12%, transparent)); color: var(--accent); display: grid; place-items: center; font-size: 13px; font-weight: 600; flex: none; }
+.share-box { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2, var(--bg)); min-width: 0; }
+.share-box a, .share-box span { min-width: 0; }
+.verify { max-width: 560px; margin: 24px auto; padding: 32px 28px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.verify-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 6px; }
+.verify-icon.ok { background: var(--success-soft); color: var(--success); }
+.verify-icon.bad { background: var(--danger-soft); color: var(--danger); }
+.verify-course { font-size: 22px; font-weight: 600; color: var(--accent); letter-spacing: -0.01em; }
+.verify-meta { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+.verify-meta div { display: flex; flex-direction: column; font-size: 13px; }
+.verify-meta span { color: var(--text-3); font-size: 12px; }
+.verify-meta strong { color: var(--text); }
+@media (max-width: 640px) {
+  .pub-hero { flex-direction: column; gap: 12px; }
+  .pub-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pub-grid { grid-template-columns: minmax(0, 1fr); }
+  .pub-module-body { padding-left: 16px; }
+}

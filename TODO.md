@@ -129,6 +129,13 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Growth
+- [ ] 🟠 Link previews for public pages (profile, shared roadmap, certificate) on WhatsApp/LinkedIn need the server to send page-specific titles and images — the site is a single-page app today, so every link shows the general LearnMap preview.
+- [ ] 🟢 "Explore" page listing popular shared roadmaps (most copied) by field.
+- [ ] 🟢 Profile page themes and a QR code for the profile link (career fairs, resumes).
+
+---
+
 ## Quality
 - [ ] 🟠 Move the end-to-end browser tests into the repo and run them on every pull request (GitHub Actions).
 - [ ] 🟢 Lighthouse pass for speed and accessibility on the main pages.
@@ -146,4 +153,5 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
 - [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)
 - [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)
+- [x] Growth pack: public profile/portfolio pages, shareable & copyable roadmaps, verified certificate links + Add to LinkedIn, invite friends with XP and badges (PR #17)
 - [x] Launch-ready: env-based database pool, auto-created tables, ownership checks, security headers & CORS, Privacy/Terms, download & delete account, Brevo email, Render/Vercel config + DEPLOY.md (PR #15)

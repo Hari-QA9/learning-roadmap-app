@@ -37,6 +37,8 @@ router.get('/export', auth, async (req, res) => {
       tasks: await rowsOf('SELECT t.* FROM tasks t JOIN modules m ON m.id = t.module_id JOIN roadmaps r ON r.id = m.roadmap_id WHERE r.user_id = ?', [id]),
       resources: await rowsOf('SELECT s.* FROM resources s JOIN roadmaps r ON r.id = s.roadmap_id WHERE r.user_id = ?', [id]),
       jobs_added: await rowsOf('SELECT * FROM jobs WHERE user_id = ?', [id]),
+      public_profile: await rowsOf('SELECT * FROM public_profiles WHERE user_id = ?', [id]),
+      people_you_invited: await rowsOf('SELECT u.name, r.created_at FROM referrals r JOIN users u ON u.id = r.invitee_id WHERE r.inviter_id = ?', [id]),
     };
     for (const t of USER_TABLES) data[t] = await rowsOf(`SELECT * FROM ${t} WHERE user_id = ?`, [id]);
     res.setHeader('Content-Disposition', 'attachment; filename="learnmap-data.json"');
@@ -67,6 +69,8 @@ router.delete('/', auth, async (req, res) => {
     try {
       for (const t of [...USER_TABLES, ...SECRET_TABLES]) await run(`DELETE FROM ${t} WHERE user_id = ?`, [id]);
       await run('DELETE FROM followers WHERE follower_id = ? OR following_id = ?', [id, id]);
+      await run('DELETE FROM public_profiles WHERE user_id = ?', [id]);
+      await run('DELETE FROM referrals WHERE inviter_id = ? OR invitee_id = ?', [id, id]);
       await run('DELETE FROM shared_roadmaps WHERE shared_by = ? OR shared_with = ?', [id, id]);
       await run('DELETE FROM jobs WHERE user_id = ?', [id]);
       // Roadmaps and everything inside them

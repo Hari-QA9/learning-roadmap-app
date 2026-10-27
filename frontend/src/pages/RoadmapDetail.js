@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api, { errorMessage } from '../lib/api';
+import api, { errorMessage, clearCache } from '../lib/api';
 import { useToast } from '../components/Toast';
 import {
   PageHeader, Button, Card, Badge, Icon, Input, Select, Tabs, Ring, Progress, EmptyState, Loading,
   ConfirmDialog, Dropdown, Modal, Field, Textarea, Alert, formatDate, parseDetails, formatMinutes,
 } from '../components/ui';
 import TaskDetail from '../components/TaskDetail';
+import ShareRoadmapModal from '../components/growth/ShareRoadmapModal';
 
 const TYPE_META = {
   learn: { label: 'Learn', icon: 'book' },
@@ -116,6 +117,7 @@ function RoadmapDetail() {
   const [savingResource, setSavingResource] = useState(false);
 
   const [confirm, setConfirm] = useState(null); // { kind, item }
+  const [sharing, setSharing] = useState(false);
   const [busyConfirm, setBusyConfirm] = useState(false);
 
   const loadTasks = useCallback(async (moduleId) => {
@@ -284,6 +286,7 @@ function RoadmapDetail() {
         description={roadmap.description}
         actions={
           <>
+            <Button icon="send" onClick={() => setSharing(true)}>{roadmap.share_slug ? 'Shared' : 'Share'}</Button>
             <Button icon="plus" onClick={() => setShowModule(true)}>Add module</Button>
             {allComplete && <Button variant="primary" icon="award" onClick={() => navigate(`/roadmap-evaluation/${id}`)}>Final assessment</Button>}
             <Dropdown trigger={({ toggle }) => <Button variant="ghost" icon="more" onClick={toggle} aria-label="More actions" />}>
@@ -644,6 +647,7 @@ function RoadmapDetail() {
         </form>
       </Modal>
 
+      <ShareRoadmapModal roadmap={roadmap} open={sharing} onClose={() => setSharing(false)} onChange={(patch) => { clearCache(); setRoadmap((r) => ({ ...r, ...patch })); }} />
       <ConfirmDialog
         open={!!confirm}
         title={confirm?.kind === 'roadmap' ? 'Delete this roadmap?' : confirm?.kind === 'module' ? 'Delete module?' : confirm?.kind === 'task' ? 'Delete task?' : 'Remove resource?'}

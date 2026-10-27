@@ -40,6 +40,10 @@ export const VerifyEmail = lazyPage(() => import('../pages/VerifyEmail'));
 export const Admin = lazyPage(() => import('../pages/Admin'));
 export const InterviewSession = lazyPage(() => import('../pages/InterviewSession'));
 export const Legal = lazyPage(() => import('../pages/Legal'));
+export const PublicProfile = lazyPage(() => import('../pages/PublicProfile'));
+export const SharedRoadmap = lazyPage(() => import('../pages/SharedRoadmap'));
+export const VerifyCertificate = lazyPage(() => import('../pages/VerifyCertificate'));
+export const Join = lazyPage(() => import('../pages/Join'));
 
 // Path → page, used to preload on hover.
 export const PRELOAD = {

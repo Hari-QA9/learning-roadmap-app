@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
 const { sendMail } = require('../lib/mailer');
+const { recordReferral } = require('../lib/growth');
 require('dotenv').config();
 
 const q = () => db.promise();
@@ -85,6 +86,7 @@ router.post('/register', async (req, res) => {
     // New accounts confirm their email (existing accounts were marked confirmed when this was added).
     await q().query('UPDATE users SET email_verified = 0 WHERE id = ?', [result.insertId]).catch(() => {});
     sendVerification({ id: result.insertId, name, email }).catch((e) => console.error('[auth] verification email:', e.message));
+    if (req.body.invite) await recordReferral(result.insertId, req.body.invite);
     res.json({ message: 'User registered successfully' });
   } catch (err) {
     console.error(err);
@@ -302,6 +304,7 @@ router.post('/google', async (req, res) => {
       await q().query('INSERT INTO user_stats (user_id) VALUES (?)', [ins.insertId]).catch(() => {});
       [users] = await q().query('SELECT * FROM users WHERE id = ?', [ins.insertId]);
       isNew = true;
+      if (req.body.invite) await recordReferral(ins.insertId, req.body.invite);
     }
     const user = users[0];
     // Google already confirmed this email.
