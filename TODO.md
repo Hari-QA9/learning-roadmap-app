@@ -122,7 +122,6 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ## Engagement (reminders & notifications)
 - [ ] 🔴 Set up email in production — Brevo (DEPLOY.md step 5) — and set `PUBLIC_API_URL` so unsubscribe links work. Reminders and job alerts are in-app only until then.
-- [ ] 🟠 Push notifications to phones (needs the installable app from PR C + web push keys).
 - [ ] 🟢 Let members pick the day/time of their weekly summary (today: Monday 9am their time).
 - [ ] 🟢 Weekly summary for mentors/parents (optional sharing).
 
@@ -130,7 +129,8 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ## Platform
 - [ ] 🟠 Publish the installable app to the Google Play Store (a "Trusted Web Activity" wraps the web app) once LearnMap is online.
-- [ ] 🟢 Web push notifications to phones when the app is closed (needs the site online over HTTPS + push keys).
+- [ ] 🟠 **Turn on phone notifications:** `npm run vapid-keys` → add the two keys to Render (DEPLOY.md step 5½).
+- [ ] 🟢 Let members choose which notifications go to their phone (today: all in-app notifications are pushed).
 - [ ] 🟢 More admin tools: deactivate a member, resend their verification, export members as CSV.
 
 ---
@@ -179,6 +179,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
 - [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)
 - [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)
+- [x] Phone & desktop push notifications (built-in Web Push, no extra packages; verified against the RFC 8291 test vector) (PR #22)
 - [x] Explore & import: public Explore page of listed shared roadmaps (opt-in per roadmap), import a YouTube playlist (needs YOUTUBE_API_KEY), syllabus, notes or .txt/.md file into a roadmap + flashcards (PR #21)
 - [x] Career pack: cover-letter builder (edit, AI rewrites, undo, copy/print), LinkedIn helper, interview prep sheets + practice from any pasted job, skill demand insights from the job board (PR #20)
 - [x] Community pack: study groups with chat and weekly group goal, invite links, public group discovery, accountability buddies with nudges/high fives, weekly challenges with XP, friends/group/public leaderboards (PR #19)

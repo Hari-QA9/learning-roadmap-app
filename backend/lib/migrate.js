@@ -60,6 +60,19 @@ const COLUMNS = [
 ];
 
 const TABLES = [
+  // Phone & desktop push notifications: one row per device that turned them on
+  `CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    endpoint TEXT NOT NULL,
+    endpoint_hash CHAR(64) NOT NULL,
+    p256dh VARCHAR(200) NOT NULL,
+    auth VARCHAR(100) NOT NULL,
+    device VARCHAR(120) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TIMESTAMP NULL,
+    UNIQUE (endpoint_hash)
+  )`,
   // Career pack: cover letters, LinkedIn reviews and interview prep sheets
   `CREATE TABLE IF NOT EXISTS career_docs (
     id INT AUTO_INCREMENT PRIMARY KEY,

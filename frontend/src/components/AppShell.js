@@ -6,6 +6,7 @@ import { Icon, Dropdown, Avatar, Button, SkeletonRows } from './ui';
 import { preload } from '../lib/pages';
 import useInstall from '../lib/useInstall';
 import { useFocus, fmtClock } from '../lib/focus';
+import { syncPush } from '../lib/push';
 
 export const NAV = [
   {
@@ -82,7 +83,7 @@ export default function AppShell() {
   const [resent, setResent] = useState(false);
   const [iosHelp, setIosHelp] = useState(false);
   const install = useInstall();
-  useEffect(() => { api.get('/auth/me', { noCache: true }).then((r) => setMe(r.data)).catch(() => {}); }, []);
+  useEffect(() => { api.get('/auth/me', { noCache: true }).then((r) => setMe(r.data)).catch(() => {}); syncPush(); }, []);
   const resend = () => api.post('/auth/resend-verification').then(() => setResent(true)).catch(() => setResent(true));
 
   const lastSeen = useRef(null);

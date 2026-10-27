@@ -30,3 +30,7 @@ services:
         sync: false
       - key: ADMIN_EMAILS
         sync: false
+      - key: VAPID_PUBLIC_KEY    # phone notifications — from `npm run vapid-keys` (optional)
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false

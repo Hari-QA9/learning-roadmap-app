@@ -1,7 +1,7 @@
 /* LearnMap service worker — makes the app installable and loads instantly on repeat visits.
    It only caches the app's own files (code, styles, icons). It never caches /api responses,
    so personal data always comes fresh from the server. */
-const VERSION = 'learnmap-v1';
+const VERSION = 'learnmap-v2';
 const SHELL = ['/', '/index.html', '/offline.html', '/manifest.json', '/logo192.png', '/logo512.png', '/favicon.ico'];
 
 self.addEventListener('install', (event) => {
@@ -40,6 +40,20 @@ self.addEventListener('fetch', (event) => {
       }))
     );
   }
+});
+
+// Push notifications from the server (reminders, nudges, group updates…), even when the app is closed.
+self.addEventListener('push', (event) => {
+  let msg = {};
+  try { msg = event.data ? event.data.json() : {}; } catch (e) { msg = { body: event.data ? event.data.text() : '' }; }
+  event.waitUntil(self.registration.showNotification(msg.title || 'LearnMap', {
+    body: msg.body || 'You have a new update.',
+    icon: '/logo192.png',
+    badge: '/logo192.png',
+    tag: msg.tag || undefined,
+    renotify: !!msg.tag,
+    data: { url: msg.url || '/notifications' },
+  }));
 });
 
 // Clicking a notification shown by the app opens the right page.

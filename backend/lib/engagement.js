@@ -84,6 +84,8 @@ async function learningSummary(userId) {
 
 /* ---------- In-app notifications ---------- */
 async function notify(userId, { title, message, link = null, type = null }) {
+  // Also send it to the member's phone/desktop if they turned push notifications on (never blocks).
+  require('./push').pushToUser(userId, { title, body: message, url: link || '/notifications', tag: type || undefined }).catch(() => {});
   try {
     await q().query('INSERT INTO notifications (user_id, title, message, link, type) VALUES (?, ?, ?, ?, ?)', [userId, String(title).slice(0, 255), String(message || ''), link, type]);
   } catch {
