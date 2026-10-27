@@ -13,7 +13,7 @@ const USER_TABLES = [
   'notifications', 'user_resumes', 'resume_versions', 'job_applications', 'job_insights', 'interview_sessions',
   'notes', 'comments', 'bookmarks', 'resource_ratings', 'quiz_attempts', 'quiz_results',
   'module_evaluations', 'roadmap_evaluations', 'certificates', 'feedback', 'ai_usage',
-  'flashcards', 'study_sessions', 'review_days', 'challenge_claims',
+  'flashcards', 'study_sessions', 'review_days', 'challenge_claims', 'career_docs',
 ];
 const SECRET_TABLES = ['password_resets', 'email_verifications'];
 const HIDE = new Set(['password', 'calendar_token', 'token_hash']);

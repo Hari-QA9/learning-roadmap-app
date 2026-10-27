@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api, { errorMessage } from '../lib/api';
 import { useToast } from '../components/Toast';
-import { PageHeader, Button, Card, Field, Input, Select, Segmented, EmptyState, SkeletonRows, Badge, Icon, Loading, ConfirmDialog, timeAgo } from '../components/ui';
+import { PageHeader, Button, Card, Field, Input, Select, Segmented, EmptyState, SkeletonRows, Badge, Icon, Loading, ConfirmDialog, Textarea, timeAgo } from '../components/ui';
 
 /** Mock interview home: start a new practice interview, see past ones. */
 export default function Interview() {
@@ -11,10 +11,13 @@ export default function Interview() {
   const [params] = useSearchParams();
   const [jobs, setJobs] = useState([]);
   const [past, setPast] = useState(null);
-  const [mode, setMode] = useState(params.get('job') ? 'job' : 'job');
+  const [mode, setMode] = useState(params.get('role') ? 'role' : 'job');
   const [jobId, setJobId] = useState(params.get('job') || '');
-  const [role, setRole] = useState('');
-  const [company, setCompany] = useState('');
+  const [role, setRole] = useState(params.get('role') || '');
+  const [company, setCompany] = useState(params.get('company') || '');
+  const [description, setDescription] = useState('');
+  const [preps, setPreps] = useState(null);
+  const [prepping, setPrepping] = useState(false);
   const [type, setType] = useState('mixed');
   const [count, setCount] = useState('5');
   const [starting, setStarting] = useState(false);
@@ -30,6 +33,7 @@ export default function Interview() {
       setJobs(list);
       if (!list.length && !params.get('job')) setMode('role');
     });
+    api.get('/career/docs', { params: { kind: 'prep' }, noCache: true }).then((r) => setPreps(r.data)).catch(() => setPreps([]));
   }, [params]);
 
   const start = async () => {
@@ -37,11 +41,24 @@ export default function Interview() {
     if (mode === 'role' && !role.trim()) return toast.error('Type the role you’re interviewing for');
     setStarting(true);
     try {
-      const r = await api.post('/interviews', { ...(mode === 'job' ? { job_id: Number(jobId) } : { role, company }), type, count: Number(count) });
+      const r = await api.post('/interviews', { ...(mode === 'job' ? { job_id: Number(jobId) } : { role, company, description }), type, count: Number(count) });
       navigate(`/interview/${r.data.id}`);
     } catch (e) {
       toast.error(errorMessage(e, 'Could not start the interview'));
       setStarting(false);
+    }
+  };
+
+  const makePrep = async () => {
+    if (mode === 'job' && !jobId) return toast.error('Pick a job');
+    if (mode === 'role' && !role.trim()) return toast.error('Type the role you’re interviewing for');
+    setPrepping(true);
+    try {
+      const r = await api.post('/career/prep', mode === 'job' ? { job_id: Number(jobId) } : { role, company, description }, { timeout: 120000 });
+      navigate(`/interview-prep/${r.data.id}`);
+    } catch (e) {
+      toast.error(errorMessage(e, 'Could not make the prep sheet'));
+      setPrepping(false);
     }
   };
 
@@ -61,7 +78,7 @@ export default function Interview() {
         <Card title="Start a practice interview" description="Takes about 10–15 minutes. You can answer by typing or speaking.">
           {starting ? <Loading label="Preparing questions for this role…" /> : (
             <div className="stack">
-              <Segmented value={mode} onChange={setMode} options={[{ value: 'job', label: 'For a job' }, { value: 'role', label: 'For a role' }]} />
+              <Segmented value={mode} onChange={setMode} options={[{ value: 'job', label: 'From my jobs' }, { value: 'role', label: 'Any job or role' }]} />
               {mode === 'job' ? (
                 jobs.length ? (
                   <Field label="Job">
@@ -73,10 +90,15 @@ export default function Interview() {
                   </Field>
                 ) : <p className="small muted">No saved jobs yet — switch to “For a role”, or save jobs from the Job board.</p>
               ) : (
-                <div className="grid-2">
-                  <Field label="Role"><Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. Registered Nurse, Research Associate" /></Field>
-                  <Field label="Company" optional><Input value={company} onChange={(e) => setCompany(e.target.value)} /></Field>
-                </div>
+                <>
+                  <div className="grid-2">
+                    <Field label="Role"><Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="e.g. Registered Nurse, Research Associate" /></Field>
+                    <Field label="Company" optional><Input value={company} onChange={(e) => setCompany(e.target.value)} /></Field>
+                  </div>
+                  <Field label="Job description" optional hint="Paste any job ad (LinkedIn, Indeed, a company site) for questions tailored to it.">
+                    <Textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} aria-label="Job description" />
+                  </Field>
+                </>
               )}
               <div className="grid-2">
                 <Field label="Question style">
@@ -92,11 +114,15 @@ export default function Interview() {
                   </Select>
                 </Field>
               </div>
-              <Button variant="primary" icon="play" onClick={start}>Start interview</Button>
+              <div className="row row-wrap" style={{ gap: 8 }}>
+                <Button variant="primary" icon="play" onClick={start}>Start interview</Button>
+                <Button icon="file" loading={prepping} onClick={makePrep}>Make a prep sheet</Button>
+              </div>
             </div>
           )}
         </Card>
 
+        <div className="stack-lg">
         <Card title="Past interviews" pad={false}>
           {!past ? <SkeletonRows rows={3} /> : past.length === 0 ? (
             <EmptyState icon="message" title="No practice yet" description="Your interviews and scores will show up here so you can see yourself improve." />
@@ -116,6 +142,20 @@ export default function Interview() {
             </div>
           )}
         </Card>
+        {preps?.length > 0 && (
+          <Card title="Prep sheets" pad={false}>
+            <div className="list">
+              {preps.map((p) => (
+                <div key={p.id} className="list-row clickable" onClick={() => navigate(`/interview-prep/${p.id}`)}>
+                  <div className="list-icon"><Icon name="file" size={15} /></div>
+                  <div className="grow" style={{ minWidth: 0 }}><div className="truncate" style={{ fontWeight: 500 }}>{p.title}</div><div className="tiny subtle">{timeAgo(p.created_at)}</div></div>
+                  <Icon name="chevronRight" size={15} style={{ color: 'var(--text-3)' }} />
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+        </div>
       </div>
       <ConfirmDialog open={!!toDelete} title="Delete this practice interview?" onConfirm={remove} onCancel={() => setToDelete(null)} />
     </>

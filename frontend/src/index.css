@@ -1029,3 +1029,20 @@ label.setting-row { cursor: pointer; }
 .leader-rank { width: 28px; text-align: center; font-weight: 600; color: var(--text-3); flex: none; }
 .leader.me { background: var(--accent-soft); }
 @media (max-width: 640px) { .chat-box { height: 320px; } .chat-msg { max-width: 88%; } }
+
+/* Career pack */
+.active-row { background: var(--accent-soft); }
+.letter-editor { font-family: Georgia, 'Times New Roman', serif; font-size: 15px; line-height: 1.65; min-height: 380px; }
+.copy-box { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); color: var(--text); font-size: 14px; line-height: 1.55; }
+.prep-pitch { font-size: 15px; line-height: 1.65; color: var(--text); margin: 0 0 8px; }
+.prep-list { margin: 0; padding-left: 18px; color: var(--text-2); line-height: 1.6; font-size: 14px; }
+.prep-list li { margin: 4px 0; }
+.prep-q { padding: 12px 14px; border-radius: 12px; background: var(--surface-2); }
+.skill-row { align-items: center; }
+.skill-bar { height: 6px; border-radius: 99px; background: var(--surface-2); margin-top: 6px; overflow: hidden; }
+.skill-bar span { display: block; height: 100%; border-radius: 99px; background: var(--accent); opacity: .55; }
+.skill-bar span.have { background: var(--success); opacity: 1; }
+@media print {
+  .prep-sheet .card { break-inside: avoid; box-shadow: none; }
+  .prep-sheet .btn { display: none !important; }
+}

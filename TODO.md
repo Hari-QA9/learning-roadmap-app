@@ -93,7 +93,6 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [ ] 🟢 More templates (keep them single-column and real text so ATS can read them).
 - [ ] 🟢 Drag-and-drop to reorder sections and entries (today: up/down arrows).
 - [ ] 🟢 On phones, a "Score / Preview" tab at the top (today the score and preview are below the editor).
-- [ ] 🟢 Cover-letter builder that reuses the resume and the job (the job page's application kit already writes one).
 - [ ] 🟢 Show when a tailored version is older than the main resume, with an option to pull in new changes.
 
 ---
@@ -104,6 +103,13 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [ ] 🟠 Use AI to pick out skills the built-in list doesn't know, for fields we haven't covered yet (today those still match if the member types them in).
 - [ ] 🟢 Let members rate resources (👍/👎) so the best ones rise to the top.
 - [ ] 🟢 Add field-specific job boards where public APIs exist (e.g. HigherEdJobs for academia, health-system career sites).
+
+---
+
+## Career tools
+- [ ] 🟢 Cover letters: download as Word (.docx); letter templates with a letterhead.
+- [ ] 🟢 Skill insights: salary ranges by role once more jobs include pay; "skills to add to your resume" one-click.
+- [ ] 🟢 LinkedIn helper: review a pasted LinkedIn profile PDF export.
 
 ---
 
@@ -168,6 +174,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
 - [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)
 - [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)
+- [x] Career pack: cover-letter builder (edit, AI rewrites, undo, copy/print), LinkedIn helper, interview prep sheets + practice from any pasted job, skill demand insights from the job board (PR #20)
 - [x] Community pack: study groups with chat and weekly group goal, invite links, public group discovery, accountability buddies with nudges/high fives, weekly challenges with XP, friends/group/public leaderboards (PR #19)
 - [x] Learning pack: placement check before AI roadmaps, AI flashcards with spaced repetition (review page, decks, keyboard shortcuts), focus timer with study time per roadmap (PR #18)
 - [x] Growth pack: public profile/portfolio pages, shareable & copyable roadmaps, verified certificate links + Add to LinkedIn, invite friends with XP and badges (PR #17)

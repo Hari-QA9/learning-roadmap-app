@@ -11,7 +11,7 @@ import { FocusProvider } from './lib/focus';
 import {
   Landing, Login, Signup, ForgotPassword, ResetPassword, Dashboard, Roadmaps, RoadmapDetail, AIGenerator,
   Profile, Notifications, Quiz, QuizPerformance, Feedback, Chat, ResumeBuilder, Templates, CareerAdvisor,
-  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, Interview, InterviewSession, VerifyEmail, Admin, Legal, PublicProfile, SharedRoadmap, VerifyCertificate, Join, Review, Focus, Groups, GroupDetail, Buddies, Challenges, JoinCommunity, preloadAllWhenIdle,
+  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, Interview, InterviewSession, VerifyEmail, Admin, Legal, PublicProfile, SharedRoadmap, VerifyCertificate, Join, Review, Focus, Groups, GroupDetail, Buddies, Challenges, JoinCommunity, CoverLetters, LinkedInHelper, PrepSheet, Insights, preloadAllWhenIdle,
 } from './lib/pages';
 
 // Remember a friend's ?invite= code from whatever page the visitor lands on.
@@ -87,6 +87,10 @@ function App() {
               <Route path="/groups/:id" element={<GroupDetail />} />
               <Route path="/buddies" element={<Buddies />} />
               <Route path="/challenges" element={<Challenges />} />
+              <Route path="/cover-letters" element={<CoverLetters />} />
+              <Route path="/linkedin" element={<LinkedInHelper />} />
+              <Route path="/interview-prep/:id" element={<PrepSheet />} />
+              <Route path="/insights" element={<Insights />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

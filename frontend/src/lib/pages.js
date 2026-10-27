@@ -51,13 +51,17 @@ export const GroupDetail = lazyPage(() => import('../pages/GroupDetail'));
 export const Buddies = lazyPage(() => import('../pages/Buddies'));
 export const Challenges = lazyPage(() => import('../pages/Challenges'));
 export const JoinCommunity = lazyPage(() => import('../pages/JoinCommunity'));
+export const CoverLetters = lazyPage(() => import('../pages/CoverLetters'));
+export const LinkedInHelper = lazyPage(() => import('../pages/LinkedInHelper'));
+export const PrepSheet = lazyPage(() => import('../pages/PrepSheet'));
+export const Insights = lazyPage(() => import('../pages/Insights'));
 
 // Path → page, used to preload on hover.
 export const PRELOAD = {
   '/dashboard': Dashboard, '/roadmaps': Roadmaps, '/templates': Templates, '/study-planner': StudyPlanner,
   '/quiz': Quiz, '/quiz-performance': QuizPerformance, '/certificates': Certificate, '/career-advisor': CareerAdvisor,
   '/resume-builder': ResumeBuilder, '/ai-generator': AIGenerator, '/chat': Chat, '/profile': Profile,
-  '/review': Review, '/focus': Focus, '/groups': Groups, '/buddies': Buddies, '/challenges': Challenges, '/notifications': Notifications, '/jobs': Jobs, '/applications': Applications, '/interview': Interview, '/feedback': Feedback, '/login': Login, '/signup': Signup,
+  '/review': Review, '/focus': Focus, '/groups': Groups, '/buddies': Buddies, '/challenges': Challenges, '/cover-letters': CoverLetters, '/linkedin': LinkedInHelper, '/insights': Insights, '/notifications': Notifications, '/jobs': Jobs, '/applications': Applications, '/interview': Interview, '/feedback': Feedback, '/login': Login, '/signup': Signup,
 };
 
 export function preload(path) {
