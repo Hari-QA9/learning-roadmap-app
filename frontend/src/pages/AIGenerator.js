@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api, { errorMessage } from '../lib/api';
 import { useToast } from '../components/Toast';
+import PlacementCheck from '../components/learning/PlacementCheck';
 import {
   PageHeader, Button, Card, Field, Input, Textarea, Select, Alert, Icon, Badge, Segmented, Spinner, Progress, formatMinutes,
 } from '../components/ui';
@@ -47,6 +48,7 @@ function AIGenerator() {
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+  const [placement, setPlacement] = useState(false);
 
   useEffect(() => {
     if (!loading) return;
@@ -140,6 +142,11 @@ function AIGenerator() {
               <Field label="What you already know" optional className="full" hint="The AI skips what you know and builds on it.">
                 <Textarea rows={2} value={form.background} onChange={set('background')} placeholder="e.g. BS in Biology, used PCR in class labs; or 1 year of manual testing" disabled={loading} />
               </Field>
+              <div className="full placement-cta">
+                <Icon name="target" size={16} className="text-accent" />
+                <span className="grow small">Not sure of your level? Take a <strong>2-minute placement check</strong> and the AI will skip what you already know.</span>
+                <Button size="sm" disabled={loading || !form.topic.trim()} onClick={() => setPlacement(true)}>Check my level</Button>
+              </div>
             </div>
           </Card>
 
@@ -245,6 +252,8 @@ function AIGenerator() {
           </Card>
         </div>
       )}
+      <PlacementCheck topic={form.topic.trim()} open={placement} onClose={() => setPlacement(false)}
+        onApply={({ level, background }) => { setForm((f) => ({ ...f, level, background })); setPlacement(false); toast.success(`Level set to ${level}`); }} />
     </div>
   );
 }

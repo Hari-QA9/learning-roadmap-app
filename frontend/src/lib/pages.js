@@ -44,13 +44,15 @@ export const PublicProfile = lazyPage(() => import('../pages/PublicProfile'));
 export const SharedRoadmap = lazyPage(() => import('../pages/SharedRoadmap'));
 export const VerifyCertificate = lazyPage(() => import('../pages/VerifyCertificate'));
 export const Join = lazyPage(() => import('../pages/Join'));
+export const Review = lazyPage(() => import('../pages/Review'));
+export const Focus = lazyPage(() => import('../pages/Focus'));
 
 // Path → page, used to preload on hover.
 export const PRELOAD = {
   '/dashboard': Dashboard, '/roadmaps': Roadmaps, '/templates': Templates, '/study-planner': StudyPlanner,
   '/quiz': Quiz, '/quiz-performance': QuizPerformance, '/certificates': Certificate, '/career-advisor': CareerAdvisor,
   '/resume-builder': ResumeBuilder, '/ai-generator': AIGenerator, '/chat': Chat, '/profile': Profile,
-  '/notifications': Notifications, '/jobs': Jobs, '/applications': Applications, '/interview': Interview, '/feedback': Feedback, '/login': Login, '/signup': Signup,
+  '/review': Review, '/focus': Focus, '/notifications': Notifications, '/jobs': Jobs, '/applications': Applications, '/interview': Interview, '/feedback': Feedback, '/login': Login, '/signup': Signup,
 };
 
 export function preload(path) {

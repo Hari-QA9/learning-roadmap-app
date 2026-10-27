@@ -5,6 +5,7 @@ import { useTheme } from '../lib/theme';
 import { Icon, Dropdown, Avatar, Button, SkeletonRows } from './ui';
 import { preload } from '../lib/pages';
 import useInstall from '../lib/useInstall';
+import { useFocus, fmtClock } from '../lib/focus';
 
 export const NAV = [
   {
@@ -13,6 +14,8 @@ export const NAV = [
       { to: '/dashboard', label: 'Overview', icon: 'home' },
       { to: '/roadmaps', label: 'Roadmaps', icon: 'map' },
       { to: '/templates', label: 'Templates', icon: 'layers' },
+      { to: '/review', label: 'Review cards', icon: 'layers', badge: 'due' },
+      { to: '/focus', label: 'Focus timer', icon: 'clock' },
       { to: '/study-planner', label: 'Study planner', icon: 'calendar' },
       { to: '/quiz', label: 'Practice quiz', icon: 'quiz' },
       { to: '/quiz-performance', label: 'Performance', icon: 'chart' },
@@ -103,6 +106,10 @@ export default function AppShell() {
   }, [refreshUnread]);
 
   useEffect(() => { setOpen(false); window.scrollTo(0, 0); }, [pathname]);
+  // Flashcards due — shown as a count next to "Review cards".
+  const [dueCards, setDueCards] = useState(0);
+  useEffect(() => { api.get('/learning/flashcards/summary', { noCache: true }).then((r) => setDueCards(r.data.due || 0)).catch(() => {}); }, [pathname]);
+  const focus = useFocus();
   useEffect(() => { refreshUnread(); }, [pathname, refreshUnread]);
 
   const doLogout = () => { logout(); navigate('/login'); };
@@ -121,7 +128,8 @@ export default function AppShell() {
               {g.items.map((i) => (
                 <NavLink key={i.to} to={i.to} end={i.to === '/quiz'} onMouseEnter={() => preload(i.to)} onFocus={() => preload(i.to)} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                   <Icon name={i.icon} size={16} />
-                  {i.label}
+                  <span className="grow">{i.label}</span>
+                  {i.badge === 'due' && dueCards > 0 && <span className="nav-count">{dueCards > 99 ? '99+' : dueCards}</span>}
                 </NavLink>
               ))}
             </div>
@@ -140,6 +148,12 @@ export default function AppShell() {
           <Button variant="ghost" icon="menu" className="menu-toggle" onClick={() => setOpen(true)} aria-label="Open menu" />
           <div className="crumb"><strong>{title}</strong></div>
           <div className="topbar-actions">
+            {(focus.status === 'running' || focus.status === 'paused' || focus.status === 'ready-break') && pathname !== '/focus' && (
+              <Link to="/focus" className={`focus-pill ${focus.mode === 'break' ? 'break' : ''}`} aria-label="Open focus timer">
+                <Icon name="clock" size={13} />
+                {focus.status === 'ready-break' ? 'Break' : fmtClock(focus.remaining)}{focus.status === 'paused' ? ' ⏸' : ''}
+              </Link>
+            )}
             <Button
               variant="ghost"
               icon={theme === 'dark' ? 'sun' : 'moon'}
