@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import api, { errorMessage } from '../lib/api';
 import { useToast } from './Toast';
-import { Card, Select, Button, Icon } from './ui';
+import { Card, Select, Icon } from './ui';
+import PushRow from './PushRow';
 
 const EMAILS = [
   ['email_weekly', 'Weekly summary', 'Monday morning: what you finished, what’s next, and top job matches'],
@@ -16,7 +17,6 @@ export const browserTz = () => { try { return Intl.DateTimeFormat().resolvedOpti
 export default function NotificationSettings() {
   const toast = useToast();
   const [s, setS] = useState(null);
-  const [perm, setPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'unsupported');
 
   useEffect(() => {
     api.get('/settings', { noCache: true }).then((r) => {
@@ -30,13 +30,6 @@ export default function NotificationSettings() {
   const save = async (patch) => {
     setS((x) => ({ ...x, ...patch }));
     try { await api.put('/settings', patch); } catch (e) { toast.error(errorMessage(e, 'Could not save')); }
-  };
-
-  const askBrowser = async () => {
-    if (typeof Notification === 'undefined') return;
-    const p = await Notification.requestPermission();
-    setPerm(p);
-    if (p === 'granted') toast.success('Browser notifications are on');
   };
 
   if (!s) return <Card title="Notifications & reminders"><div className="small muted">Loading…</div></Card>;
@@ -68,16 +61,7 @@ export default function NotificationSettings() {
             {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n} task{n > 1 ? 's' : ''}</option>)}
           </Select>
         </div>
-        <div className="setting-row">
-          <div className="grow">
-            <div className="small" style={{ fontWeight: 500, color: 'var(--text)' }}>Browser notifications</div>
-            <div className="tiny subtle">Get a pop-up when something new arrives while LearnMap is open in another tab.</div>
-          </div>
-          {perm === 'granted' ? <span className="small text-success row" style={{ gap: 4 }}><Icon name="check" size={13} /> On</span>
-            : perm === 'denied' ? <span className="tiny subtle" style={{ maxWidth: 160, textAlign: 'right' }}>Blocked — allow it in your browser’s site settings</span>
-              : perm === 'unsupported' ? <span className="tiny subtle">Not supported</span>
-                : <Button size="sm" onClick={askBrowser}>Turn on</Button>}
-        </div>
+        <PushRow />
         <div className="tiny subtle">Times use your time zone: {s.timezone}</div>
       </div>
     </Card>

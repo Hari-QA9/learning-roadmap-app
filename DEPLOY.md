@@ -78,6 +78,16 @@ Render's free plan blocks normal email (SMTP), so emails go through Brevo instea
 
 Test it: on the live site, use **Forgot password**. The email should arrive within a minute (check spam the first time).
 
+## Step 5½: Phone notifications (5 min, optional)
+
+1. On your computer, in the `backend` folder, run `npm run vapid-keys`. It prints two lines.
+2. On **Render → Environment**, add `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` with those values → **Save**. (Also put them in your local `backend/.env` if you want to try it locally.)
+3. On the live site: **Profile → Notifications → Phone & desktop notifications** → turn it on → **Send a test**.
+   - **Android / computers:** works in Chrome, Edge and Firefox.
+   - **iPhone / iPad (iOS 16.4+):** first open the site in Safari → Share → **Add to Home Screen**, open LearnMap from the home screen, then turn it on.
+
+Keep the private key secret. If you ever change the keys, everyone has to switch notifications on again.
+
 ## Step 6: Optional extras
 
 - **Sign in with Google:** in Google Cloud Console → your OAuth client → **Authorized JavaScript origins**, add your Vercel address. Then on Render add `GOOGLE_CLIENT_ID`.

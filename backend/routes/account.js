@@ -13,10 +13,10 @@ const USER_TABLES = [
   'notifications', 'user_resumes', 'resume_versions', 'job_applications', 'job_insights', 'interview_sessions',
   'notes', 'comments', 'bookmarks', 'resource_ratings', 'quiz_attempts', 'quiz_results',
   'module_evaluations', 'roadmap_evaluations', 'certificates', 'feedback', 'ai_usage',
-  'flashcards', 'study_sessions', 'review_days', 'challenge_claims', 'career_docs',
+  'flashcards', 'study_sessions', 'review_days', 'challenge_claims', 'career_docs', 'push_subscriptions',
 ];
 const SECRET_TABLES = ['password_resets', 'email_verifications'];
-const HIDE = new Set(['password', 'calendar_token', 'token_hash']);
+const HIDE = new Set(['password', 'calendar_token', 'token_hash', 'endpoint', 'endpoint_hash', 'p256dh', 'auth']);
 
 const clean = (rows) => rows.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => !HIDE.has(k))));
 
