@@ -87,6 +87,8 @@ function Roadmaps() {
         description="Every learning goal you’re working on, with its modules, tasks and resources."
         actions={
           <>
+            <Button icon="upload" onClick={() => navigate('/import')}>Import</Button>
+            <Button icon="search" onClick={() => navigate('/discover')}>Explore</Button>
             <Button icon="wand" onClick={() => navigate('/ai-generator')}>Generate with AI</Button>
             <Button variant="primary" icon="plus" onClick={() => setShowCreate(true)}>New roadmap</Button>
           </>

@@ -9,6 +9,15 @@ export default function ShareRoadmapModal({ roadmap, open, onClose, onChange }) 
   const toast = useToast();
   const [slug, setSlug] = useState(roadmap?.share_slug || null);
   const [busy, setBusy] = useState(false);
+  const [listed, setListed] = useState(!!Number(roadmap?.listed));
+  const toggleListed = async (on) => {
+    setListed(on);
+    try {
+      const r = await api.put(`/growth/roadmaps/${roadmap.id}/listing`, { listed: on });
+      onChange?.({ listed: on ? 1 : 0 });
+      toast.success(r.data.message);
+    } catch (e) { setListed(!on); toast.error(errorMessage(e, 'Could not update')); }
+  };
 
   useEffect(() => {
     if (!open || !roadmap) return;
@@ -30,7 +39,7 @@ export default function ShareRoadmapModal({ roadmap, open, onClose, onChange }) 
     setBusy(true);
     try {
       await api.delete(`/growth/roadmaps/${roadmap.id}/share`);
-      setSlug(null); onChange?.({ share_slug: null });
+      setSlug(null); setListed(false); onChange?.({ share_slug: null, listed: 0 });
       toast.success('Sharing turned off');
       onClose();
     } catch (e) {
@@ -52,6 +61,10 @@ export default function ShareRoadmapModal({ roadmap, open, onClose, onChange }) 
             <span className="truncate grow mono small">{url.replace(/^https?:\/\//, '')}</span>
             <Button size="sm" icon="copy" onClick={copy}>Copy</Button>
           </div>
+          <label className="row small" style={{ gap: 10, justifyContent: 'space-between', cursor: 'pointer' }}>
+            <span><strong style={{ color: 'var(--text)' }}>List on Explore</strong><span className="muted" style={{ display: 'block' }}>Let anyone discover it on LearnMap’s public Explore page.</span></span>
+            <input type="checkbox" className="switch" checked={listed} onChange={(e) => toggleListed(e.target.checked)} aria-label="List on Explore" />
+          </label>
           {roadmap.copies > 0 && <div className="small muted">{roadmap.copies} {roadmap.copies === 1 ? 'person has' : 'people have'} copied it so far.</div>}
           <a className="small" href={url} target="_blank" rel="noreferrer">Preview the public page ↗</a>
         </div>
