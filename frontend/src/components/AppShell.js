@@ -30,6 +30,7 @@ export const NAV = [
       { to: '/groups', label: 'Study groups', icon: 'user', badge: 'groups' },
       { to: '/buddies', label: 'Buddies', icon: 'flame' },
       { to: '/challenges', label: 'Challenges', icon: 'trophy' },
+      { to: '/classes', label: 'Classes', icon: 'grad' },
     ],
   },
   {

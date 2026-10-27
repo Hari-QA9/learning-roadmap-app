@@ -42,6 +42,7 @@ router.get('/export', auth, async (req, res) => {
       study_groups: await rowsOf('SELECT g.name, g.goal, gm.role, gm.joined_at FROM group_members gm JOIN study_groups g ON g.id = gm.group_id WHERE gm.user_id = ?', [id]),
       group_messages: await rowsOf('SELECT g.name AS group_name, m.body, m.created_at FROM group_messages m JOIN study_groups g ON g.id = m.group_id WHERE m.user_id = ?', [id]),
       buddies: await rowsOf('SELECT u.name, b.status, b.created_at FROM buddies b JOIN users u ON u.id = CASE WHEN b.requester_id = ? THEN b.addressee_id ELSE b.requester_id END WHERE b.requester_id = ? OR b.addressee_id = ?', [id, id, id]),
+      classes: await rowsOf('SELECT c.name, cm.role, cm.joined_at FROM classroom_members cm JOIN classrooms c ON c.id = cm.classroom_id WHERE cm.user_id = ?', [id]),
       people_you_invited: await rowsOf('SELECT u.name, r.created_at FROM referrals r JOIN users u ON u.id = r.invitee_id WHERE r.inviter_id = ?', [id]),
     };
     for (const t of USER_TABLES) data[t] = await rowsOf(`SELECT * FROM ${t} WHERE user_id = ?`, [id]);
@@ -92,6 +93,12 @@ router.delete('/', auth, async (req, res) => {
       await run('DELETE FROM group_members WHERE user_id = ?', [id]);
       await run('DELETE FROM group_messages WHERE user_id = ?', [id]);
       await run('DELETE FROM buddies WHERE requester_id = ? OR addressee_id = ?', [id, id]);
+      // Classes: classes this member teaches are closed (students keep their roadmaps)
+      await run('DELETE FROM assignment_copies WHERE user_id = ? OR assignment_id IN (SELECT id FROM classroom_assignments WHERE classroom_id IN (SELECT id FROM classrooms WHERE owner_id = ?))', [id, id]);
+      await run('DELETE FROM classroom_assignments WHERE classroom_id IN (SELECT id FROM (SELECT id FROM classrooms WHERE owner_id = ?) x)', [id]);
+      await run('DELETE FROM classroom_posts WHERE user_id = ? OR classroom_id IN (SELECT id FROM (SELECT id FROM classrooms WHERE owner_id = ?) x)', [id, id]);
+      await run('DELETE FROM classroom_members WHERE user_id = ? OR classroom_id IN (SELECT id FROM (SELECT id FROM classrooms WHERE owner_id = ?) x)', [id, id]);
+      await run('DELETE FROM classrooms WHERE owner_id = ?', [id]);
       await run('DELETE FROM shared_roadmaps WHERE shared_by = ? OR shared_with = ?', [id, id]);
       await run('DELETE FROM jobs WHERE user_id = ?', [id]);
       // Roadmaps and everything inside them

@@ -119,6 +119,8 @@ function RoadmapDetail() {
 
   const [confirm, setConfirm] = useState(null); // { kind, item }
   const [sharing, setSharing] = useState(false);
+  const [assignment, setAssignment] = useState(null);
+  useEffect(() => { api.get(`/classes/for-roadmap/${id}`, { noCache: true }).then((r) => setAssignment(r.data)).catch(() => {}); }, [id]);
   const focus = useFocus();
   const makeDeck = async () => {
     toast.info('Making flashcards…');
@@ -312,6 +314,12 @@ function RoadmapDetail() {
           </>
         }
       />
+      {assignment && (
+        <div className="assign-banner">
+          <Icon name="grad" size={16} />
+          <span className="grow small">Assigned in <button type="button" className="link-btn small" onClick={() => navigate(`/classes/${assignment.class_id}`)}>{assignment.class_name}</button> by {assignment.teacher}{assignment.due_date ? ` · due ${formatDate(assignment.due_date, { month: 'short', day: 'numeric' })}` : ''}{assignment.instructions ? ` — ${assignment.instructions}` : ''}</span>
+        </div>
+      )}
 
       {/* Overview */}
       <div className="card card-pad mb-3">

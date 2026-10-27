@@ -50,6 +50,7 @@ function Privacy() {
         <li><strong>Invites:</strong> if you join through a friend’s invite link, they see your first name in their list of friends who joined.</li>
         <li><strong>Study groups:</strong> members of a group you join see your name, your weekly activity counts (tasks, focus minutes, cards reviewed), your streak and what you post in the group chat. The group owner can remove messages and members.</li>
         <li><strong>Study buddies:</strong> a buddy you accept sees your streak, whether you hit today’s goal and your weekly counts — never your task names or notes.</li>
+        <li><strong>Classes:</strong> if you join a class, its teacher or mentor sees your name, email, your progress on the roadmaps they assign, when you were last active, and your weekly task and focus counts. Leave the class at any time.</li>
         <li><strong>Leaderboards:</strong> your friends and group members can see your weekly points. You appear on the public “Everyone” leaderboard only if you switch it on, and then only as first name and last initial.</li>
       </ul>
 

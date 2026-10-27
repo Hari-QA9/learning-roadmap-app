@@ -60,6 +60,47 @@ const COLUMNS = [
 ];
 
 const TABLES = [
+  // Classrooms & mentoring
+  `CREATE TABLE IF NOT EXISTS classrooms (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT NULL,
+    owner_id INT NOT NULL,
+    join_code VARCHAR(16) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (join_code)
+  )`,
+  `CREATE TABLE IF NOT EXISTS classroom_members (
+    classroom_id INT NOT NULL,
+    user_id INT NOT NULL,
+    role VARCHAR(10) DEFAULT 'student',
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (classroom_id, user_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS classroom_assignments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    classroom_id INT NOT NULL,
+    source_roadmap_id INT NULL,
+    title VARCHAR(300) NOT NULL,
+    instructions TEXT NULL,
+    due_date DATE NULL,
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE TABLE IF NOT EXISTS assignment_copies (
+    assignment_id INT NOT NULL,
+    user_id INT NOT NULL,
+    roadmap_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (assignment_id, user_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS classroom_posts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    classroom_id INT NOT NULL,
+    user_id INT NOT NULL,
+    body TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
   // Phone & desktop push notifications: one row per device that turned them on
   `CREATE TABLE IF NOT EXISTS push_subscriptions (
     id INT AUTO_INCREMENT PRIMARY KEY,

@@ -17,15 +17,19 @@ export default function JoinCommunity({ kind }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (kind !== 'group') return;
-    api.get(`/public/groups/${encodeURIComponent(code)}`, { noCache: true }).then((r) => setG(r.data)).catch((e) => setError(errorMessage(e, 'This invite link isn’t valid any more.')));
+    if (kind === 'buddy') return;
+    api.get(`/public/${kind === 'class' ? 'classes' : 'groups'}/${encodeURIComponent(code)}`, { noCache: true }).then((r) => setG(r.data)).catch((e) => setError(errorMessage(e, 'This invite link isn’t valid any more.')));
   }, [kind, code]);
 
   const go = async () => {
-    if (!isLoggedIn()) { remember(`/${kind === 'group' ? 'g' : 'buddy'}/${code}?auto=1`); navigate('/signup'); return; }
+    if (!isLoggedIn()) { remember(`/${{ group: 'g', buddy: 'buddy', class: 'class' }[kind]}/${code}?auto=1`); navigate('/signup'); return; }
     setBusy(true);
     try {
-      if (kind === 'group') {
+      if (kind === 'class') {
+        const r = await api.post('/classes/join', { code });
+        toast.success(r.data.message);
+        navigate(`/classes/${r.data.id}`, { replace: true });
+      } else if (kind === 'group') {
         const r = await api.post('/community/groups/join', { code });
         toast.success(r.data.message);
         navigate(`/groups/${r.data.id}`, { replace: true });
@@ -46,13 +50,22 @@ export default function JoinCommunity({ kind }) {
   }, [g]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) return <PublicLayout><EmptyState icon="user" title="Invite not valid" description={error} action={<Link className="btn btn-primary" to="/">Go to LearnMap</Link>} /></PublicLayout>;
-  if (kind === 'group' && !g) return <PublicLayout><Loading /></PublicLayout>;
+  if (kind !== 'buddy' && !g) return <PublicLayout><Loading /></PublicLayout>;
 
   return (
     <PublicLayout>
       <div className="verify card">
-        <div className="verify-icon ok"><Icon name={kind === 'group' ? 'user' : 'flame'} size={26} /></div>
-        {kind === 'group' ? (
+        <div className="verify-icon ok"><Icon name={kind === 'class' ? 'grad' : kind === 'group' ? 'user' : 'flame'} size={26} /></div>
+        {kind === 'class' ? (
+          <>
+            <div className="tiny subtle" style={{ letterSpacing: '.14em', textTransform: 'uppercase' }}>Join a class</div>
+            <h1>{g.name}</h1>
+            <p className="muted" style={{ margin: 0 }}>with {g.teacher}{g.students ? ` · ${g.students} student${g.students === 1 ? '' : 's'}` : ''}</p>
+            {g.description && <p className="small muted">{g.description}</p>}
+            <p className="tiny subtle">Your teacher will see your name, email, your progress on the roadmaps they assign, and your weekly activity (tasks finished, focus minutes, last active). Nothing else.</p>
+            <Button variant="primary" size="lg" loading={busy} onClick={go}>{isLoggedIn() ? 'Join class' : 'Join free & enter class'}</Button>
+          </>
+        ) : kind === 'group' ? (
           <>
             <div className="tiny subtle" style={{ letterSpacing: '.14em', textTransform: 'uppercase' }}>You’re invited to a study group</div>
             <h1>{g.name}</h1>
