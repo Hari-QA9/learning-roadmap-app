@@ -15,7 +15,10 @@ function getModel({ json = false, system } = {}) {
   if (!client) client = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const opts = { model: MODEL };
   if (json) opts.generationConfig = { responseMimeType: 'application/json', temperature: 0.7 };
-  if (system) opts.systemInstruction = system;
+  // Write in the member's language (Spanish, Hindi, Telugu…) when they don't use English.
+  const lang = require('./lang').instruction();
+  const sys = [system, lang].filter(Boolean).join('\n\n');
+  if (sys) opts.systemInstruction = sys;
   return client.getGenerativeModel(opts);
 }
 

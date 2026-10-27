@@ -4,6 +4,8 @@ import { Button, Icon } from '../components/ui';
 import { useTheme } from '../lib/theme';
 import { isLoggedIn } from '../lib/api';
 import { preload } from '../lib/pages';
+import { useT } from '../lib/i18n';
+import LanguageSelect from '../components/LanguageSelect';
 
 /** Adds `.in` to every `.reveal` element as it scrolls into view. */
 function useReveal() {
@@ -63,12 +65,12 @@ function ProductPreview() {
 }
 
 const TILES = [
-  { cls: 'lp-tile-wide lp-tile-dark', icon: 'wand', kicker: 'AI roadmap generator', title: 'A plan built around you.', body: 'Tell it your goal, your level and your hours. Get modules, step-by-step tasks, resources and a capstone project in under a minute.' },
-  { cls: '', icon: 'sparkles', kicker: 'Explain this', title: 'A tutor on every task.', body: 'One click for a short lesson, a worked example and a practice exercise.' },
-  { cls: '', icon: 'award', kicker: 'Assessments', title: 'Prove it. Get certified.', body: 'Pass each module, take the final, download your certificate.' },
-  { cls: '', icon: 'compass', kicker: 'Career advisor', title: 'Know what’s next.', body: 'Roles that fit, the skills you’re missing, and a roadmap for each gap.' },
-  { cls: '', icon: 'file', kicker: 'Resume builder', title: 'ATS-ready in minutes.', body: 'Live preview, AI summary, and a check against any job description.' },
-  { cls: 'lp-tile-full', icon: 'calendar', kicker: 'Study planner', title: 'Your week, planned.', body: 'A realistic schedule that fits the time you actually have — with milestones and a checklist you tick as you go.' },
+  { cls: 'lp-tile-wide lp-tile-dark', icon: 'wand', n: 1 },
+  { cls: '', icon: 'sparkles', n: 2 },
+  { cls: '', icon: 'award', n: 3 },
+  { cls: '', icon: 'compass', n: 4 },
+  { cls: '', icon: 'file', n: 5 },
+  { cls: 'lp-tile-full', icon: 'calendar', n: 6 },
 ];
 
 function Landing() {
@@ -77,6 +79,7 @@ function Landing() {
   const loggedIn = isLoggedIn();
   const ref = useReveal();
   const go = (path) => navigate(path);
+  const t = useT();
 
   return (
     <div className="lp" ref={ref}>
@@ -87,18 +90,18 @@ function Landing() {
             <span className="brand-name" style={{ fontSize: 16 }}>LearnMap</span>
           </Link>
           <nav className="lp-links">
-            <a href="#features">Features</a>
-            <a href="#how">How it works</a>
-            <Link to="/explore">Explore roadmaps</Link>
+            <a href="#features">{t('lp.features')}</a>
+            <a href="#how">{t('lp.how')}</a>
+            <Link to="/explore">{t('lp.explore')}</Link>
           </nav>
           <div className="row" style={{ marginLeft: 'auto', gap: 4 }}>
             <Button variant="ghost" size="sm" icon={theme === 'dark' ? 'sun' : 'moon'} onClick={toggleTheme} aria-label="Toggle theme" />
             {loggedIn ? (
-              <Button variant="primary" size="sm" onMouseEnter={() => preload('/dashboard')} onClick={() => go('/dashboard')}>Open app</Button>
+              <Button variant="primary" size="sm" onMouseEnter={() => preload('/dashboard')} onClick={() => go('/dashboard')}>{t('lp.open')}</Button>
             ) : (
               <>
-                <Button variant="ghost" size="sm" onMouseEnter={() => preload('/login')} onClick={() => go('/login')}>Log in</Button>
-                <Button variant="primary" size="sm" onMouseEnter={() => preload('/signup')} onClick={() => go('/signup')}>Get started</Button>
+                <Button variant="ghost" size="sm" onMouseEnter={() => preload('/login')} onClick={() => go('/login')}>{t('lp.login')}</Button>
+                <Button variant="primary" size="sm" onMouseEnter={() => preload('/signup')} onClick={() => go('/signup')}>{t('lp.start')}</Button>
               </>
             )}
           </div>
@@ -108,18 +111,18 @@ function Landing() {
       <section className="lp-hero">
         <p className="lp-eyebrow page-enter">LearnMap</p>
         <h1 className="lp-title page-enter" style={{ animationDelay: '60ms' }}>
-          Learn anything.<br /><span className="lp-gradient">Finish everything.</span>
+          {t('lp.title1')}<br /><span className="lp-gradient">{t('lp.title2')}</span>
         </h1>
         <p className="lp-sub page-enter" style={{ animationDelay: '140ms' }}>
-          Personal roadmaps, an AI tutor on every task, and progress you can actually see — all in one beautifully simple place.
+          {t('lp.sub')}
         </p>
         <div className="lp-ctas page-enter" style={{ animationDelay: '220ms' }}>
           <Button variant="primary" size="lg" onMouseEnter={() => preload(loggedIn ? '/dashboard' : '/signup')} onClick={() => go(loggedIn ? '/dashboard' : '/signup')}>
-            {loggedIn ? 'Open LearnMap' : 'Get started — it’s free'}
+            {loggedIn ? t('lp.open') : t('lp.ctaFree')}
           </Button>
           {!loggedIn && (
             <button className="lp-link-btn" onMouseEnter={() => preload('/login')} onClick={() => go('/login')}>
-              Log in <Icon name="chevronRight" size={15} />
+              {t('lp.login')} <Icon name="chevronRight" size={15} />
             </button>
           )}
         </div>
@@ -130,15 +133,15 @@ function Landing() {
 
       <section className="lp-section" id="features">
         <div className="lp-section-head reveal">
-          <h2 className="section-title">Everything you need.<br /><span style={{ color: 'var(--text-3)' }}>Nothing you don’t.</span></h2>
+          <h2 className="section-title">{t('lp.need1')}<br /><span style={{ color: 'var(--text-3)' }}>{t('lp.need2')}</span></h2>
         </div>
         <div className="lp-bento">
-          {TILES.map((t, i) => (
-            <div key={t.title} className={`lp-tile reveal ${t.cls}`} style={{ transitionDelay: `${(i % 3) * 80}ms` }}>
-              <div className="lp-tile-icon"><Icon name={t.icon} size={20} /></div>
-              <div className="lp-kicker">{t.kicker}</div>
-              <h3 className="lp-tile-title">{t.title}</h3>
-              <p className="lp-tile-body">{t.body}</p>
+          {TILES.map((tile, i) => (
+            <div key={tile.n} className={`lp-tile reveal ${tile.cls}`} style={{ transitionDelay: `${(i % 3) * 80}ms` }}>
+              <div className="lp-tile-icon"><Icon name={tile.icon} size={20} /></div>
+              <div className="lp-kicker">{t(`lp.t${tile.n}k`)}</div>
+              <h3 className="lp-tile-title">{t(`lp.t${tile.n}t`)}</h3>
+              <p className="lp-tile-body">{t(`lp.t${tile.n}b`)}</p>
             </div>
           ))}
         </div>
@@ -146,17 +149,17 @@ function Landing() {
 
       <section className="lp-section" id="how">
         <div className="lp-section-head reveal">
-          <h2 className="section-title">From “I want to learn this”<br />to “I can prove it.”</h2>
+          <h2 className="section-title">{t('lp.how1')}<br />{t('lp.how2')}</h2>
         </div>
         <div className="lp-steps">
           {[
-            ['1', 'Tell us your goal', 'Topic, level, hours per week. Thirty seconds.'],
-            ['2', 'Follow your roadmap', 'Clear tasks, real resources, a tutor when you’re stuck.'],
-            ['3', 'Earn your certificate', 'Pass the assessments and show your capstone.'],
-          ].map(([n, t, d], i) => (
+            ['1', t('lp.s1t'), t('lp.s1d')],
+            ['2', t('lp.s2t'), t('lp.s2d')],
+            ['3', t('lp.s3t'), t('lp.s3d')],
+          ].map(([n, title, d], i) => (
             <div key={n} className="lp-step reveal" style={{ transitionDelay: `${i * 100}ms` }}>
               <div className="lp-step-n">{n}</div>
-              <h3>{t}</h3>
+              <h3>{title}</h3>
               <p>{d}</p>
             </div>
           ))}
@@ -164,17 +167,17 @@ function Landing() {
       </section>
 
       <section className="lp-final reveal">
-        <h2 className="section-title">Start your next roadmap today.</h2>
-        <p className="lp-sub" style={{ marginTop: 14 }}>Free. No credit card. Set up in under a minute.</p>
+        <h2 className="section-title">{t('lp.final')}</h2>
+        <p className="lp-sub" style={{ marginTop: 14 }}>{t('lp.finalSub')}</p>
         <div className="lp-ctas" style={{ marginTop: 28 }}>
-          <Button variant="primary" size="lg" onClick={() => go(loggedIn ? '/dashboard' : '/signup')}>{loggedIn ? 'Open LearnMap' : 'Create your free account'}</Button>
+          <Button variant="primary" size="lg" onClick={() => go(loggedIn ? '/dashboard' : '/signup')}>{loggedIn ? t('lp.open') : t('lp.createFree')}</Button>
         </div>
       </section>
 
       <footer className="lp-footer">
         <div className="row row-wrap" style={{ justifyContent: 'space-between', gap: 12 }}>
-          <span>© {new Date().getFullYear()} LearnMap · Learning Roadmap & Resource Organizer</span>
-          <span className="row" style={{ gap: 16 }}><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link></span>
+          <span>© {new Date().getFullYear()} LearnMap · {t('footer.tagline')}</span>
+          <span className="row" style={{ gap: 16, alignItems: 'center' }}><Link to="/privacy">{t('footer.privacy')}</Link><Link to="/terms">{t('footer.terms')}</Link><LanguageSelect compact /></span>
         </div>
       </footer>
     </div>

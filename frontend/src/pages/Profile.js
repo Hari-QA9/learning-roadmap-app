@@ -1,6 +1,8 @@
 import NotificationSettings from '../components/NotificationSettings';
 import CalendarCard from '../components/CalendarCard';
 import DataCard from '../components/DataCard';
+import LanguageSelect from '../components/LanguageSelect';
+import { useT } from '../lib/i18n';
 import PublicProfileCard from '../components/growth/PublicProfileCard';
 import InviteCard from '../components/growth/InviteCard';
 import React, { useEffect, useState } from 'react';
@@ -12,6 +14,15 @@ import { useTheme } from '../lib/theme';
 import {
   PageHeader, Button, Card, Field, Input, Textarea, Avatar, Stat, Loading, Icon, EmptyState, Segmented, Badge, Modal, timeAgo, formatDate,
 } from '../components/ui';
+function LanguageCard() {
+  const t = useT();
+  return (
+    <Card title={t('lang.title')} description={t('lang.desc')}>
+      <LanguageSelect />
+      <p className="tiny subtle mt-2">{t('lang.beta')}</p>
+    </Card>
+  );
+}
 
 const BADGE_INFO = [
   { name: 'First Roadmap', how: 'Create your first learning roadmap (manually or with AI).' },
@@ -179,6 +190,8 @@ function Profile() {
 
           <NotificationSettings />
           <CalendarCard />
+
+          <LanguageCard />
 
           <Card title="Appearance">
             <Segmented value={theme} onChange={setTheme} options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />

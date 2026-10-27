@@ -7,10 +7,11 @@ import { preload } from '../lib/pages';
 import useInstall from '../lib/useInstall';
 import { useFocus, fmtClock } from '../lib/focus';
 import { syncPush } from '../lib/push';
+import { useT, useI18n } from '../lib/i18n';
 
 export const NAV = [
   {
-    label: 'Learn',
+    label: 'Learn', key: 'nav.learn',
     items: [
       { to: '/dashboard', label: 'Overview', icon: 'home' },
       { to: '/roadmaps', label: 'Roadmaps', icon: 'map' },
@@ -25,7 +26,7 @@ export const NAV = [
     ],
   },
   {
-    label: 'Community',
+    label: 'Community', key: 'nav.community',
     items: [
       { to: '/groups', label: 'Study groups', icon: 'user', badge: 'groups' },
       { to: '/buddies', label: 'Buddies', icon: 'flame' },
@@ -34,7 +35,7 @@ export const NAV = [
     ],
   },
   {
-    label: 'Career',
+    label: 'Career', key: 'nav.career',
     items: [
       { to: '/jobs', label: 'Job board', icon: 'briefcase' },
       { to: '/applications', label: 'Applications', icon: 'list' },
@@ -47,7 +48,7 @@ export const NAV = [
     ],
   },
   {
-    label: 'AI tools',
+    label: 'AI tools', key: 'nav.ai',
     items: [
       { to: '/ai-generator', label: 'Roadmap generator', icon: 'wand' },
       { to: '/chat', label: 'Ask AI', icon: 'message' },
@@ -63,7 +64,8 @@ const TITLES = {
 };
 
 function useTitle(pathname) {
-  for (const g of NAV) for (const i of g.items) if (pathname === i.to || pathname.startsWith(i.to + '/')) return i.label;
+  const t = useT();
+  for (const g of NAV) for (const i of g.items) if (pathname === i.to || pathname.startsWith(i.to + '/')) return t(`nav.${i.to}`);
   if (TITLES[pathname]) return TITLES[pathname];
   if (pathname.startsWith('/module-evaluation') || pathname.startsWith('/roadmap-evaluation')) return 'Assessment';
   if (pathname.startsWith('/certificate')) return 'Certificates';
@@ -78,13 +80,21 @@ export default function AppShell() {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const user = getUser() || {};
+  const t = useT();
   const title = useTitle(pathname);
 
   const [me, setMe] = useState(null);
   const [resent, setResent] = useState(false);
   const [iosHelp, setIosHelp] = useState(false);
   const install = useInstall();
-  useEffect(() => { api.get('/auth/me', { noCache: true }).then((r) => setMe(r.data)).catch(() => {}); syncPush(); }, []);
+  const { setLang } = useI18n();
+  useEffect(() => {
+    api.get('/auth/me', { noCache: true }).then((r) => setMe(r.data)).catch(() => {});
+    syncPush();
+    // Use the language saved on the account (e.g. chosen on another device) unless this device has its own choice.
+    let local = null; try { local = localStorage.getItem('learnmap.lang'); } catch {}
+    if (!local) api.get('/settings').then((r) => { if (r.data?.language && r.data.language !== 'en') setLang(r.data.language); }).catch(() => {});
+  }, [setLang]);
   const resend = () => api.post('/auth/resend-verification').then(() => setResent(true)).catch(() => setResent(true));
 
   const lastSeen = useRef(null);
@@ -142,11 +152,11 @@ export default function AppShell() {
         <nav className="sidebar-nav">
           {NAV.map((g) => (
             <div className="nav-group" key={g.label}>
-              <div className="nav-label">{g.label}</div>
+              <div className="nav-label">{t(g.key)}</div>
               {g.items.map((i) => (
                 <NavLink key={i.to} to={i.to} end={i.to === '/quiz'} onMouseEnter={() => preload(i.to)} onFocus={() => preload(i.to)} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                   <Icon name={i.icon} size={16} />
-                  <span className="grow">{i.label}</span>
+                  <span className="grow">{t(`nav.${i.to}`)}</span>
                   {i.badge === 'due' && dueCards > 0 && <span className="nav-count">{dueCards > 99 ? '99+' : dueCards}</span>}
                   {i.badge === 'groups' && groupUnread > 0 && <span className="nav-count">{groupUnread > 99 ? '99+' : groupUnread}</span>}
                 </NavLink>
@@ -156,7 +166,7 @@ export default function AppShell() {
         </nav>
         <div className="sidebar-foot">
           <NavLink to="/feedback" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-            <Icon name="feedback" size={16} /> Send feedback
+            <Icon name="feedback" size={16} /> {t('nav.feedback')}
           </NavLink>
         </div>
       </aside>
@@ -198,17 +208,17 @@ export default function AppShell() {
                 <div className="small subtle truncate">{user.email}</div>
               </div>
               <div className="menu-sep" />
-              <Link to="/profile" className="menu-item"><Icon name="user" size={15} /> Profile</Link>
-              <Link to="/notifications" className="menu-item"><Icon name="bell" size={15} /> Notifications</Link>
-              {me?.isAdmin && <Link to="/admin" className="menu-item"><Icon name="chart" size={15} /> Admin dashboard</Link>}
+              <Link to="/profile" className="menu-item"><Icon name="user" size={15} /> {t('menu.profile')}</Link>
+              <Link to="/notifications" className="menu-item"><Icon name="bell" size={15} /> {t('menu.notifications')}</Link>
+              {me?.isAdmin && <Link to="/admin" className="menu-item"><Icon name="chart" size={15} /> {t('menu.admin')}</Link>}
               {!install.installed && (install.canPrompt || install.ios) && (
-                <button className="menu-item" onClick={() => (install.canPrompt ? install.install() : setIosHelp(true))}><Icon name="download" size={15} /> Install app</button>
+                <button className="menu-item" onClick={() => (install.canPrompt ? install.install() : setIosHelp(true))}><Icon name="download" size={15} /> {t('menu.install')}</button>
               )}
               <button className="menu-item" onClick={toggleTheme}>
-                <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} /> {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} /> {theme === 'dark' ? t('menu.light') : t('menu.dark')}
               </button>
               <div className="menu-sep" />
-              <button className="menu-item danger" onClick={doLogout}><Icon name="logout" size={15} /> Log out</button>
+              <button className="menu-item danger" onClick={doLogout}><Icon name="logout" size={15} /> {t('menu.logout')}</button>
             </Dropdown>
           </div>
         </header>

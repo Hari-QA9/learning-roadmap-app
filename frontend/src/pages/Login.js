@@ -5,6 +5,7 @@ import { Button, Field, Input, Alert } from '../components/ui';
 import { PasswordField } from '../components/PasswordField';
 import AuthLayout from './AuthLayout';
 import GoogleButton from '../components/GoogleButton';
+import { useT } from '../lib/i18n';
 import { peekAfterAuth, takeAfterAuth } from '../lib/growth';
 
 const LAST_EMAIL = 'learnmap.lastEmail';
@@ -24,6 +25,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const t = useT();
   const from = location.state?.from && !location.state.from.startsWith('/login') ? location.state.from : (peekAfterAuth() || '/dashboard');
 
   const onSubmit = async (e) => {
@@ -56,8 +58,8 @@ function Login() {
 
   return (
     <AuthLayout>
-      <h1>Welcome back</h1>
-      <p className="mt-1 mb-3">Log in to pick up where you left off.</p>
+      <h1>{t('auth.welcome')}</h1>
+      <p className="mt-1 mb-3">{t('auth.welcomeSub')}</p>
 
       {notice && !error && <div className="mb-2"><Alert tone={notice.tone}>{notice.text}</Alert></div>}
       {error && (
@@ -71,26 +73,27 @@ function Login() {
 
       <GoogleButton text="signin_with" redirectTo={from || '/dashboard'} />
       <form onSubmit={onSubmit} noValidate={false}>
-        <Field label="Email">
+        <Field label={t('auth.email')}>
           <Input type="email" name="email" value={form.email} onChange={onChange} placeholder="you@example.com" autoComplete="email" required autoFocus={!form.email} />
         </Field>
         <PasswordField
+          label={t('auth.password')}
           value={form.password}
           onChange={onChange}
           autoFocus={!!form.email}
-          labelRight={<Link to="/forgot-password" onClick={(e) => e.stopPropagation()}>Forgot password?</Link>}
+          labelRight={<Link to="/forgot-password" onClick={(e) => e.stopPropagation()}>{t('auth.forgot')}</Link>}
         />
         <label className="checkbox mt-2">
           <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-          Keep me signed in for 30 days
+          {t('auth.remember')}
         </label>
         <Button type="submit" variant="primary" size="lg" block loading={loading} disabled={!form.email.trim() || !form.password} className="mt-3">
-          {loading ? 'Logging in…' : 'Log in'}
+          {loading ? t('auth.loggingIn') : t('auth.login')}
         </Button>
       </form>
 
       <p className="mt-3 small center">
-        New to LearnMap? <Link to="/signup">Create an account</Link>
+        {t('auth.new')} <Link to="/signup">{t('auth.createAccount')}</Link>
       </p>
     </AuthLayout>
   );

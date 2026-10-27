@@ -19,7 +19,7 @@ router.get('/', auth, async (req, res) => {
     res.json({
       email_weekly: !!Number(s.email_weekly), email_reminders: !!Number(s.email_reminders),
       email_job_alerts: !!Number(s.email_job_alerts), email_followups: !!Number(s.email_followups),
-      daily_goal: Number(s.daily_goal) || 1, timezone: s.timezone, field: s.field, needsOnboarding,
+      daily_goal: Number(s.daily_goal) || 1, timezone: s.timezone, field: s.field, language: s.language || 'en', needsOnboarding,
       emailEnabled: require('../lib/mailer').emailConfigured(),
     });
   } catch (err) {
@@ -34,6 +34,7 @@ router.put('/', auth, async (req, res) => {
   for (const k of E.EMAIL_TYPES) if (b[k] !== undefined) patch[k] = toBool(b[k]);
   if (b.daily_goal !== undefined) patch.daily_goal = Math.min(10, Math.max(1, parseInt(b.daily_goal, 10) || 1));
   if (b.timezone !== undefined && E.validTz(b.timezone)) patch.timezone = String(b.timezone).slice(0, 64);
+  if (b.language !== undefined && require('../lib/lang').LANGS[b.language]) patch.language = b.language;
   try {
     await E.saveSettings(req.user.id, patch);
     res.json({ message: 'Saved' });

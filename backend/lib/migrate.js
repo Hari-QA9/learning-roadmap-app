@@ -57,6 +57,8 @@ const COLUMNS = [
   ['user_settings', 'leaderboard_public', 'TINYINT DEFAULT 0'],
   // Explore: shared roadmaps the owner chose to list publicly
   ['roadmaps', 'listed', 'TINYINT DEFAULT 0'],
+  // The language the member uses LearnMap in (en, es, hi, te, fr, zh)
+  ['user_settings', 'language', "VARCHAR(5) DEFAULT 'en'"],
 ];
 
 const TABLES = [

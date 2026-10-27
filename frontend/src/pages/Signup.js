@@ -6,12 +6,14 @@ import { PasswordField, StrengthMeter, scorePassword } from '../components/Passw
 import AuthLayout from './AuthLayout';
 import GoogleButton from '../components/GoogleButton';
 import { getInvite, clearInvite, takeAfterAuth } from '../lib/growth';
+import { useT } from '../lib/i18n';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function Signup() {
   const navigate = useNavigate();
   const invited = !!getInvite();
+  const t = useT();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [touched, setTouched] = useState({});
   const [error, setError] = useState('');
@@ -54,17 +56,17 @@ function Signup() {
   return (
     <AuthLayout>
       {invited && <div className="mb-2"><Alert tone="success">A friend invited you — welcome! Create your free account below.</Alert></div>}
-      <h1>Create your account</h1>
-      <p className="mt-1 mb-3">Plan what you want to learn and track it to the finish.</p>
+      <h1>{t('auth.createTitle')}</h1>
+      <p className="mt-1 mb-3">{t('auth.createSub')}</p>
 
       {error && <div className="mb-2"><Alert tone="danger">{error}</Alert></div>}
 
       <GoogleButton text="signup_with" />
       <form onSubmit={onSubmit}>
-        <Field label="Full name">
-          <Input name="name" value={form.name} onChange={onChange} placeholder="Your name" autoComplete="name" required autoFocus />
+        <Field label={t('auth.fullName')}>
+          <Input name="name" value={form.name} onChange={onChange} placeholder={t('auth.namePh')} autoComplete="name" required autoFocus />
         </Field>
-        <Field label="Email" error={emailErr}>
+        <Field label={t('auth.email')} error={emailErr}>
           <Input type="email" name="email" value={form.email} onChange={onChange} onBlur={blur('email')} placeholder="you@example.com" autoComplete="email" required />
         </Field>
         <PasswordField
@@ -72,12 +74,13 @@ function Signup() {
           onChange={onChange}
           onBlur={blur('password')}
           autoComplete="new-password"
-          hint={!form.password ? 'At least 8 characters. Mix letters, numbers and symbols.' : undefined}
+          label={t('auth.password')}
+          hint={!form.password ? t('auth.pwHint') : undefined}
           error={pwErr}
         />
         <StrengthMeter password={form.password} />
         <PasswordField
-          label="Confirm password"
+          label={t('auth.confirm')}
           name="confirm"
           value={form.confirm}
           onChange={onChange}
@@ -85,14 +88,14 @@ function Signup() {
           error={confirmErr}
         />
         <Button type="submit" variant="primary" size="lg" block loading={loading} disabled={!valid} className="mt-3">
-          {loading ? 'Creating account…' : 'Create account'}
+          {loading ? t('auth.creating') : t('auth.create')}
         </Button>
         {valid && !strong && <p className="tiny subtle center mt-1">Tip: a stronger password keeps your account safer.</p>}
-        <p className="tiny subtle center mt-2">By creating an account you agree to the <Link to="/terms">Terms</Link> and <Link to="/privacy">Privacy Policy</Link>.</p>
+        <p className="tiny subtle center mt-2">{t('auth.agree1')} <Link to="/terms">{t('footer.terms')}</Link> {t('auth.and')} <Link to="/privacy">{t('auth.privacyPolicy')}</Link>.</p>
       </form>
 
       <p className="mt-3 small center">
-        Already have an account? <Link to="/login">Log in</Link>
+        {t('auth.haveAccount')} <Link to="/login">{t('auth.login')}</Link>
       </p>
     </AuthLayout>
   );

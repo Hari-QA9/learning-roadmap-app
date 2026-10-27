@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getLang } from './i18n';
 
 // One API client for the whole app. Set REACT_APP_API_URL (frontend/.env locally, or the
 // hosting provider's settings) to point at the deployed backend, e.g. https://learnmap-api.onrender.com/api.
@@ -12,6 +13,15 @@ const localApi = () => {
 export const API_URL = (process.env.REACT_APP_API_URL || localApi()).replace(/\/$/, '');
 
 const api = axios.create({ baseURL: API_URL, timeout: 90000 });
+
+// Tell the server which language the member uses, so the AI writes in it.
+api.interceptors.request.use((config) => {
+  try {
+    const lang = getLang();
+    if (lang && lang !== 'en') { config.headers = config.headers || {}; config.headers['X-Language'] = lang; }
+  } catch { /* storage blocked */ }
+  return config;
+});
 
 /* ---------- Instant revisits ----------
    GET responses are kept in memory for 60 seconds, so going back to a page you
