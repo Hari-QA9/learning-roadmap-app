@@ -23,6 +23,14 @@ export const NAV = [
     ],
   },
   {
+    label: 'Community',
+    items: [
+      { to: '/groups', label: 'Study groups', icon: 'user', badge: 'groups' },
+      { to: '/buddies', label: 'Buddies', icon: 'flame' },
+      { to: '/challenges', label: 'Challenges', icon: 'trophy' },
+    ],
+  },
+  {
     label: 'Career',
     items: [
       { to: '/jobs', label: 'Job board', icon: 'briefcase' },
@@ -109,6 +117,9 @@ export default function AppShell() {
   // Flashcards due — shown as a count next to "Review cards".
   const [dueCards, setDueCards] = useState(0);
   useEffect(() => { api.get('/learning/flashcards/summary', { noCache: true }).then((r) => setDueCards(r.data.due || 0)).catch(() => {}); }, [pathname]);
+  // Unread group chat messages — shown next to "Study groups".
+  const [groupUnread, setGroupUnread] = useState(0);
+  useEffect(() => { api.get('/community/groups', { noCache: true }).then((r) => setGroupUnread((r.data || []).reduce((n, g) => n + (g.unread || 0), 0))).catch(() => {}); }, [pathname]);
   const focus = useFocus();
   useEffect(() => { refreshUnread(); }, [pathname, refreshUnread]);
 
@@ -130,6 +141,7 @@ export default function AppShell() {
                   <Icon name={i.icon} size={16} />
                   <span className="grow">{i.label}</span>
                   {i.badge === 'due' && dueCards > 0 && <span className="nav-count">{dueCards > 99 ? '99+' : dueCards}</span>}
+                  {i.badge === 'groups' && groupUnread > 0 && <span className="nav-count">{groupUnread > 99 ? '99+' : groupUnread}</span>}
                 </NavLink>
               ))}
             </div>

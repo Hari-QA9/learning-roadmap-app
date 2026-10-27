@@ -143,6 +143,20 @@ router.get('/roadmaps/:slug', async (req, res) => {
   }
 });
 
+// GET /api/public/groups/:code — what a group invite link shows before joining
+router.get('/groups/:code', async (req, res) => {
+  const code = String(req.params.code || '').toLowerCase();
+  if (!/^[a-z0-9]{6,16}$/.test(code)) return res.status(404).json({ message: 'This invite link isn’t valid.' });
+  try {
+    const [[g]] = await q().query('SELECT id, name, goal, description FROM study_groups WHERE invite_code = ?', [code]);
+    if (!g) return res.status(404).json({ message: 'This invite link isn’t valid any more.' });
+    const [[{ n }]] = await q().query('SELECT COUNT(*) AS n FROM group_members WHERE group_id = ?', [g.id]);
+    res.json({ name: g.name, goal: g.goal || '', description: g.description || '', members: Number(n) });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load this group.' });
+  }
+});
+
 // GET /api/public/certificates/:id — check a certificate is real
 router.get('/certificates/:id', async (req, res) => {
   const id = String(req.params.id || '').trim();

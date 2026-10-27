@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import JobRow from '../components/JobRow';
 import TodayCard from '../components/TodayCard';
+import WeekCard from '../components/WeekCard';
 import api, { getUser } from '../lib/api';
 import {
   PageHeader, Stat, Card, Button, Progress, EmptyState, SkeletonRows, Icon, Badge, timeAgo,
@@ -120,6 +121,7 @@ function Dashboard() {
 
         <div className="stack-lg">
           <TodayCard today={today} />
+          <WeekCard />
           <Card
             title="Jobs for you"
             description="Best matches for your skills"
