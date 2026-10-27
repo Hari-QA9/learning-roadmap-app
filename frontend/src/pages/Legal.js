@@ -45,7 +45,7 @@ function Privacy() {
       <h2>Things you choose to make public</h2>
       <ul>
         <li><strong>Public profile:</strong> off by default. If you turn it on (Profile → Public profile), anyone with the link can see what you pick: name, headline, links, skills, roadmaps and progress, certificates, and resume sections. Never your email or phone number.</li>
-        <li><strong>Shared roadmaps:</strong> when you share a roadmap, anyone with the link can see its modules, tasks and resources and copy it. Your progress and notes stay private. You can stop sharing at any time.</li>
+        <li><strong>Shared roadmaps:</strong> when you share a roadmap, anyone with the link can see its modules, tasks and resources and copy it. Your progress and notes stay private. If you also switch on “List on Explore”, it appears on the public Explore page with your first name (or your public profile name). You can stop sharing at any time.</li>
         <li><strong>Certificates:</strong> anyone with a certificate ID can check it’s real and see the name and roadmap on it.</li>
         <li><strong>Invites:</strong> if you join through a friend’s invite link, they see your first name in their list of friends who joined.</li>
         <li><strong>Study groups:</strong> members of a group you join see your name, your weekly activity counts (tasks, focus minutes, cards reviewed), your streak and what you post in the group chat. The group owner can remove messages and members.</li>

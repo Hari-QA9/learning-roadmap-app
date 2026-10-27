@@ -1046,3 +1046,12 @@ label.setting-row { cursor: pointer; }
   .prep-sheet .card { break-inside: avoid; box-shadow: none; }
   .prep-sheet .btn { display: none !important; }
 }
+
+/* Explore & import */
+.explore-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.explore-card { padding: 16px 18px; color: inherit; text-decoration: none; display: flex; flex-direction: column; transition: transform 150ms var(--ease), box-shadow 150ms var(--ease); }
+.explore-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.explore-title { color: var(--text); line-height: 1.3; font-size: 15px; }
+.chip { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); cursor: pointer; }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 640px) { .explore-grid { grid-template-columns: minmax(0, 1fr); } }

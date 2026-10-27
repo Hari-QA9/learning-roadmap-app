@@ -59,7 +59,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
   1. Go to console.cloud.google.com → create a project (any name).
   2. **APIs & Services → Library** → search **YouTube Data API v3** → **Enable**.
   3. **APIs & Services → Credentials → Create credentials → API key** → copy it.
-  4. In `backend/.env` set `YOUTUBE_API_KEY=…`. New roadmaps will use it (free quota is plenty for normal use).
+  4. In `backend/.env` set `YOUTUBE_API_KEY=…`. New roadmaps will use it (free quota is plenty for normal use). It also switches on **Import → YouTube playlist**.
 
 - [ ] 🟠 **Sign in with Google** (free)
   1. Go to console.cloud.google.com → pick your project → **APIs & Services → OAuth consent screen** → External → fill in app name (LearnMap), support email → Save.
@@ -143,6 +143,12 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Import
+- [ ] 🟠 Upload PDF syllabi directly (today: copy the text from the PDF and paste it). Needs a PDF text library on the server.
+- [ ] 🟢 Import from Coursera/Udemy course pages and from a website's table of contents (needs page fetching on the server).
+
+---
+
 ## Learning
 - [ ] 🟢 Flashcards: images and code formatting on cards; import/export Anki decks.
 - [ ] 🟢 Focus timer: optional focus sounds (rain, lo-fi) and a "do not disturb" reminder.
@@ -152,7 +158,6 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ## Growth
 - [ ] 🟠 Link previews for public pages (profile, shared roadmap, certificate) on WhatsApp/LinkedIn need the server to send page-specific titles and images — the site is a single-page app today, so every link shows the general LearnMap preview.
-- [ ] 🟢 "Explore" page listing popular shared roadmaps (most copied) by field.
 - [ ] 🟢 Profile page themes and a QR code for the profile link (career fairs, resumes).
 
 ---
@@ -174,6 +179,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
 - [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)
 - [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)
+- [x] Explore & import: public Explore page of listed shared roadmaps (opt-in per roadmap), import a YouTube playlist (needs YOUTUBE_API_KEY), syllabus, notes or .txt/.md file into a roadmap + flashcards (PR #21)
 - [x] Career pack: cover-letter builder (edit, AI rewrites, undo, copy/print), LinkedIn helper, interview prep sheets + practice from any pasted job, skill demand insights from the job board (PR #20)
 - [x] Community pack: study groups with chat and weekly group goal, invite links, public group discovery, accountability buddies with nudges/high fives, weekly challenges with XP, friends/group/public leaderboards (PR #19)
 - [x] Learning pack: placement check before AI roadmaps, AI flashcards with spaced repetition (review page, decks, keyboard shortcuts), focus timer with study time per roadmap (PR #18)

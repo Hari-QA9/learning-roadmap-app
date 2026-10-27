@@ -13,6 +13,7 @@ export const NAV = [
     items: [
       { to: '/dashboard', label: 'Overview', icon: 'home' },
       { to: '/roadmaps', label: 'Roadmaps', icon: 'map' },
+      { to: '/discover', label: 'Explore', icon: 'search' },
       { to: '/templates', label: 'Templates', icon: 'layers' },
       { to: '/review', label: 'Review cards', icon: 'layers', badge: 'due' },
       { to: '/focus', label: 'Focus timer', icon: 'clock' },
@@ -56,6 +57,7 @@ const TITLES = {
   '/notifications': 'Notifications',
   '/profile': 'Profile',
   '/feedback': 'Feedback',
+  '/import': 'Import a course',
 };
 
 function useTitle(pathname) {

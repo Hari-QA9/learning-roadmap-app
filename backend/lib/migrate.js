@@ -55,6 +55,8 @@ const COLUMNS = [
   ['user_settings', 'invite_code', 'VARCHAR(16) NULL'],
   // Community pack: opt in to the public weekly leaderboard
   ['user_settings', 'leaderboard_public', 'TINYINT DEFAULT 0'],
+  // Explore: shared roadmaps the owner chose to list publicly
+  ['roadmaps', 'listed', 'TINYINT DEFAULT 0'],
 ];
 
 const TABLES = [

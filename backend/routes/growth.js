@@ -5,7 +5,7 @@ const router = express.Router();
 const db = require('../db');
 const auth = require('../middleware/auth');
 const { ownRoadmap } = require('../lib/ownership');
-const { insertTask } = require('../lib/tasks');
+const { copyRoadmap } = require('../lib/roadmapCopy');
 const { notify } = require('../lib/engagement');
 const { randomCode, checkUsername, suggestUsername, inviteCode, awardBadge } = require('../lib/growth');
 
@@ -99,7 +99,7 @@ router.post('/roadmaps/:id/share', auth, async (req, res) => {
       slug = randomCode(10);
       await q().query('UPDATE roadmaps SET share_slug = ? WHERE id = ?', [slug, r.id]);
     }
-    res.json({ slug, copies: Number(r.copies) || 0 });
+    res.json({ slug, copies: Number(r.copies) || 0, listed: !!Number(r.listed) });
   } catch (err) {
     console.error('[growth] share', err.message);
     res.status(500).json({ message: 'Could not create a share link.' });
@@ -111,9 +111,23 @@ router.delete('/roadmaps/:id/share', auth, async (req, res) => {
     const r = await ownRoadmap(req.params.id, req.user.id);
     if (!r) return res.status(404).json({ message: 'Roadmap not found.' });
     await q().query('UPDATE roadmaps SET share_slug = NULL WHERE id = ?', [r.id]);
+    await q().query('UPDATE roadmaps SET listed = 0 WHERE id = ?', [r.id]).catch(() => {});
     res.json({ message: 'Sharing turned off. The old link no longer works.' });
   } catch (err) {
     res.status(500).json({ message: 'Could not turn sharing off.' });
+  }
+});
+
+// List (or unlist) a shared roadmap on the public Explore page
+router.put('/roadmaps/:id/listing', auth, async (req, res) => {
+  try {
+    const r = await ownRoadmap(req.params.id, req.user.id);
+    if (!r) return res.status(404).json({ message: 'Roadmap not found.' });
+    if (!r.share_slug) return res.status(400).json({ message: 'Share the roadmap first.' });
+    await q().query('UPDATE roadmaps SET listed = ? WHERE id = ?', [req.body.listed ? 1 : 0, r.id]);
+    res.json({ message: req.body.listed ? 'Listed on Explore — anyone can find it.' : 'Removed from Explore. The link still works.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not update the listing.' });
   }
 });
 
@@ -126,36 +140,7 @@ router.post('/roadmaps/copy/:slug', auth, async (req, res) => {
     const [[src]] = await q().query('SELECT * FROM roadmaps WHERE share_slug = ?', [slug]);
     if (!src) return res.status(404).json({ message: 'This roadmap is no longer shared.' });
     const userId = req.user.id;
-    const [mods] = await q().query('SELECT * FROM modules WHERE roadmap_id = ? ORDER BY order_index, id LIMIT 40', [src.id]);
-
-    const [ins] = await q().query(
-      'INSERT INTO roadmaps (user_id, title, description, goal, duration, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [userId, src.title, src.description, src.goal, src.duration, 'active']
-    );
-    const newId = ins.insertId;
-    // Optional columns may be missing in very old databases — never fail the copy over them.
-    await q().query('UPDATE roadmaps SET details = ?, copied_from = ? WHERE id = ?', [src.details || null, src.id, newId]).catch(() => {});
-
-    let taskCount = 0;
-    for (const m of mods) {
-      const [mi] = await q().query(
-        'INSERT INTO modules (roadmap_id, title, description, position, order_index) VALUES (?, ?, ?, ?, ?)',
-        [newId, m.title, m.description, m.position || 0, m.order_index || 0]
-      );
-      if (m.details) await q().query('UPDATE modules SET details = ? WHERE id = ?', [m.details, mi.insertId]).catch(() => {});
-      const [tasks] = await q().query('SELECT * FROM tasks WHERE module_id = ? ORDER BY position, id LIMIT 60', [m.id]);
-      for (const t of tasks) {
-        if (taskCount++ >= 500) break;
-        await insertTask({
-          userId, roadmapId: newId, moduleId: mi.insertId, title: t.title, description: t.description || '',
-          priority: t.priority || 'medium', position: t.position || 0, taskType: t.task_type || null, estMinutes: t.est_minutes || null, details: t.details || null,
-        });
-      }
-    }
-    const [resources] = await q().query('SELECT title, url, type, is_free FROM resources WHERE roadmap_id = ? LIMIT 100', [src.id]);
-    for (const r of resources) {
-      await q().query('INSERT INTO resources (roadmap_id, title, url, type, is_free) VALUES (?, ?, ?, ?, ?)', [newId, r.title, r.url, r.type, r.is_free]).catch(() => {});
-    }
+    const newId = await copyRoadmap(src, userId);
     await q().query('INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)', [userId, 'Copied Roadmap', `Copied roadmap: ${src.title}`]).catch(() => {});
 
     if (src.user_id !== userId) {

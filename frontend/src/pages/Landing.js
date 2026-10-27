@@ -89,6 +89,7 @@ function Landing() {
           <nav className="lp-links">
             <a href="#features">Features</a>
             <a href="#how">How it works</a>
+            <Link to="/explore">Explore roadmaps</Link>
           </nav>
           <div className="row" style={{ marginLeft: 'auto', gap: 4 }}>
             <Button variant="ghost" size="sm" icon={theme === 'dark' ? 'sun' : 'moon'} onClick={toggleTheme} aria-label="Toggle theme" />

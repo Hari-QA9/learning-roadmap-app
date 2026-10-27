@@ -104,6 +104,40 @@ router.get('/u/:username', async (req, res) => {
   }
 });
 
+// GET /api/public/explore — roadmaps their owners listed on Explore (most copied first)
+router.get('/explore', async (req, res) => {
+  try {
+    const term = String(req.query.q || '').trim().toLowerCase().slice(0, 80);
+    const sort = req.query.sort === 'new' ? 'r.created_at DESC' : 'r.copies DESC, r.created_at DESC';
+    const params = [];
+    let where = 'r.share_slug IS NOT NULL AND r.listed = 1';
+    if (term) {
+      where += ' AND (LOWER(r.title) LIKE ? OR LOWER(COALESCE(r.description, \'\')) LIKE ?)';
+      params.push(`%${term}%`, `%${term}%`);
+    }
+    const page = Math.max(0, parseInt(req.query.page, 10) || 0);
+    const [rows] = await q().query(
+      `SELECT r.id, r.title, r.description, r.duration, r.copies, r.share_slug, r.created_at, u.name AS author, p.username
+       FROM roadmaps r JOIN users u ON u.id = r.user_id LEFT JOIN public_profiles p ON p.user_id = u.id AND p.is_public = 1
+       WHERE ${where} ORDER BY ${sort} LIMIT 25 OFFSET ${page * 24}`, params);
+    const ids = rows.map((r) => r.id);
+    const [counts] = ids.length ? await q().query(
+      'SELECT m.roadmap_id, COUNT(DISTINCT m.id) AS modules, COUNT(t.id) AS tasks FROM modules m LEFT JOIN tasks t ON t.module_id = m.id WHERE m.roadmap_id IN (?) GROUP BY m.roadmap_id', [ids]) : [[]];
+    const c = new Map(counts.map((x) => [x.roadmap_id, x]));
+    res.json({
+      more: rows.length > 24,
+      roadmaps: rows.slice(0, 24).map((r) => ({
+        slug: r.share_slug, title: r.title, description: String(r.description || '').slice(0, 220), duration: r.duration || '',
+        copies: Number(r.copies) || 0, modules: Number(c.get(r.id)?.modules) || 0, tasks: Number(c.get(r.id)?.tasks) || 0,
+        author: r.username ? r.author : firstName(r.author), username: r.username || null, created_at: r.created_at,
+      })),
+    });
+  } catch (err) {
+    console.error('[public] explore', err.message);
+    res.status(500).json({ message: 'Could not load roadmaps.' });
+  }
+});
+
 // GET /api/public/roadmaps/:slug — a shared roadmap (outline only)
 router.get('/roadmaps/:slug', async (req, res) => {
   const slug = String(req.params.slug || '');
