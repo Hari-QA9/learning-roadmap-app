@@ -47,6 +47,7 @@ const communityRoutes = require('./routes/community');
 const careerRoutes = require('./routes/career');
 const importRoutes = require('./routes/importer');
 const pushRoutes = require('./routes/push');
+const classRoutes = require('./routes/classes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/roadmaps', roadmapRoutes);
@@ -79,6 +80,7 @@ app.use('/api/community', communityRoutes);
 app.use('/api/career', careerRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/push', pushRoutes);
+app.use('/api/classes', classRoutes);
 
 app.get('/', (req, res) => res.send('Learning Roadmap API Running'));
 // Health check for the hosting provider (also confirms the database answers).

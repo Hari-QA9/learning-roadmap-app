@@ -11,7 +11,7 @@ import { FocusProvider } from './lib/focus';
 import {
   Landing, Login, Signup, ForgotPassword, ResetPassword, Dashboard, Roadmaps, RoadmapDetail, AIGenerator,
   Profile, Notifications, Quiz, QuizPerformance, Feedback, Chat, ResumeBuilder, Templates, CareerAdvisor,
-  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, Interview, InterviewSession, VerifyEmail, Admin, Legal, PublicProfile, SharedRoadmap, VerifyCertificate, Join, Review, Focus, Groups, GroupDetail, Buddies, Challenges, JoinCommunity, CoverLetters, LinkedInHelper, PrepSheet, Insights, Explore, Import, preloadAllWhenIdle,
+  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, Interview, InterviewSession, VerifyEmail, Admin, Legal, PublicProfile, SharedRoadmap, VerifyCertificate, Join, Review, Focus, Groups, GroupDetail, Buddies, Challenges, JoinCommunity, CoverLetters, LinkedInHelper, PrepSheet, Insights, Explore, Import, Classes, ClassDetail, preloadAllWhenIdle,
 } from './lib/pages';
 
 // Remember a friend's ?invite= code from whatever page the visitor lands on.
@@ -53,6 +53,7 @@ function App() {
             <Route path="/explore" element={<Explore />} />
             <Route path="/g/:code" element={<JoinCommunity kind="group" />} />
             <Route path="/buddy/:code" element={<JoinCommunity kind="buddy" />} />
+            <Route path="/class/:code" element={<JoinCommunity kind="class" />} />
 
             <Route path="/welcome" element={<PrivateRoute><Welcome /></PrivateRoute>} />
 
@@ -94,6 +95,8 @@ function App() {
               <Route path="/insights" element={<Insights />} />
               <Route path="/discover" element={<Explore inApp />} />
               <Route path="/import" element={<Import />} />
+              <Route path="/classes" element={<Classes />} />
+              <Route path="/classes/:id" element={<ClassDetail />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -143,6 +143,13 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Classes
+- [ ] 🟠 Co-teachers (more than one teacher per class).
+- [ ] 🟢 Reminder the day before an assignment is due (today: the due date is put on the student's last task, so normal due-date reminders apply).
+- [ ] 🟢 Grades / feedback per assignment, and quizzes the teacher can assign.
+
+---
+
 ## Import
 - [ ] 🟠 Upload PDF syllabi directly (today: copy the text from the PDF and paste it). Needs a PDF text library on the server.
 - [ ] 🟢 Import from Coursera/Udemy course pages and from a website's table of contents (needs page fetching on the server).
@@ -179,6 +186,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
 - [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)
 - [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)
+- [x] Classrooms & mentoring: classes with join code/link, assign roadmaps (each student gets a copy, late joiners too), teacher progress table + CSV, announcements, roadmap banner (PR #23)
 - [x] Phone & desktop push notifications (built-in Web Push, no extra packages; verified against the RFC 8291 test vector) (PR #22)
 - [x] Explore & import: public Explore page of listed shared roadmaps (opt-in per roadmap), import a YouTube playlist (needs YOUTUBE_API_KEY), syllabus, notes or .txt/.md file into a roadmap + flashcards (PR #21)
 - [x] Career pack: cover-letter builder (edit, AI rewrites, undo, copy/print), LinkedIn helper, interview prep sheets + practice from any pasted job, skill demand insights from the job board (PR #20)

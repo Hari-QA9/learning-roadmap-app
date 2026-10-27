@@ -191,6 +191,20 @@ router.get('/groups/:code', async (req, res) => {
   }
 });
 
+// GET /api/public/classes/:code — what a class join link shows before joining
+router.get('/classes/:code', async (req, res) => {
+  const code = String(req.params.code || '').toLowerCase();
+  if (!/^[a-z0-9]{6,16}$/.test(code)) return res.status(404).json({ message: 'This class code isn’t valid.' });
+  try {
+    const [[c]] = await q().query('SELECT c.id, c.name, c.description, u.name AS teacher FROM classrooms c JOIN users u ON u.id = c.owner_id WHERE c.join_code = ?', [code]);
+    if (!c) return res.status(404).json({ message: 'This class code isn’t valid any more. Ask your teacher for a new one.' });
+    const [[{ n }]] = await q().query('SELECT COUNT(*) AS n FROM classroom_members WHERE classroom_id = ? AND role = ?', [c.id, 'student']);
+    res.json({ name: c.name, description: c.description || '', teacher: c.teacher, students: Number(n) });
+  } catch (err) {
+    res.status(500).json({ message: 'Could not load this class.' });
+  }
+});
+
 // GET /api/public/certificates/:id — check a certificate is real
 router.get('/certificates/:id', async (req, res) => {
   const id = String(req.params.id || '').trim();
