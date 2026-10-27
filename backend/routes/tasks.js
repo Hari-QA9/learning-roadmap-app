@@ -4,6 +4,7 @@ const db = require('../db');
 const auth = require('../middleware/auth');
 const { insertTask } = require('../lib/tasks');
 const { recordTaskDone } = require('../lib/engagement');
+const { queuedAt } = require('../lib/offline');
 
 const q = () => db.promise();
 
@@ -73,10 +74,12 @@ router.put('/:id', auth, async (req, res) => {
     if (status && status !== 'done' && before.status === 'done') await q().query('UPDATE tasks SET completed_at = NULL WHERE id = ?', [req.params.id]).catch(() => {});
 
     if (becameDone) {
-      await q().query('UPDATE tasks SET completed_at = CURRENT_TIMESTAMP WHERE id = ?', [req.params.id]).catch(() => {});
+      const at = queuedAt(req); // finished offline and synced later → count it when it happened
+      if (at) await q().query('UPDATE tasks SET completed_at = ? WHERE id = ?', [at, req.params.id]).catch(() => {});
+      else await q().query('UPDATE tasks SET completed_at = CURRENT_TIMESTAMP WHERE id = ?', [req.params.id]).catch(() => {});
       await q().query('UPDATE user_stats SET xp_points = xp_points + 20 WHERE user_id = ?', [req.user.id]).catch(() => {});
       await q().query('INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)', [req.user.id, 'Completed Task', `Completed task: ${title || before.title}`]).catch(() => {});
-      await recordTaskDone(req.user.id).catch((e) => console.warn('[tasks] activity', e.message));
+      await recordTaskDone(req.user.id, at).catch((e) => console.warn('[tasks] activity', e.message));
     }
     res.json({ message: 'Task updated' });
   } catch (err) {

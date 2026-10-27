@@ -2,7 +2,9 @@ import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react
 import { NavLink, Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import api, { getUser, logout } from '../lib/api';
 import { useTheme } from '../lib/theme';
-import { Icon, Dropdown, Avatar, Button, SkeletonRows } from './ui';
+import { Icon, Dropdown, Avatar, Button, SkeletonRows, ConfirmDialog } from './ui';
+import { useToast } from './Toast';
+import { useOffline, onSynced } from '../lib/offline';
 import { preload } from '../lib/pages';
 import useInstall from '../lib/useInstall';
 import { useFocus, fmtClock } from '../lib/focus';
@@ -18,6 +20,7 @@ export const NAV = [
       { to: '/discover', label: 'Explore', icon: 'search' },
       { to: '/templates', label: 'Templates', icon: 'layers' },
       { to: '/review', label: 'Review cards', icon: 'layers', badge: 'due' },
+      { to: '/calendar', label: 'Calendar', icon: 'calendar' },
       { to: '/focus', label: 'Focus timer', icon: 'clock' },
       { to: '/study-planner', label: 'Study planner', icon: 'calendar' },
       { to: '/quiz', label: 'Practice quiz', icon: 'quiz' },
@@ -140,7 +143,16 @@ export default function AppShell() {
   const focus = useFocus();
   useEffect(() => { refreshUnread(); }, [pathname, refreshUnread]);
 
-  const doLogout = () => { logout(); navigate('/login'); };
+  // Offline: banner, "changes synced" message, and a warning before logging out with unsent changes.
+  const net = useOffline();
+  const toast = useToast();
+  useEffect(() => onSynced(({ synced, failed }) => {
+    if (synced) toast.success(t('offline.synced', { n: synced }));
+    if (failed) toast.error(`${failed} offline change${failed === 1 ? '' : 's'} could not be saved (the item may have been deleted).`);
+  }), [toast, t]);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const reallyLogout = () => { setConfirmLogout(false); logout({ everything: true }); navigate('/login'); };
+  const doLogout = () => { if (net.pending) setConfirmLogout(true); else reallyLogout(); };
 
   return (
     <div className="shell">
@@ -236,6 +248,18 @@ export default function AppShell() {
             <button type="button" className="link-btn small" onClick={() => setIosHelp(false)}>Got it</button>
           </div>
         )}
+        {(net.offline || net.pending > 0) && (
+          <div className={`verify-banner offline-banner ${net.offline ? '' : 'syncing'}`} role="status">
+            <Icon name={net.offline ? 'wifiOff' : 'refresh'} size={15} />
+            <span className="grow">
+              {net.offline ? t('offline.banner') : t('offline.syncing')}
+              {net.pending > 0 && <> {t('offline.pending', { n: net.pending })}</>}
+            </span>
+          </div>
+        )}
+        <ConfirmDialog open={confirmLogout} title="Log out with unsynced changes?" confirmLabel="Log out anyway"
+          description={`${net.pending} change${net.pending === 1 ? '' : 's'} you made offline haven’t reached the server yet. Logging out removes them from this device. Connect to the internet first to keep them.`}
+          onConfirm={reallyLogout} onCancel={() => setConfirmLogout(false)} />
         <main className="content page-enter" key={pathname}>
           <Suspense fallback={<div className="card" style={{ marginTop: 8 }}><SkeletonRows rows={4} /></div>}>
             <Outlet context={{ refreshUnread }} />

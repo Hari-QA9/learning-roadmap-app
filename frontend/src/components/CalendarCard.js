@@ -3,8 +3,9 @@ import api, { errorMessage } from '../lib/api';
 import { useToast } from './Toast';
 import { Card, Button, Input, Icon } from './ui';
 
-/** Private calendar link: task due dates and interviews show up in Google/Outlook/Apple Calendar. */
-export default function CalendarCard() {
+/** Private calendar link: due dates, interviews and study sessions show up in Google/Outlook/Apple Calendar.
+ *  `bare`: just the contents (inside a modal). */
+export default function CalendarCard({ bare = false }) {
   const toast = useToast();
   const [link, setLink] = useState(null);
   const [resetting, setResetting] = useState(false);
@@ -19,8 +20,8 @@ export default function CalendarCard() {
     finally { setResetting(false); }
   };
 
-  return (
-    <Card title="Calendar" description="Task due dates and interviews in the calendar you already use. It updates automatically.">
+  const body = (
+    <>
       {!link ? <div className="small muted">Loading…</div> : (
         <div className="stack-sm">
           <div className="row" style={{ gap: 6 }}>
@@ -35,10 +36,12 @@ export default function CalendarCard() {
           <p className="tiny subtle">
             {link.isLocal
               ? 'This link works once LearnMap is online — calendars can’t reach a server running on your own computer.'
-              : 'Keep this link private — anyone with it can see your due dates and interviews. Use “New link” if it was shared by mistake.'}
+              : 'Keep this link private — anyone with it can see your due dates, interviews and study times. Use “New link” if it was shared by mistake.'}
           </p>
         </div>
       )}
-    </Card>
+    </>
   );
+  if (bare) return body;
+  return <Card title="Calendar" description="Due dates, interviews and your study sessions in the calendar you already use. It updates automatically.">{body}</Card>;
 }

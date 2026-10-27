@@ -45,6 +45,7 @@ export const STRINGS = {
     'auth.f1': 'Structured roadmaps', 'auth.f2': 'AI planning', 'auth.f3': 'Certificates',
     'lang.title': 'Language', 'lang.desc': 'Used for the app and for everything the AI writes — roadmaps, explanations, flashcards, quizzes, cover letters and interviews.',
     'lang.beta': 'Translations are new: some pages are still in English. The AI writes fully in your language.', 'lang.label': 'Language',
+    'nav./calendar': 'Calendar', 'offline.banner': 'You’re offline — showing what’s saved on this device.', 'offline.pending': 'Changes waiting to sync: {n}', 'offline.syncing': 'Syncing your changes…', 'offline.synced': 'Offline changes synced: {n}',
   },
 
   es: {
@@ -82,6 +83,7 @@ export const STRINGS = {
     'auth.f1': 'Rutas estructuradas', 'auth.f2': 'Planificación con IA', 'auth.f3': 'Certificados',
     'lang.title': 'Idioma', 'lang.desc': 'Se usa en la app y en todo lo que escribe la IA: rutas, explicaciones, tarjetas, cuestionarios, cartas y entrevistas.',
     'lang.beta': 'Las traducciones son nuevas: algunas páginas siguen en inglés. La IA escribe completamente en tu idioma.', 'lang.label': 'Idioma',
+    'nav./calendar': 'Calendario', 'offline.banner': 'Sin conexión: mostrando lo guardado en este dispositivo.', 'offline.pending': 'Cambios pendientes de sincronizar: {n}', 'offline.syncing': 'Sincronizando tus cambios…', 'offline.synced': 'Cambios sin conexión sincronizados: {n}',
   },
 
   hi: {
@@ -119,6 +121,7 @@ export const STRINGS = {
     'auth.f1': 'व्यवस्थित रोडमैप', 'auth.f2': 'AI योजना', 'auth.f3': 'प्रमाणपत्र',
     'lang.title': 'भाषा', 'lang.desc': 'ऐप में और AI जो कुछ भी लिखता है — रोडमैप, व्याख्या, फ़्लैशकार्ड, क्विज़, कवर लेटर और इंटरव्यू — उसमें यही भाषा इस्तेमाल होगी।',
     'lang.beta': 'अनुवाद नए हैं: कुछ पेज अभी अंग्रेज़ी में हैं। AI पूरी तरह आपकी भाषा में लिखता है।', 'lang.label': 'भाषा',
+    'nav./calendar': 'कैलेंडर', 'offline.banner': 'आप ऑफ़लाइन हैं — इस डिवाइस पर सहेजी गई जानकारी दिखाई जा रही है।', 'offline.pending': 'सिंक होने वाले बदलाव: {n}', 'offline.syncing': 'आपके बदलाव सिंक हो रहे हैं…', 'offline.synced': 'ऑफ़लाइन बदलाव सिंक हुए: {n}',
   },
 
   te: {
@@ -156,6 +159,7 @@ export const STRINGS = {
     'auth.f1': 'క్రమబద్ధమైన రోడ్‌మ్యాప్‌లు', 'auth.f2': 'AI ప్రణాళిక', 'auth.f3': 'సర్టిఫికెట్లు',
     'lang.title': 'భాష', 'lang.desc': 'యాప్‌లో మరియు AI రాసే ప్రతిదానిలో — రోడ్‌మ్యాప్‌లు, వివరణలు, ఫ్లాష్‌కార్డులు, క్విజ్‌లు, కవర్ లెటర్లు, ఇంటర్వ్యూలు — ఈ భాష వాడబడుతుంది.',
     'lang.beta': 'అనువాదాలు కొత్తవి: కొన్ని పేజీలు ఇంకా ఇంగ్లీష్‌లో ఉన్నాయి. AI పూర్తిగా మీ భాషలో రాస్తుంది.', 'lang.label': 'భాష',
+    'nav./calendar': 'క్యాలెండర్', 'offline.banner': 'మీరు ఆఫ్‌లైన్‌లో ఉన్నారు — ఈ పరికరంలో సేవ్ చేసినవి చూపిస్తున్నాం.', 'offline.pending': 'సింక్ కావాల్సిన మార్పులు: {n}', 'offline.syncing': 'మీ మార్పులు సింక్ అవుతున్నాయి…', 'offline.synced': 'ఆఫ్‌లైన్ మార్పులు సింక్ అయ్యాయి: {n}',
   },
 
   fr: {
@@ -193,6 +197,7 @@ export const STRINGS = {
     'auth.f1': 'Parcours structurés', 'auth.f2': 'Planification IA', 'auth.f3': 'Certificats',
     'lang.title': 'Langue', 'lang.desc': 'Utilisée dans l’application et pour tout ce que l’IA écrit : parcours, explications, cartes, quiz, lettres et entretiens.',
     'lang.beta': 'Les traductions sont nouvelles : certaines pages sont encore en anglais. L’IA écrit entièrement dans votre langue.', 'lang.label': 'Langue',
+    'nav./calendar': 'Calendrier', 'offline.banner': 'Vous êtes hors ligne — affichage de ce qui est enregistré sur cet appareil.', 'offline.pending': 'Modifications en attente de synchronisation : {n}', 'offline.syncing': 'Synchronisation de vos modifications…', 'offline.synced': 'Modifications hors ligne synchronisées : {n}',
   },
 
   zh: {
@@ -230,5 +235,6 @@ export const STRINGS = {
     'auth.f1': '结构化学习路线', 'auth.f2': 'AI 规划', 'auth.f3': '证书',
     'lang.title': '语言', 'lang.desc': '用于应用界面，以及 AI 写的所有内容——学习路线、讲解、闪卡、测验、求职信和面试。',
     'lang.beta': '翻译刚刚上线：部分页面仍为英文。AI 会完全使用你的语言。', 'lang.label': '语言',
+    'nav./calendar': '日历', 'offline.banner': '你已离线——正在显示此设备上保存的内容。', 'offline.pending': '待同步的更改：{n}', 'offline.syncing': '正在同步你的更改…', 'offline.synced': '离线更改已同步：{n}',
   },
 };

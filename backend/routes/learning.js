@@ -273,7 +273,8 @@ router.post('/focus/sessions', auth, async (req, res) => {
       }
     }
     if (roadmapId && !(await ownRoadmap(roadmapId, req.user.id))) roadmapId = null;
-    const day = await userDay(req.user.id);
+    const at = require('../lib/offline').queuedAt(req); // logged offline → the day it happened
+    const day = at ? dayIn((await getSettings(req.user.id).catch(() => ({}))).timezone, at) : await userDay(req.user.id);
     await q().query('INSERT INTO study_sessions (user_id, roadmap_id, task_id, minutes, day, label) VALUES (?, ?, ?, ?, ?, ?)',
       [req.user.id, roadmapId, taskId, minutes, day, clean(req.body.label, 160) || null]);
     await q().query('UPDATE user_stats SET xp_points = xp_points + ? WHERE user_id = ?', [Math.floor(minutes / 5), req.user.id]).catch(() => {});

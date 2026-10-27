@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getLang } from './i18n';
+import * as offline from './offline';
 
 // One API client for the whole app. Set REACT_APP_API_URL (frontend/.env locally, or the
 // hosting provider's settings) to point at the deployed backend, e.g. https://learnmap-api.onrender.com/api.
@@ -33,19 +34,63 @@ const baseAdapter = axios.getAdapter ? axios.getAdapter(axios.defaults.adapter) 
 
 export function clearCache() { cache.clear(); }
 
+const userId = () => { try { return getUser()?.id || null; } catch { return null; } };
+const offlineReply = (config, data, extra = {}) => ({ data, status: 200, statusText: 'OK (saved copy)', headers: { 'x-offline': 'copy', ...extra }, config, request: {}, offline: true });
+const networkError = (config) => Object.assign(new Error('Network Error'), { code: 'ERR_NETWORK', config, isAxiosError: true });
+
 api.defaults.adapter = async (config) => {
   const method = (config.method || 'get').toLowerCase();
-  if (method !== 'get' || config.noCache) {
-    const res = await baseAdapter(config);
-    cache.clear();
-    return res;
+  const uid = userId();
+
+  /* Changes */
+  if (method !== 'get') {
+    if (method === 'delete') {
+      config = { ...config, url: offline.resolveTempUrl(config.url) };
+      if (uid && (await offline.dropTempNote(uid, config.url))) { cache.clear(); return { data: { message: 'Deleted' }, status: 200, statusText: 'OK', headers: {}, config, request: {} }; }
+    }
+    const rule = !config.offlineReplay && uid ? offline.queueRule(method, config.url) : null;
+    if (rule && offline.browserOffline()) { cache.clear(); return offline.enqueue(uid, config, rule); }
+    try {
+      const res = await baseAdapter(config);
+      cache.clear();
+      offline.markOnline();
+      return res;
+    } catch (err) {
+      if (offline.isNetworkError(err)) {
+        offline.markOffline();
+        if (rule) { cache.clear(); return offline.enqueue(uid, config, rule); }
+      }
+      throw err;
+    }
   }
+
+  /* Reads */
   const key = `${config.url}|${JSON.stringify(config.params || {})}|${config.headers?.Authorization || ''}`;
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.time < CACHE_TTL) return { ...hit.res, config };
-  const res = await baseAdapter(config);
-  if (res.status >= 200 && res.status < 300) cache.set(key, { time: Date.now(), res });
-  return res;
+  if (config.noCache) cache.clear();
+  else {
+    const hit = cache.get(key);
+    if (hit && Date.now() - hit.time < CACHE_TTL) return { ...hit.res, config };
+  }
+  const fromDevice = async (err) => {
+    const copy = await offline.readCopy(uid, config.url, config.params);
+    if (copy) return offlineReply(config, copy.data, { 'x-offline-at': String(copy.at) });
+    throw err;
+  };
+  if (offline.browserOffline()) return fromDevice(networkError(config));
+  const started = offline.currentEpoch();
+  try {
+    const res = await baseAdapter(config);
+    if (res.status >= 200 && res.status < 300) {
+      if (!config.noCache) cache.set(key, { time: Date.now(), res });
+      offline.saveCopy(uid, config.url, config.params, res.data, started).catch(() => {});
+    }
+    offline.markOnline();
+    return res;
+  } catch (err) {
+    if (!offline.isNetworkError(err)) throw err;
+    offline.markOffline();
+    return fromDevice(err);
+  }
 };
 
 /* ---------- Session ----------
@@ -69,6 +114,8 @@ export function isLoggedIn() {
 export function setSession(token, user, remember = true) {
   logout();
   clearCache();
+  // Changes this account made offline on this device are kept and sent; anyone else's are dropped.
+  offline.clearOffline({ keepUid: user?.id ?? null }).catch(() => {});
   const s = remember ? localStorage : sessionStorage;
   s.setItem('token', token);
   s.setItem('user', JSON.stringify(user || {}));
@@ -106,7 +153,7 @@ api.interceptors.response.use(
 export function errorMessage(err, fallback = 'Something went wrong. Please try again.') {
   if (!err) return fallback;
   if (err.code === 'ECONNABORTED') return 'The request took too long. Please try again.';
-  if (!err.response) return 'Can’t reach the server. Is the backend running?';
+  if (!err.response) return offline.browserOffline() ? 'You’re offline — this needs an internet connection.' : 'Can’t reach the server. Is the backend running?';
   const d = err.response.data;
   return (d && (d.message || d.error)) || fallback;
 }
@@ -120,11 +167,20 @@ export function getUser() {
   }
 }
 
-export function logout() {
+/**
+ * Ends the session and removes this device's saved copies of your data.
+ * `everything: true` (pressing "Log out") also drops changes that were never sent;
+ * otherwise (session expired) they wait until you log back in.
+ */
+export function logout({ everything = false } = {}) {
   cache.clear();
+  offline.clearOffline({ outbox: everything, keepUid: everything ? null : userId() }).catch(() => {});
   for (const s of [localStorage, sessionStorage]) {
     try { s.removeItem('token'); s.removeItem('user'); } catch {}
   }
 }
+
+// Let the offline outbox send its queued changes through this same client.
+offline.configure({ sender: (cfg) => api.request(cfg), uid: userId });
 
 export default api;

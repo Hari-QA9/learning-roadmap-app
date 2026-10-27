@@ -56,6 +56,7 @@ function Privacy() {
 
       <h2>Cookies and storage</h2>
       <p>We don’t use tracking or advertising cookies. Your browser stores your login session and preferences (such as dark mode) locally so the app works.</p>
+      <p>So LearnMap works without internet, your browser also keeps a copy of the pages you open (your roadmaps, tasks, notes and so on) and any changes you make while offline until they reach our server. This copy stays on your device, is used only by LearnMap, and is deleted when you log out.</p>
 
       <h2>Your choices</h2>
       <ul>
