@@ -9,7 +9,7 @@ const { buildICS } = require('../lib/ics');
 const E = require('../lib/engagement');
 
 const q = () => db.promise();
-const API = () => (process.env.PUBLIC_API_URL || `http://localhost:${process.env.PORT || 5000}/api`).replace(/\/$/, '');
+const API = require('../lib/security').publicApiUrl;
 const feedUrl = (token) => `${API()}/calendar/feed/${token}.ics`;
 const ymd = (d) => String(d instanceof Date ? d.toISOString() : d).slice(0, 10);
 
