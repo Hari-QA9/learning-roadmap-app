@@ -98,7 +98,7 @@ export default function GroupDetail() {
   const inviteUrl = siteUrl(`/g/${g.invite_code}`);
   const pct = Math.round((g.week.tasks / Math.max(1, g.week.goal)) * 100);
   const invite = async () => {
-    const r = await shareLink({ title: `Join ${g.name} on LearnMap`, text: `Join my study group “${g.name}” on LearnMap${g.goal ? ` — ${g.goal}` : ''}:`, url: inviteUrl });
+    const r = await shareLink({ title: `Join ${g.name} on Learnvoy`, text: `Join my study group “${g.name}” on Learnvoy${g.goal ? ` — ${g.goal}` : ''}:`, url: inviteUrl });
     if (r === 'copied') toast.success('Invite link copied');
   };
   const askBuddy = async (m) => {

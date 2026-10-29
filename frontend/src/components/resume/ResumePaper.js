@@ -74,7 +74,7 @@ export function ResumeDocument({ r, certs = [] }) {
           <div className="rp-row" key={x.id}><span>{x.name}{x.issuer && <span className="rp-org"> — {x.issuer}</span>}</span><span className="rp-date">{x.date}</span></div>
         ))}
         {certs.map((x) => (
-          <div className="rp-row" key={`lm-${x.id}`}><span>{x.roadmap_title}<span className="rp-org"> — LearnMap</span></span><span className="rp-date">{new Date(x.issued_at).getFullYear()}</span></div>
+          <div className="rp-row" key={`lm-${x.id}`}><span>{x.roadmap_title}<span className="rp-org"> — Learnvoy</span></span><span className="rp-date">{new Date(x.issued_at).getFullYear()}</span></div>
         ))}
       </div>
     ),

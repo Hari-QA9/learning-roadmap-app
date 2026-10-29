@@ -71,7 +71,7 @@ export default function Welcome() {
     <div className="welcome">
       <div className="welcome-card fade-in">
         <div className="row-between">
-          <div className="row" style={{ gap: 8 }}><span className="brand-mark"><Icon name="compass" size={15} stroke={2} /></span><strong>LearnMap</strong></div>
+          <div className="row" style={{ gap: 8 }}><span className="brand-mark"><Icon name="compass" size={15} stroke={2} /></span><strong>Learnvoy</strong></div>
           {step < 3 && <button type="button" className="btn btn-ghost btn-sm" onClick={skip}>Skip for now</button>}
         </div>
         {step < 3 && <div className="welcome-progress"><span style={{ width: `${((step + 1) / 3) * 100}%` }} /></div>}
@@ -80,7 +80,7 @@ export default function Welcome() {
           <div className="stack-lg">
             <div>
               <h1>Welcome{name ? `, ${name}` : ''}!</h1>
-              <p className="muted">Three quick questions so LearnMap fits your field — it works for science, healthcare, business, tech and more.</p>
+              <p className="muted">Three quick questions so Learnvoy fits your field — it works for science, healthcare, business, tech and more.</p>
             </div>
             <div>
               <div className="label mb-2">What field are you in (or heading into)?</div>

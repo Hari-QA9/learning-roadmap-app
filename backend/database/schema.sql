@@ -1,4 +1,4 @@
--- LearnMap base database structure (tables only — no member data).
+-- Learnvoy base database structure (tables only — no member data).
 --
 -- You don't normally need to run this by hand: the backend runs it automatically on start
 -- (backend/lib/migrate.js), then adds the newer tables and columns. It's safe to run again:
@@ -354,7 +354,7 @@ INSERT IGNORE INTO `badges` (`id`, `name`, `description`, `icon`) VALUES
   (6, 'Resource Hunter', 'Bookmarked 5 resources', '📚'),
   (7, 'Social Learner', 'Shared a roadmap with someone', '🤝'),
   (8, 'Feedback Hero', 'Submitted feedback', '💬'),
-  (9, 'Ambassador', 'A friend joined LearnMap with your invite link', '📣'),
+  (9, 'Ambassador', 'A friend joined Learnvoy with your invite link', '📣'),
   (10, 'Trailblazer', 'Someone copied a roadmap you shared', '🧭');
 
 SET FOREIGN_KEY_CHECKS = 1;

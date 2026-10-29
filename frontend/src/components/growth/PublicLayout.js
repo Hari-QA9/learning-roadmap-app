@@ -13,7 +13,7 @@ export default function PublicLayout({ children, cta }) {
       <header className="pub-top">
         <Link to="/" className="row" style={{ color: 'var(--text)', textDecoration: 'none', gap: 8 }}>
           <span className="brand-mark"><Icon name="compass" size={15} stroke={2} /></span>
-          <span className="brand-name">LearnMap</span>
+          <span className="brand-name">Learnvoy</span>
         </Link>
         <div className="row" style={{ gap: 6 }}>
           <Button variant="ghost" size="sm" icon={theme === 'dark' ? 'sun' : 'moon'} onClick={toggleTheme} aria-label="Toggle theme" />
@@ -24,7 +24,7 @@ export default function PublicLayout({ children, cta }) {
       </header>
       <main className="pub-body page-enter">{children}</main>
       <footer className="pub-foot">
-        <span>Made with LearnMap — plan what you want to learn and track it to the finish.</span>
+        <span>Made with Learnvoy — plan what you want to learn and track it to the finish.</span>
         <span className="row" style={{ gap: 14 }}><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link></span>
       </footer>
     </div>

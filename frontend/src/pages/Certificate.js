@@ -26,7 +26,7 @@ function printCertificate(cert) {
     .foot b { display: block; color: #1a1a19; font-weight: 500; margin-bottom: 2px; }
   </style></head><body>
   <div class="cert">
-    <div class="brand">LearnMap</div>
+    <div class="brand">Learnvoy</div>
     <div class="eyebrow">Certificate of completion</div>
     <div class="name">${esc(cert.user_name)}</div>
     <div class="text">has successfully completed every module and passed the final assessment for</div>

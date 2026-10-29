@@ -175,7 +175,7 @@ function Applications() {
         open={addOpen}
         onClose={() => setAddOpen(false)}
         title="Add an application"
-        description="Track a job you applied to outside LearnMap."
+        description="Track a job you applied to outside Learnvoy."
         footer={<><Button variant="ghost" onClick={() => setAddOpen(false)}>Cancel</Button><Button variant="primary" loading={saving} onClick={add}>Add</Button></>}
       >
         <form className="stack" onSubmit={add}>

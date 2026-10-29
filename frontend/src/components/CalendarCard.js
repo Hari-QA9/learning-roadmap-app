@@ -35,7 +35,7 @@ export default function CalendarCard({ bare = false }) {
           </div>
           <p className="tiny subtle">
             {link.isLocal
-              ? 'This link works once LearnMap is online — calendars can’t reach a server running on your own computer.'
+              ? 'This link works once Learnvoy is online — calendars can’t reach a server running on your own computer.'
               : 'Keep this link private — anyone with it can see your due dates, interviews and study times. Use “New link” if it was shared by mistake.'}
           </p>
         </div>

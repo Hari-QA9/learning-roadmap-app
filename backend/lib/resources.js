@@ -29,9 +29,9 @@ async function urlWorks(url) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 5000);
     try {
-      let res = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (LearnMap link check)' } });
+      let res = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (Learnvoy link check)' } });
       // Some sites don't allow HEAD; try a normal request before giving up.
-      if (res.status === 405 || res.status === 403 || res.status === 400) res = await fetch(url, { method: 'GET', redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (LearnMap link check)' } });
+      if (res.status === 405 || res.status === 403 || res.status === 400) res = await fetch(url, { method: 'GET', redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (Learnvoy link check)' } });
       return res.status < 400;
     } catch {
       return false;

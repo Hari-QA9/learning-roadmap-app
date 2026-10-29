@@ -98,7 +98,7 @@ async function getJSON(url, { headers = {}, timeoutMs = 20000 } = {}) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'LearnMap job board', Accept: 'application/json', ...headers }, signal: ctrl.signal });
+    const res = await fetch(url, { headers: { 'User-Agent': 'Learnvoy job board', Accept: 'application/json', ...headers }, signal: ctrl.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } finally {

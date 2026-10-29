@@ -83,7 +83,7 @@ router.post('/onboarding', auth, async (req, res) => {
         contact: { name: u[0]?.name || '', headline: roles[0] || '', email: u[0]?.email || '', phone: '', location: '', linkedin: '', website: '' },
         summary: '', skills: [{ id: 's1', group: '', items: skills.join(', ') }],
         experience: [], projects: [], education: [], certifications: [], research: [], publications: [], volunteer: [], awards: [],
-        kind: 'resume', order: ['summary', 'skills', 'experience', 'projects', 'education', 'certifications'], hidden: [], template: 'classic', paper: 'letter', includeLearnMapCerts: true,
+        kind: 'resume', order: ['summary', 'skills', 'experience', 'projects', 'education', 'certifications'], hidden: [], template: 'classic', paper: 'letter', includeLearnvoyCerts: true,
       };
       await q().query('INSERT INTO user_resumes (user_id, resume_data) VALUES (?, ?)', [req.user.id, JSON.stringify(resume)]);
     }

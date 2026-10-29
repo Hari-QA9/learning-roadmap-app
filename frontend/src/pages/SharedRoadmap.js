@@ -19,9 +19,9 @@ export default function SharedRoadmap() {
 
   useEffect(() => {
     api.get(`/public/roadmaps/${encodeURIComponent(slug)}`, { noCache: true })
-      .then((res) => { setR(res.data); document.title = `${res.data.title} · LearnMap roadmap`; })
+      .then((res) => { setR(res.data); document.title = `${res.data.title} · Learnvoy roadmap`; })
       .catch((e) => setError(errorMessage(e, 'This roadmap is no longer shared.')));
-    return () => { document.title = 'LearnMap'; };
+    return () => { document.title = 'Learnvoy'; };
   }, [slug]);
 
   const copy = async () => {
@@ -55,7 +55,7 @@ export default function SharedRoadmap() {
     if (res === 'copied') toast.success('Link copied');
   };
 
-  if (error) return <PublicLayout><EmptyState icon="map" title="Roadmap not available" description={error} action={<Link className="btn btn-primary" to="/">Go to LearnMap</Link>} /></PublicLayout>;
+  if (error) return <PublicLayout><EmptyState icon="map" title="Roadmap not available" description={error} action={<Link className="btn btn-primary" to="/">Go to Learnvoy</Link>} /></PublicLayout>;
   if (!r) return <PublicLayout><Loading /></PublicLayout>;
 
   return (

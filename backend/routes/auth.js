@@ -56,11 +56,11 @@ async function sendVerification(user) {
   const { emailLayout } = require('../lib/engagement');
   const { text, html } = emailLayout({
     heading: 'Confirm your email',
-    intro: `Hi ${user.name || ''}, welcome to LearnMap! Please confirm this is your email so we can send reminders and job alerts. The link works for 48 hours.`,
+    intro: `Hi ${user.name || ''}, welcome to Learnvoy! Please confirm this is your email so we can send reminders and job alerts. The link works for 48 hours.`,
     cta: { label: 'Confirm my email', url: link },
-    footerNote: 'If you didn’t create a LearnMap account, you can ignore this email.',
+    footerNote: 'If you didn’t create a Learnvoy account, you can ignore this email.',
   });
-  return sendMail({ to: user.email, subject: 'Confirm your LearnMap email', text, html });
+  return sendMail({ to: user.email, subject: 'Confirm your Learnvoy email', text, html });
 }
 
 // REGISTER
@@ -165,9 +165,9 @@ router.post('/forgot-password', async (req, res) => {
     const link = `${APP_URL}/reset-password?token=${token}`;
     const result = await sendMail({
       to: user.email,
-      subject: 'Reset your LearnMap password',
-      text: `Hi ${user.name || ''},\n\nSomeone (hopefully you) asked to reset your LearnMap password.\nOpen this link within 30 minutes to choose a new one:\n\n${link}\n\nIf you didn't ask for this, you can ignore this email.`,
-      html: `<p>Hi ${String(user.name || '').replace(/</g, '&lt;')},</p><p>Someone (hopefully you) asked to reset your LearnMap password.</p><p><a href="${link}">Choose a new password</a> — this link expires in 30 minutes.</p><p>If you didn't ask for this, you can ignore this email.</p>`,
+      subject: 'Reset your Learnvoy password',
+      text: `Hi ${user.name || ''},\n\nSomeone (hopefully you) asked to reset your Learnvoy password.\nOpen this link within 30 minutes to choose a new one:\n\n${link}\n\nIf you didn't ask for this, you can ignore this email.`,
+      html: `<p>Hi ${String(user.name || '').replace(/</g, '&lt;')},</p><p>Someone (hopefully you) asked to reset your Learnvoy password.</p><p><a href="${link}">Choose a new password</a> — this link expires in 30 minutes.</p><p>If you didn't ask for this, you can ignore this email.</p>`,
     });
     if (result.delivered) console.log(`[auth] Password reset email sent to ${user.email}.`);
     res.json(generic);

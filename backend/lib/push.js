@@ -22,7 +22,7 @@ function subject() {
   const s = (process.env.VAPID_SUBJECT || '').trim();
   if (/^(mailto:|https:)/.test(s)) return s;
   const m = String(process.env.MAIL_FROM || process.env.SMTP_FROM || process.env.SMTP_USER || '').match(/[^\s<>]+@[^\s<>]+/);
-  return `mailto:${m ? m[0] : 'admin@learnmap.app'}`;
+  return `mailto:${m ? m[0] : 'admin@learnvoy.app'}`;
 }
 
 /** The "Authorization: vapid t=…, k=…" header for a push service. */
