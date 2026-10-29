@@ -49,7 +49,7 @@ export default function JoinCommunity({ kind }) {
     if (isLoggedIn() && new URLSearchParams(window.location.search).get('auto') === '1' && (kind === 'buddy' || g)) go();
   }, [g]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (error) return <PublicLayout><EmptyState icon="user" title="Invite not valid" description={error} action={<Link className="btn btn-primary" to="/">Go to LearnMap</Link>} /></PublicLayout>;
+  if (error) return <PublicLayout><EmptyState icon="user" title="Invite not valid" description={error} action={<Link className="btn btn-primary" to="/">Go to Learnvoy</Link>} /></PublicLayout>;
   if (kind !== 'buddy' && !g) return <PublicLayout><Loading /></PublicLayout>;
 
   return (
@@ -70,7 +70,7 @@ export default function JoinCommunity({ kind }) {
             <div className="tiny subtle" style={{ letterSpacing: '.14em', textTransform: 'uppercase' }}>You’re invited to a study group</div>
             <h1>{g.name}</h1>
             {g.goal && <p className="muted" style={{ margin: 0 }}>{g.goal}</p>}
-            <p className="small muted">{g.members} member{g.members === 1 ? '' : 's'} learning together on LearnMap</p>
+            <p className="small muted">{g.members} member{g.members === 1 ? '' : 's'} learning together on Learnvoy</p>
             <Button variant="primary" size="lg" loading={busy} onClick={go}>{isLoggedIn() ? 'Join group' : 'Join free & enter group'}</Button>
           </>
         ) : (

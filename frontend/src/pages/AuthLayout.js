@@ -13,7 +13,7 @@ export default function AuthLayout({ children }) {
       <aside className="auth-side">
         <Link to="/" className="row" style={{ color: 'var(--text)', textDecoration: 'none' }}>
           <span className="brand-mark"><Icon name="compass" size={15} stroke={2} /></span>
-          <span className="brand-name">LearnMap</span>
+          <span className="brand-name">Learnvoy</span>
         </Link>
         <div>
           <blockquote>{t('auth.quote')}</blockquote>
@@ -24,7 +24,7 @@ export default function AuthLayout({ children }) {
           </div>
         </div>
         <div className="small subtle row" style={{ gap: 14 }}>
-          <span>© {new Date().getFullYear()} LearnMap</span>
+          <span>© {new Date().getFullYear()} Learnvoy</span>
           <Link to="/privacy" style={{ color: 'inherit' }}>{t('footer.privacy')}</Link>
           <Link to="/terms" style={{ color: 'inherit' }}>{t('footer.terms')}</Link>
         </div>

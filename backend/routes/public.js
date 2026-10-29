@@ -9,7 +9,7 @@ const { loadProfile } = require('../lib/careerProfile');
 
 const q = () => db.promise();
 const parse = (s, fb) => { try { return s ? JSON.parse(s) : fb; } catch { return fb; } };
-const firstName = (n) => String(n || 'A LearnMap member').split(' ')[0];
+const firstName = (n) => String(n || 'A Learnvoy member').split(' ')[0];
 
 // Public pages can be cached briefly by browsers.
 router.use((req, res, next) => { res.setHeader('Cache-Control', 'public, max-age=60'); next(); });

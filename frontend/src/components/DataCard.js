@@ -21,7 +21,7 @@ export default function DataCard({ email }) {
       const url = URL.createObjectURL(new Blob([JSON.stringify(r.data, null, 2)], { type: 'application/json' }));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `learnmap-data-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `learnvoy-data-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();

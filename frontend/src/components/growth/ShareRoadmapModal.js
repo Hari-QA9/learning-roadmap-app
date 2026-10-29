@@ -49,7 +49,7 @@ export default function ShareRoadmapModal({ roadmap, open, onClose, onChange }) 
 
   return (
     <Modal open={open} onClose={onClose} title="Share this roadmap"
-      description="Anyone with the link can see the modules, tasks and resources (not your progress or notes) and copy it to their own LearnMap."
+      description="Anyone with the link can see the modules, tasks and resources (not your progress or notes) and copy it to their own Learnvoy."
       footer={<>
         {slug && <Button variant="ghost" onClick={stop} disabled={busy}>Stop sharing</Button>}
         <Button variant="primary" icon="send" onClick={share} disabled={!slug}>Share</Button>
@@ -62,7 +62,7 @@ export default function ShareRoadmapModal({ roadmap, open, onClose, onChange }) 
             <Button size="sm" icon="copy" onClick={copy}>Copy</Button>
           </div>
           <label className="row small" style={{ gap: 10, justifyContent: 'space-between', cursor: 'pointer' }}>
-            <span><strong style={{ color: 'var(--text)' }}>List on Explore</strong><span className="muted" style={{ display: 'block' }}>Let anyone discover it on LearnMap’s public Explore page.</span></span>
+            <span><strong style={{ color: 'var(--text)' }}>List on Explore</strong><span className="muted" style={{ display: 'block' }}>Let anyone discover it on Learnvoy’s public Explore page.</span></span>
             <input type="checkbox" className="switch" checked={listed} onChange={(e) => toggleListed(e.target.checked)} aria-label="List on Explore" />
           </label>
           {roadmap.copies > 0 && <div className="small muted">{roadmap.copies} {roadmap.copies === 1 ? 'person has' : 'people have'} copied it so far.</div>}

@@ -3,7 +3,7 @@ import { getLang } from './i18n';
 import * as offline from './offline';
 
 // One API client for the whole app. Set REACT_APP_API_URL (frontend/.env locally, or the
-// hosting provider's settings) to point at the deployed backend, e.g. https://learnmap-api.onrender.com/api.
+// hosting provider's settings) to point at the deployed backend, e.g. https://learnvoy-api.onrender.com/api.
 // Without it, the backend is assumed to run on port 5000 of the same computer the page came from —
 // so http://localhost:3000 talks to localhost:5000, and a phone opening http://192.168.x.x:3000
 // on your Wi-Fi talks to 192.168.x.x:5000 automatically.

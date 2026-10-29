@@ -115,7 +115,7 @@ function emailLayout({ heading, intro, items = [], cta, footerNote, unsubscribe 
     ...items.map((i) => `• ${i.title}${i.meta ? ` — ${i.meta}` : ''}${i.url ? `\n  ${i.url}` : ''}`),
     items.length ? '' : null,
     cta ? `${cta.label}: ${cta.url}` : null,
-    '', footerNote || 'You get this email because you have a LearnMap account.',
+    '', footerNote || 'You get this email because you have a Learnvoy account.',
     unsubscribe ? `Turn off these emails: ${unsubscribe}` : null,
     `Manage all email settings: ${app}/profile`,
   ].filter((x) => x !== null).join('\n');
@@ -123,7 +123,7 @@ function emailLayout({ heading, intro, items = [], cta, footerNote, unsubscribe 
   const html = `<!doctype html><html><body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f5f7;padding:28px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border-radius:16px;padding:32px 28px">
-<tr><td style="font-size:13px;font-weight:600;color:#0071e3;letter-spacing:.02em">LearnMap</td></tr>
+<tr><td style="font-size:13px;font-weight:600;color:#0071e3;letter-spacing:.02em">Learnvoy</td></tr>
 <tr><td style="padding-top:10px;font-size:22px;font-weight:700;line-height:1.25">${esc(heading)}</td></tr>
 <tr><td style="padding-top:10px;font-size:15px;line-height:1.55;color:#424245">${esc(intro)}</td></tr>
 ${items.length ? `<tr><td style="padding-top:18px">${items.map((i) => `
@@ -131,7 +131,7 @@ ${items.length ? `<tr><td style="padding-top:18px">${items.map((i) => `
 <a href="${esc(i.url || app)}" style="font-size:15px;font-weight:600;color:#1d1d1f;text-decoration:none">${esc(i.title)}</a>
 ${i.meta ? `<div style="font-size:13px;color:#6e6e73;padding-top:2px">${esc(i.meta)}</div>` : ''}</td></tr></table>`).join('')}</td></tr>` : ''}
 ${cta ? `<tr><td style="padding-top:22px"><a href="${esc(cta.url)}" style="display:inline-block;background:#0071e3;color:#ffffff;font-size:15px;font-weight:600;padding:11px 20px;border-radius:980px;text-decoration:none">${esc(cta.label)}</a></td></tr>` : ''}
-<tr><td style="padding-top:28px;font-size:12px;line-height:1.5;color:#86868b">${esc(footerNote || 'You get this email because you have a LearnMap account.')}<br>
+<tr><td style="padding-top:28px;font-size:12px;line-height:1.5;color:#86868b">${esc(footerNote || 'You get this email because you have a Learnvoy account.')}<br>
 ${unsubscribe ? `<a href="${esc(unsubscribe)}" style="color:#86868b">Turn off these emails</a> · ` : ''}<a href="${esc(app)}/profile" style="color:#86868b">Email settings</a></td></tr>
 </table></td></tr></table></body></html>`;
   return { text, html };

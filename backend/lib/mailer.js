@@ -2,7 +2,7 @@
 //
 //  1. Brevo email API (recommended for hosting — works on Render's free plan, which blocks SMTP):
 //       BREVO_API_KEY=xkeysib-...
-//       MAIL_FROM=LearnMap <you@gmail.com>     (an address you verified in Brevo → Senders)
+//       MAIL_FROM=Learnvoy <you@gmail.com>     (an address you verified in Brevo → Senders)
 //  2. SMTP (fine on your own computer, e.g. Gmail with an App Password):
 //       SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
 //
@@ -12,11 +12,11 @@ require('dotenv').config();
 const brevoKey = () => process.env.BREVO_API_KEY || '';
 const fromAddress = () => process.env.MAIL_FROM || process.env.SMTP_FROM || process.env.SMTP_USER || '';
 
-/** "LearnMap <me@x.com>" → { name: 'LearnMap', email: 'me@x.com' } */
+/** "Learnvoy <me@x.com>" → { name: 'Learnvoy', email: 'me@x.com' } */
 function parseFrom(value) {
   const m = String(value || '').match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
-  if (m) return { name: m[1].trim() || 'LearnMap', email: m[2].trim() };
-  return { name: 'LearnMap', email: String(value || '').trim() };
+  if (m) return { name: m[1].trim() || 'Learnvoy', email: m[2].trim() };
+  return { name: 'Learnvoy', email: String(value || '').trim() };
 }
 
 let transport = null;
@@ -73,7 +73,7 @@ async function sendMail({ to, subject, text, html }) {
 // Check the email settings once at startup so problems show up immediately.
 async function verifyMail() {
   if (brevoKey()) {
-    if (!parseFrom(fromAddress()).email) { console.error('[mail] BREVO_API_KEY is set but MAIL_FROM is missing (e.g. MAIL_FROM=LearnMap <you@gmail.com>).'); return; }
+    if (!parseFrom(fromAddress()).email) { console.error('[mail] BREVO_API_KEY is set but MAIL_FROM is missing (e.g. MAIL_FROM=Learnvoy <you@gmail.com>).'); return; }
     try {
       const res = await fetch('https://api.brevo.com/v3/account', { headers: { 'api-key': brevoKey(), accept: 'application/json' }, signal: AbortSignal.timeout(10000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

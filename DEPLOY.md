@@ -1,6 +1,6 @@
-# Putting LearnMap online
+# Putting Learnvoy online
 
-This guide puts LearnMap on the internet for free, so it works on any phone, tablet or computer, anywhere. It takes about 45 minutes the first time.
+This guide puts Learnvoy on the internet for free, so it works on any phone, tablet or computer, anywhere. It takes about 45 minutes the first time.
 
 | Part | Service | Cost |
 |---|---|---|
@@ -24,7 +24,7 @@ Rules for every step:
 
 You don't need to create any tables. The backend builds them automatically the first time it starts.
 
-> Aiven may pause a free database that sits unused for a long time. If LearnMap ever says the database is unavailable, open Aiven and press **Power on**.
+> Aiven may pause a free database that sits unused for a long time. If Learnvoy ever says the database is unavailable, open Aiven and press **Power on**.
 
 ## Step 2: Backend on Render (about 10 min)
 
@@ -43,7 +43,7 @@ You don't need to create any tables. The backend builds them automatically the f
 
    `JWT_SECRET` is generated for you automatically, so leave it alone.
 4. **Apply**. Wait for the first deploy to finish (about 3–5 min). The log should show `Connected to MySQL database` and `Server running on port …`.
-5. Copy your backend address from the top of the page, for example `https://learnmap-api.onrender.com`.
+5. Copy your backend address from the top of the page, for example `https://learnvoy-api.onrender.com`.
 6. Check it works: open `https://<your-backend>/api/health` in a browser. You should see `{"ok":true}`.
 
 ## Step 3: Frontend on Vercel (about 5 min)
@@ -52,13 +52,13 @@ You don't need to create any tables. The backend builds them automatically the f
 2. **Add New… → Project** → import `learning-roadmap-app`.
 3. **Root Directory** → click **Edit** → choose `frontend`. Framework should show **Create React App**.
 4. Open **Environment Variables** and add:
-   - `REACT_APP_API_URL` = your backend address + `/api` (for example `https://learnmap-api.onrender.com/api`)
+   - `REACT_APP_API_URL` = your backend address + `/api` (for example `https://learnvoy-api.onrender.com/api`)
    - `REACT_APP_CONTACT_EMAIL` = an email for privacy questions (optional)
-5. **Deploy**. When it finishes, copy your site address, for example `https://learnmap.vercel.app`.
+5. **Deploy**. When it finishes, copy your site address, for example `https://learnvoy.vercel.app`.
 
 ## Step 4: Connect the two (2 min)
 
-Back on **Render** → your service → **Environment**, set `APP_URL` to your Vercel address (for example `https://learnmap.vercel.app`, with no slash at the end) → **Save changes**. Render restarts the backend by itself.
+Back on **Render** → your service → **Environment**, set `APP_URL` to your Vercel address (for example `https://learnvoy.vercel.app`, with no slash at the end) → **Save changes**. Render restarts the backend by itself.
 
 This is what lets the website talk to the backend. Other websites are blocked.
 
@@ -73,7 +73,7 @@ Render's free plan blocks normal email (SMTP), so emails go through Brevo instea
 3. **SMTP & API → API Keys → Generate a new API key** → copy it.
 4. On **Render → Environment**, set:
    - `BREVO_API_KEY` = the key
-   - `MAIL_FROM` = `LearnMap <your-verified-gmail@gmail.com>`
+   - `MAIL_FROM` = `Learnvoy <your-verified-gmail@gmail.com>`
 5. Save. In the Render logs you should see `[mail] Ready to send email through Brevo`.
 
 Test it: on the live site, use **Forgot password**. The email should arrive within a minute (check spam the first time).
@@ -84,7 +84,7 @@ Test it: on the live site, use **Forgot password**. The email should arrive with
 2. On **Render → Environment**, add `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` with those values → **Save**. (Also put them in your local `backend/.env` if you want to try it locally.)
 3. On the live site: **Profile → Notifications → Phone & desktop notifications** → turn it on → **Send a test**.
    - **Android / computers:** works in Chrome, Edge and Firefox.
-   - **iPhone / iPad (iOS 16.4+):** first open the site in Safari → Share → **Add to Home Screen**, open LearnMap from the home screen, then turn it on.
+   - **iPhone / iPad (iOS 16.4+):** first open the site in Safari → Share → **Add to Home Screen**, open Learnvoy from the home screen, then turn it on.
 
 Keep the private key secret. If you ever change the keys, everyone has to switch notifications on again.
 
@@ -92,14 +92,14 @@ Keep the private key secret. If you ever change the keys, everyone has to switch
 
 - **Sign in with Google:** in Google Cloud Console → your OAuth client → **Authorized JavaScript origins**, add your Vercel address. Then on Render add `GOOGLE_CLIENT_ID`.
 - **More jobs:** add `ADZUNA_APP_ID`/`ADZUNA_APP_KEY`, `USAJOBS_API_KEY`/`USAJOBS_EMAIL`, `JSEARCH_API_KEY`, or `YOUTUBE_API_KEY` on Render (same keys as in `TODO.md`).
-- **Your own domain** (for example `learnmap.app`): buy it, add it in Vercel → **Domains**, then update `APP_URL` on Render (and the Google origin).
+- **Your own domain** (for example `learnvoy.app`): buy it, add it in Vercel → **Domains**, then update `APP_URL` on Render (and the Google origin).
 
 ---
 
 ## Good to know
 
 - **Updates are automatic.** Whenever a pull request is merged into `main`, Render and Vercel redeploy by themselves.
-- **The free backend sleeps** after 15 minutes without visitors. The first visit after that takes about a minute to wake it up. While it sleeps, reminder and summary emails wait until the next wake-up. Render's **Starter** plan ($7/month) keeps it awake all the time and is worth it once real people use LearnMap.
+- **The free backend sleeps** after 15 minutes without visitors. The first visit after that takes about a minute to wake it up. While it sleeps, reminder and summary emails wait until the next wake-up. Render's **Starter** plan ($7/month) keeps it awake all the time and is worth it once real people use Learnvoy.
 - **Your computer copy keeps working** exactly as before (`npm start` in both folders) and uses your local MySQL. The online copy has its own database.
 - **Something broke?** Render → your service → **Logs** shows backend errors. Sign in as the admin email → account menu → **Admin dashboard** → **System** shows what's switched on.
 

@@ -26,7 +26,7 @@ export default function VerifyEmail() {
         {state.status === 'ok' && (<><h1 style={{ marginBottom: 0 }}>You’re confirmed</h1><p className="muted">{state.message} Reminders and job alerts can now reach your inbox.</p></>)}
         {state.status === 'error' && (<><h1 style={{ marginBottom: 0 }}>Link didn’t work</h1><p className="muted">{state.message}</p></>)}
         {state.status !== 'working' && (
-          <Link className="btn btn-primary" to={isLoggedIn() ? '/dashboard' : '/login'}>{isLoggedIn() ? 'Go to LearnMap' : 'Log in'}</Link>
+          <Link className="btn btn-primary" to={isLoggedIn() ? '/dashboard' : '/login'}>{isLoggedIn() ? 'Go to Learnvoy' : 'Log in'}</Link>
         )}
       </div>
     </div>

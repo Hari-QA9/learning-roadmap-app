@@ -204,7 +204,7 @@ export default function CalendarPage() {
       <ScheduleModal open={modal === 'schedule'} initial={schedule} locale={locale} onClose={() => setModal(null)} onSaved={(s) => { setData((d) => ({ ...d, schedule: s })); setModal(null); }} />
       <PlanModal open={modal === 'plan'} schedule={schedule} locale={locale} today={today} onClose={() => setModal(null)}
         onPlanned={(r) => { setModal(null); setUndo(r); const d = dateOf(r.first); setView({ y: d.getFullYear(), m: d.getMonth() }); setSelected(r.first); load(); }} />
-      <Modal open={modal === 'sync'} onClose={() => setModal(null)} title="See LearnMap in your own calendar"
+      <Modal open={modal === 'sync'} onClose={() => setModal(null)} title="See Learnvoy in your own calendar"
         description="Due dates, interviews and your weekly study sessions appear in Google Calendar, Apple Calendar or Outlook — and stay up to date.">
         <CalendarCard bare />
       </Modal>
@@ -269,7 +269,7 @@ function ScheduleModal({ open, initial, locale, onClose, onSaved }) {
         <label className="row small" style={{ gap: 8 }}>
           <input type="checkbox" checked={f.remind} onChange={(e) => setF({ ...f, remind: e.target.checked })} /> Remind me before each session
         </label>
-        <p className="tiny subtle" style={{ margin: 0 }}>Reminders arrive in LearnMap and on your phone if you turned on notifications in Profile.</p>
+        <p className="tiny subtle" style={{ margin: 0 }}>Reminders arrive in Learnvoy and on your phone if you turned on notifications in Profile.</p>
       </div>
     </Modal>
   );

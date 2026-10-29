@@ -71,7 +71,7 @@ router.get('/feed/:token', async (req, res) => {
       study.push({
         uid: `study-${userId}@learnmap`, local: { ...S.localRange(first, sched.time, sched.minutes), tz },
         rrule: `FREQ=WEEKLY;BYDAY=${sched.days.map((d) => S.BYDAY[d]).join(',')}`,
-        title: 'Study time — LearnMap', description: 'Your weekly study session. Open LearnMap to see what’s next.', url: `${app}/calendar`, alarmMinutes: 10,
+        title: 'Study time — Learnvoy', description: 'Your weekly study session. Open Learnvoy to see what’s next.', url: `${app}/calendar`, alarmMinutes: 10,
       });
     }
     const events = [
@@ -79,13 +79,13 @@ router.get('/feed/:token', async (req, res) => {
       ...tasks.map((t) => ({ uid: `task-${t.id}@learnmap`, allDay: ymd(t.due_date), title: `Due: ${t.title}`, description: `Roadmap: ${t.roadmap_title}`, url: `${app}/roadmaps/${t.roadmap_id}` })),
       ...apps.map((a) => {
         const start = new Date(a.interview_at);
-        return { uid: `interview-${a.id}@learnmap`, start, end: new Date(start.getTime() + 3600000), title: `Interview: ${a.job_title}${a.company ? ` — ${a.company}` : ''}`, description: [a.next_step, 'Practice first with a LearnMap mock interview.'].filter(Boolean).join('\n'), url: `${app}/applications`, location: a.location || '', alarmMinutes: 60 };
+        return { uid: `interview-${a.id}@learnmap`, start, end: new Date(start.getTime() + 3600000), title: `Interview: ${a.job_title}${a.company ? ` — ${a.company}` : ''}`, description: [a.next_step, 'Practice first with a Learnvoy mock interview.'].filter(Boolean).join('\n'), url: `${app}/applications`, location: a.location || '', alarmMinutes: 60 };
       }),
     ];
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-    res.setHeader('Content-Disposition', 'inline; filename="learnmap.ics"');
+    res.setHeader('Content-Disposition', 'inline; filename="learnvoy.ics"');
     res.setHeader('Cache-Control', 'private, max-age=900');
-    res.end(buildICS(events, 'LearnMap'));
+    res.end(buildICS(events, 'Learnvoy'));
   } catch (err) {
     console.error('[calendar] feed', err.message);
     res.status(500).json({ message: 'Could not build the calendar.' });

@@ -1,6 +1,6 @@
 {
-  "short_name": "LearnMap",
-  "name": "LearnMap — learn, plan and land the job",
+  "short_name": "Learnvoy",
+  "name": "Learnvoy — learn, plan and land the job",
   "description": "Personal learning roadmaps, an AI tutor, job matching, resume builder and mock interviews.",
   "id": "/",
   "start_url": "/dashboard?source=app",

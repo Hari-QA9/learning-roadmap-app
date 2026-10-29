@@ -1,4 +1,4 @@
-# LearnMap — future to-do list
+# Learnvoy — future to-do list
 
 Work we decided to hold for later, so nothing gets lost. Tick items off (`[x]`) as they're done and add new ones whenever we postpone something.
 
@@ -19,6 +19,11 @@ Work we decided to hold for later, so nothing gets lost. Tick items off (`[x]`) 
 - [x] Removed unused packages (`mysql`, `bcrypt`, `openai`) and the last hard-coded fallback secret (PR #16).
 - [x] Privacy policy and terms pages (PR #15). 🟠 Have someone knowledgeable review the wording before a big launch.
 - [x] Account deletion and "download my data" in Profile (PR #15).
+
+### Name & brand
+- [x] Renamed the app from LearnMap to **Learnvoy** (an iPhone app called "LearnMap" already exists in the same category) (PR #26).
+- [ ] Check "Learnvoy" on the official US trademark search (tmsearch.uspto.gov) and buy the domain (e.g. learnvoy.com or learnvoy.app) and social handles. Similar names to know about: "Learn Voyage" (learnvoyage.com) and "Learning Voyage, Inc." trademarks.
+- [ ] 🟢 A proper logo (today: the compass icon + the name in text).
 
 ### Production setup
 - [x] Database settings from environment variables, with a connection pool (PR #15).
@@ -62,7 +67,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
   4. In `backend/.env` set `YOUTUBE_API_KEY=…`. New roadmaps will use it (free quota is plenty for normal use). It also switches on **Import → YouTube playlist**.
 
 - [ ] 🟠 **Sign in with Google** (free)
-  1. Go to console.cloud.google.com → pick your project → **APIs & Services → OAuth consent screen** → External → fill in app name (LearnMap), support email → Save.
+  1. Go to console.cloud.google.com → pick your project → **APIs & Services → OAuth consent screen** → External → fill in app name (Learnvoy), support email → Save.
   2. **Credentials → Create credentials → OAuth client ID** → type **Web application**.
   3. Under **Authorized JavaScript origins** add `http://localhost:3000` (and your real site address once it's online).
   4. Copy the **Client ID** into `backend/.env` as `GOOGLE_CLIENT_ID=…` and restart the backend — the Google button appears on the login and sign-up pages.
@@ -130,7 +135,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 ---
 
 ## Platform
-- [ ] 🟠 Publish the installable app to the Google Play Store (a "Trusted Web Activity" wraps the web app) once LearnMap is online.
+- [ ] 🟠 Publish the installable app to the Google Play Store (a "Trusted Web Activity" wraps the web app) once Learnvoy is online.
 - [ ] 🟠 **Turn on phone notifications:** `npm run vapid-keys` → add the two keys to Render (DEPLOY.md step 5½).
 - [ ] 🟢 Let members choose which notifications go to their phone (today: all in-app notifications are pushed).
 - [ ] 🟢 More admin tools: deactivate a member, resend their verification, export members as CSV.
@@ -181,7 +186,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 ---
 
 ## Growth
-- [ ] 🟠 Link previews for public pages (profile, shared roadmap, certificate) on WhatsApp/LinkedIn need the server to send page-specific titles and images — the site is a single-page app today, so every link shows the general LearnMap preview.
+- [ ] 🟠 Link previews for public pages (profile, shared roadmap, certificate) on WhatsApp/LinkedIn need the server to send page-specific titles and images — the site is a single-page app today, so every link shows the general Learnvoy preview.
 - [ ] 🟢 Profile page themes and a QR code for the profile link (career fairs, resumes).
 
 ---

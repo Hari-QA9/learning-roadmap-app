@@ -31,17 +31,17 @@ export default function PublicProfile() {
   useEffect(() => {
     setP(null); setError('');
     api.get(`/public/u/${encodeURIComponent(username)}`, { noCache: true })
-      .then((r) => { setP(r.data); document.title = `${r.data.name} · LearnMap`; })
+      .then((r) => { setP(r.data); document.title = `${r.data.name} · Learnvoy`; })
       .catch((e) => setError(errorMessage(e, 'This profile doesn’t exist or is private.')));
-    return () => { document.title = 'LearnMap'; };
+    return () => { document.title = 'Learnvoy'; };
   }, [username]);
 
   const share = async () => {
-    const r = await shareLink({ title: `${p.name} on LearnMap`, text: p.headline || 'My learning portfolio', url: siteUrl(`/u/${p.username}`) });
+    const r = await shareLink({ title: `${p.name} on Learnvoy`, text: p.headline || 'My learning portfolio', url: siteUrl(`/u/${p.username}`) });
     if (r === 'copied') toast.success('Link copied');
   };
 
-  if (error) return <PublicLayout><EmptyState icon="user" title="Profile not found" description={error} action={<Link className="btn btn-primary" to="/">Go to LearnMap</Link>} /></PublicLayout>;
+  if (error) return <PublicLayout><EmptyState icon="user" title="Profile not found" description={error} action={<Link className="btn btn-primary" to="/">Go to Learnvoy</Link>} /></PublicLayout>;
   if (!p) return <PublicLayout><Loading /></PublicLayout>;
   const links = LINKS.filter((l) => p.links?.[l.key]);
   const r = p.resume;

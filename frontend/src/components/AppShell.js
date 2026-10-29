@@ -159,7 +159,7 @@ export default function AppShell() {
       <aside className={`sidebar ${open ? 'open' : ''}`} aria-label="Main navigation">
         <Link to="/dashboard" className="sidebar-brand">
           <span className="brand-mark"><Icon name="compass" size={15} stroke={2} /></span>
-          <span className="brand-name">LearnMap</span>
+          <span className="brand-name">Learnvoy</span>
         </Link>
         <nav className="sidebar-nav">
           {NAV.map((g) => (

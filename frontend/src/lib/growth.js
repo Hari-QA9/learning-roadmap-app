@@ -53,7 +53,7 @@ export function linkedInCertUrl(cert) {
   const p = new URLSearchParams({
     startTask: 'CERTIFICATION_NAME',
     name: cert.roadmap_title,
-    organizationName: 'LearnMap',
+    organizationName: 'Learnvoy',
     issueYear: String(d.getFullYear()),
     issueMonth: String(d.getMonth() + 1),
     certUrl: siteUrl(`/verify/${cert.certificate_id}`),

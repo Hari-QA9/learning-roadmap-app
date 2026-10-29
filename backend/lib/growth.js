@@ -15,7 +15,7 @@ function randomCode(len = 10) {
 }
 
 const RESERVED = new Set(['admin', 'administrator', 'api', 'app', 'login', 'logout', 'signup', 'register', 'u', 'r', 'verify', 'settings',
-  'support', 'help', 'about', 'privacy', 'terms', 'learnmap', 'www', 'root', 'staff', 'team', 'official', 'null', 'undefined', 'me', 'profile']);
+  'support', 'help', 'about', 'privacy', 'terms', 'learnmap', 'learnvoy', 'www', 'root', 'staff', 'team', 'official', 'null', 'undefined', 'me', 'profile']);
 const USERNAME_RE = /^[a-z0-9](?:[a-z0-9_-]{1,28}[a-z0-9])?$/;
 
 /** Normalises a requested username and returns an error message if it can't be used. */

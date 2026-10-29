@@ -84,8 +84,8 @@ export function FocusProvider({ children }) {
   // Show the countdown in the browser tab.
   useEffect(() => {
     if (s.status !== 'running') return undefined;
-    document.title = `${fmtClock(remaining)} ${s.mode === 'break' ? 'Break' : 'Focus'} · LearnMap`;
-    return () => { if (/^\d\d:\d\d /.test(document.title)) document.title = 'LearnMap'; };
+    document.title = `${fmtClock(remaining)} ${s.mode === 'break' ? 'Break' : 'Focus'} · Learnvoy`;
+    return () => { if (/^\d\d:\d\d /.test(document.title)) document.title = 'Learnvoy'; };
   }, [remaining, s.status, s.mode]);
 
   const api_ = useMemo(() => ({
