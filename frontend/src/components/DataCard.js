@@ -42,7 +42,7 @@ export default function DataCard({ email }) {
     setError('');
     try {
       await api.delete('/account', { data: { confirm: confirm.trim() } });
-      logout();
+      logout({ everything: true });
       navigate('/', { replace: true });
     } catch (err) {
       setError(errorMessage(err, 'Could not delete the account'));

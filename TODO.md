@@ -115,7 +115,9 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ## Interviews & calendar
 - [ ] 🟠 Voice mock interviews: the AI reads questions aloud and you answer out loud (today: typed, or browser speech-to-text in Chrome/Edge/Safari).
-- [ ] 🟢 Two-way Google/Outlook calendar sync (today: a subscribe link + "Add to calendar" buttons).
+- [ ] 🟢 Two-way Google/Outlook calendar sync (today: a subscribe link with due dates, interviews and weekly study sessions, plus "Add to calendar" buttons).
+- [ ] 🟢 Drag a task to another day on the Calendar page to move its due date.
+- [ ] 🟢 Re-plan automatically when you fall behind (move overdue planned tasks to the next study days).
 - [ ] 🟢 Thank-you email draft after an interview (AI, from the tracker).
 
 ---
@@ -148,6 +150,13 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [ ] 🟠 Have a native speaker review each translation (Spanish, Hindi, Telugu, French, Chinese).
 - [ ] 🟢 Emails (reminders, weekly summary) in the member's language.
 - [ ] 🟢 Right-to-left languages (Arabic, Urdu) need layout work.
+
+---
+
+## Offline
+- [ ] 🟠 Test offline mode on a real phone after going live (installed app, airplane mode, then back online).
+- [ ] 🟢 More changes that work offline: adding/deleting tasks, flashcard edits, resume edits (today: task status and due dates, notes, review cards, focus sessions).
+- [ ] 🟢 "Saved for offline" indicator per roadmap, and a button to save a whole roadmap ahead of a trip.
 
 ---
 
@@ -194,6 +203,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
 - [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)
 - [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)
+- [x] Calendar & offline: Calendar page (month + day agenda), weekly study schedule with a reminder before each session, auto-plan a roadmap over your study days (with undo), study sessions in the calendar feed; offline copies of pages you open, offline task/notes/review/focus changes that sync later with the time they happened, offline banner, every page's code saved for offline (PR #25)
 - [x] More languages: Español, हिन्दी, తెలుగు, Français, 中文 — app shell, landing, sign-up/login, Profile; the AI writes roadmaps, explanations, flashcards, quizzes, letters and interviews in the chosen language (PR #24)
 - [x] Classrooms & mentoring: classes with join code/link, assign roadmaps (each student gets a copy, late joiners too), teacher progress table + CSV, announcements, roadmap banner (PR #23)
 - [x] Phone & desktop push notifications (built-in Web Push, no extra packages; verified against the RFC 8291 test vector) (PR #22)

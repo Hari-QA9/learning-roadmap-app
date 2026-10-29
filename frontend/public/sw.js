@@ -1,11 +1,29 @@
-/* LearnMap service worker — makes the app installable and loads instantly on repeat visits.
-   It only caches the app's own files (code, styles, icons). It never caches /api responses,
-   so personal data always comes fresh from the server. */
-const VERSION = 'learnmap-v2';
+/* LearnMap service worker — makes the app installable, loads instantly on repeat visits and
+   opens without internet. It caches the app's own files only (code, styles, icons) — every
+   page's code up front, so any page opens offline. It never caches /api responses: the data
+   pages show offline is kept by the app itself (IndexedDB) and removed when you log out. */
+const VERSION = 'learnmap-v3';
 const SHELL = ['/', '/index.html', '/offline.html', '/manifest.json', '/logo192.png', '/logo512.png', '/favicon.ico'];
 
+// All built code/style files listed by the production build (so pages you haven't opened yet work offline too).
+async function buildFiles() {
+  try {
+    const res = await fetch('/asset-manifest.json', { cache: 'no-store' });
+    if (!res.ok) return [];
+    const m = await res.json();
+    return Object.values(m.files || {}).filter((f) => typeof f === 'string' && /^\/static\/.+\.(js|css)$/.test(f));
+  } catch (e) { return []; }
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil((async () => {
+    const c = await caches.open(VERSION);
+    await c.addAll(SHELL);
+    const files = await buildFiles();
+    // One missing file must not stop the app from installing.
+    await Promise.all(files.map((f) => c.add(f).catch(() => {})));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {

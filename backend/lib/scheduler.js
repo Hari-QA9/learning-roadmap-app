@@ -4,6 +4,7 @@
 //   • weekly progress summary (Mondays, 9am+ in the member's time zone)
 //   • job alerts for new strong matches  (at most daily)
 //   • follow-up reminder 7 days after applying
+//   • "time to study" before each session on the member's weekly study schedule
 // Emails are only sent when SMTP is configured; in-app notifications always are.
 require('dotenv').config();
 const db = require('../db');
@@ -230,6 +231,40 @@ async function weeklyDigests(users, { force = false } = {}) {
   return sent;
 }
 
+/* ---------- "Time to study" (the weekly study schedule) ---------- */
+// The scheduler runs hourly, so each session gets one reminder sometime in the hour before it.
+const minutesIn = (tz, date = new Date()) => {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: E.validTz(tz) ? tz : 'UTC', hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(date);
+  const get = (t) => Number(parts.find((p) => p.type === t)?.value || 0);
+  return (get('hour') % 24) * 60 + get('minute');
+};
+async function studyReminders(users, now = new Date()) {
+  const S = require('./studySchedule');
+  let sent = 0;
+  for (const u of users) {
+    const sched = S.parseSchedule(u.settings);
+    if (!sched.active || !sched.remind) continue;
+    const tz = u.settings.timezone;
+    const today = E.dayIn(tz, now);
+    if (u.settings.last_study_ping === today || !sched.days.includes(S.weekdayOf(today))) continue;
+    const [hh, mm] = sched.time.split(':').map(Number);
+    const until = hh * 60 + mm - minutesIn(tz, now);
+    if (until < 0 || until >= 60) continue;
+    const [[next]] = await q().query(
+      `SELECT t.title, r.id AS roadmap_id, r.title AS roadmap_title FROM tasks t JOIN modules m ON m.id = t.module_id JOIN roadmaps r ON r.id = m.roadmap_id
+       WHERE r.user_id = ? AND t.status <> 'done' ORDER BY (t.due_date IS NULL), t.due_date, r.created_at DESC, m.order_index, t.created_at LIMIT 1`, [u.id]
+    ).catch(() => [[null]]);
+    await E.notify(u.id, {
+      title: until <= 5 ? 'Time to study' : `Study session at ${sched.time}`,
+      message: next ? `Next up: “${next.title}” in ${next.roadmap_title}` : 'Pick a roadmap and keep going.',
+      link: next ? `/roadmaps/${next.roadmap_id}` : '/calendar', type: 'study',
+    });
+    await E.saveSettings(u.id, { last_study_ping: today });
+    sent++;
+  }
+  return sent;
+}
+
 let running = false;
 async function runScheduler(opts = {}) {
   if (running) return null;
@@ -237,7 +272,7 @@ async function runScheduler(opts = {}) {
   const out = {};
   try {
     const users = await usersWithSettings();
-    for (const [name, fn] of Object.entries({ due: dueTaskReminders, interviews: interviewReminders, nudges: inactivityNudges, jobAlerts, followUps, digests: (us) => weeklyDigests(us, opts) })) {
+    for (const [name, fn] of Object.entries({ due: dueTaskReminders, interviews: interviewReminders, study: studyReminders, nudges: inactivityNudges, jobAlerts, followUps, digests: (us) => weeklyDigests(us, opts) })) {
       try { out[name] = await fn(users); } catch (err) { out[name] = `error: ${err.message}`; console.warn(`[scheduler] ${name}: ${err.message}`); }
     }
     const total = Object.values(out).filter((v) => typeof v === 'number').reduce((a, b) => a + b, 0);
@@ -254,4 +289,4 @@ function startScheduler() {
   setInterval(() => runScheduler().catch(() => {}), 60 * 60 * 1000).unref();
 }
 
-module.exports = { runScheduler, startScheduler };
+module.exports = { runScheduler, startScheduler, studyReminders };

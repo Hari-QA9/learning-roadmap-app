@@ -59,6 +59,12 @@ const COLUMNS = [
   ['roadmaps', 'listed', 'TINYINT DEFAULT 0'],
   // The language the member uses LearnMap in (en, es, hi, te, fr, zh)
   ['user_settings', 'language', "VARCHAR(5) DEFAULT 'en'"],
+  // Calendar: weekly study schedule (days 0=Sun…6=Sat, local time) and its reminder
+  ['user_settings', 'study_days', 'VARCHAR(20) NULL'],
+  ['user_settings', 'study_time', 'VARCHAR(5) NULL'],
+  ['user_settings', 'study_minutes', 'INT DEFAULT 60'],
+  ['user_settings', 'study_remind', 'TINYINT DEFAULT 1'],
+  ['user_settings', 'last_study_ping', 'VARCHAR(10) NULL'],
 ];
 
 const TABLES = [

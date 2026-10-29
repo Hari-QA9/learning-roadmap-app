@@ -12,7 +12,7 @@ import { I18nProvider } from './lib/i18n';
 import {
   Landing, Login, Signup, ForgotPassword, ResetPassword, Dashboard, Roadmaps, RoadmapDetail, AIGenerator,
   Profile, Notifications, Quiz, QuizPerformance, Feedback, Chat, ResumeBuilder, Templates, CareerAdvisor,
-  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, Interview, InterviewSession, VerifyEmail, Admin, Legal, PublicProfile, SharedRoadmap, VerifyCertificate, Join, Review, Focus, Groups, GroupDetail, Buddies, Challenges, JoinCommunity, CoverLetters, LinkedInHelper, PrepSheet, Insights, Explore, Import, Classes, ClassDetail, preloadAllWhenIdle,
+  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, Interview, InterviewSession, VerifyEmail, Admin, Legal, PublicProfile, SharedRoadmap, VerifyCertificate, Join, Review, Focus, Groups, GroupDetail, Buddies, Challenges, JoinCommunity, CoverLetters, LinkedInHelper, PrepSheet, Insights, Explore, Import, Classes, ClassDetail, CalendarPage, preloadAllWhenIdle,
 } from './lib/pages';
 
 // Remember a friend's ?invite= code from whatever page the visitor lands on.
@@ -98,6 +98,7 @@ function App() {
               <Route path="/discover" element={<Explore inApp />} />
               <Route path="/import" element={<Import />} />
               <Route path="/classes" element={<Classes />} />
+              <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/classes/:id" element={<ClassDetail />} />
             </Route>
 

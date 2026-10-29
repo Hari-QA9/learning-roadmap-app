@@ -26,7 +26,8 @@ async function getSettings(userId) {
 
 async function saveSettings(userId, patch) {
   const allowed = ['email_weekly', 'email_reminders', 'email_job_alerts', 'email_followups', 'daily_goal', 'timezone', 'onboarded', 'field',
-    'last_digest_at', 'last_nudge_at', 'last_job_alert_at', 'calendar_token', 'language'];
+    'last_digest_at', 'last_nudge_at', 'last_job_alert_at', 'calendar_token', 'language',
+    'study_days', 'study_time', 'study_minutes', 'study_remind', 'last_study_ping'];
   const keys = Object.keys(patch).filter((k) => allowed.includes(k));
   if (!keys.length) return getSettings(userId);
   const [has] = await q().query('SELECT user_id FROM user_settings WHERE user_id = ?', [userId]);
@@ -55,9 +56,10 @@ function weekdayIn(tz, date = new Date()) {
 const addDays = (ymd, n) => { const d = new Date(`${ymd}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
 /* ---------- Learning activity ---------- */
-async function recordTaskDone(userId) {
+/** `at`: when it was actually finished (e.g. offline, synced later) — counts for that day. */
+async function recordTaskDone(userId, at = null) {
   const s = await getSettings(userId);
-  const day = dayIn(s.timezone);
+  const day = dayIn(s.timezone, at || new Date());
   const [has] = await q().query('SELECT id FROM activity_days WHERE user_id = ? AND day = ?', [userId, day]);
   if (has.length) await q().query('UPDATE activity_days SET tasks_done = tasks_done + 1 WHERE id = ?', [has[0].id]);
   else await q().query('INSERT INTO activity_days (user_id, day, tasks_done) VALUES (?, ?, 1)', [userId, day]);
