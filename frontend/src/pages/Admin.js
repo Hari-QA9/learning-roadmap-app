@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import api, { errorMessage } from '../lib/api';
 import { PageHeader, Card, Stat, Badge, Icon, Input, EmptyState, SkeletonRows, Button, timeAgo, formatDate } from '../components/ui';
 import { SOURCE_LABEL } from '../components/JobRow';
+import MLPanel from '../components/admin/MLPanel';
 
 const Check = ({ on, label }) => (
   <div className="row small" style={{ gap: 6 }}>
@@ -140,6 +141,8 @@ export default function Admin() {
           </Card>
         </div>
       </div>
+      <h2 className="admin-h2">Machine learning</h2>
+      <MLPanel />
     </>
   );
 }

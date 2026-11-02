@@ -5,6 +5,9 @@
 //   • job alerts for new strong matches  (at most daily)
 //   • follow-up reminder 7 days after applying
 //   • "time to study" before each session on the member's weekly study schedule
+//   • ML: personal memory models for review cards (weekly)
+//   • ML: quit-risk snapshots, labels, weekly retraining and comeback nudges (daily)
+//   • ML: meaning vectors for new job posts (smart matching)
 // Emails are only sent when SMTP is configured; in-app notifications always are.
 require('dotenv').config();
 const db = require('../db');
@@ -114,11 +117,13 @@ async function matchesFor(userId, since, min = Number(process.env.JOB_ALERT_MIN_
      WHERE j.user_id IS NULL AND a.id IS NULL AND j.fetched_at >= ? LIMIT 2000`, [userId, since]
   );
   const custom = customSkills(profile.skills);
+  const smart = require('./jobMatch');
+  const sem = await smart.semanticScores(profile, rows.map((j) => j.id)).catch(() => new Map());
   return rows.map((j) => {
     let skills = parse(j.skills, []);
     const hits = custom.filter((k) => mentions(`${j.title}\n${j.description || ''}`, k));
     skills = [...skills, ...hits.filter((k) => !skills.includes(k))];
-    return { ...j, match: matchJob({ title: j.title, skills }, profile).score || 0 };
+    return { ...j, match: smart.blend(matchJob({ title: j.title, skills }, profile).score || 0, sem.get(Number(j.id))) || 0 };
   }).filter((j) => j.match >= min).filter((j) => !profile.remote_only || Number(j.remote)).sort((a, b) => b.match - a.match);
 }
 
@@ -265,6 +270,68 @@ async function studyReminders(users, now = new Date()) {
   return sent;
 }
 
+/* ---------- ML: quit-risk (daily snapshot, labels, weekly retrain, nudges) ---------- */
+let quitRiskDay = null;
+async function quitRisk(users) {
+  const QR = require('./quitRisk');
+  const today = new Date().toISOString().slice(0, 10);
+  const day = QR.addDays(today, -1); // yesterday is a complete day
+  if (quitRiskDay === day) return 0;
+  quitRiskDay = day;
+  const history = await QR.loadHistory();
+  await QR.fillLabels(today, history);
+  // Retrain weekly once there's enough labelled data (keeps the baseline until a model earns its place).
+  const current = await QR.activeModel();
+  const age = current.trained_at ? (Date.now() - new Date(current.trained_at).getTime()) / 86400000 : Infinity;
+  if (age >= 7) await QR.trainFromDb().catch((e) => console.warn('[scheduler] quit-risk train', e.message));
+  const model = await QR.activeModel();
+  const snaps = await QR.snapshot(day, history, model);
+  // Nudge high-risk learners (never the holdout group, at most once a week each).
+  const threshold = Number(process.env.QUIT_RISK_NUDGE) || 0.6;
+  let sent = 0;
+  for (const s of snaps.filter((x) => x.risk >= threshold).sort((a, b) => b.risk - a.risk)) {
+    if (QR.holdout(s.user_id)) continue;
+    const u = users.find((x) => x.id === s.user_id);
+    if (!u || !older(u.settings.last_nudge_at, 24 * 7)) continue;
+    const [[next]] = await q().query(
+      `SELECT t.title, r.id AS roadmap_id, r.title AS roadmap_title FROM tasks t JOIN modules m ON m.id = t.module_id JOIN roadmaps r ON r.id = m.roadmap_id
+       WHERE r.user_id = ? AND t.status <> 'done' ORDER BY (t.due_date IS NULL), t.due_date, m.order_index, t.created_at LIMIT 1`, [u.id]).catch(() => [[null]]);
+    await E.notify(u.id, {
+      title: 'Keep your momentum going',
+      message: next ? `Ten minutes is enough today: “${next.title}” in ${next.roadmap_title}.` : 'Ten minutes is enough today — pick up where you left off.',
+      link: next ? `/roadmaps/${next.roadmap_id}` : '/dashboard', type: 'comeback',
+    });
+    await E.saveSettings(u.id, { last_nudge_at: sqlTime(new Date()) });
+    u.settings.last_nudge_at = new Date(); // so the general "come back" nudge doesn't also fire today
+    await q().query('UPDATE ml_snapshots SET nudged = 1 WHERE user_id = ? AND day = ?', [u.id, day]);
+    sent++;
+  }
+  return sent;
+}
+
+/* ---------- ML: embed new job posts (smart matching) ---------- */
+async function embedJobs() {
+  return require('./jobMatch').embedMissingJobs(1000);
+}
+
+/* ---------- Personal memory models (weekly) ---------- */
+// Re-fits each active reviewer's FSRS weights from their review history, at most once a week.
+async function memoryModels(users) {
+  const [rows] = await q().query('SELECT user_id, COUNT(*) AS n FROM flashcard_reviews GROUP BY user_id HAVING COUNT(*) >= 100');
+  const { personalise } = require('../routes/learning');
+  let fitted = 0;
+  for (const r of rows) {
+    if (fitted >= 10) break; // spread the work over the hours
+    const u = users.find((x) => x.id === r.user_id);
+    if (!u) continue;
+    let meta = null; try { meta = JSON.parse(u.settings.fsrs_meta || 'null'); } catch { /* none yet */ }
+    if (meta && older(meta.fitted_at, 24 * 7) === false) continue;
+    await personalise(u.id).catch((e) => console.warn(`[scheduler] memory model ${u.id}: ${e.message}`));
+    fitted++;
+  }
+  return fitted;
+}
+
 let running = false;
 async function runScheduler(opts = {}) {
   if (running) return null;
@@ -272,7 +339,7 @@ async function runScheduler(opts = {}) {
   const out = {};
   try {
     const users = await usersWithSettings();
-    for (const [name, fn] of Object.entries({ due: dueTaskReminders, interviews: interviewReminders, study: studyReminders, nudges: inactivityNudges, jobAlerts, followUps, digests: (us) => weeklyDigests(us, opts) })) {
+    for (const [name, fn] of Object.entries({ due: dueTaskReminders, interviews: interviewReminders, study: studyReminders, quitRisk, memory: memoryModels, embeddings: embedJobs, nudges: inactivityNudges, jobAlerts, followUps, digests: (us) => weeklyDigests(us, opts) })) {
       try { out[name] = await fn(users); } catch (err) { out[name] = `error: ${err.message}`; console.warn(`[scheduler] ${name}: ${err.message}`); }
     }
     const total = Object.values(out).filter((v) => typeof v === 'number').reduce((a, b) => a + b, 0);

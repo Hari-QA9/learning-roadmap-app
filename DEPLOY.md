@@ -92,6 +92,7 @@ Keep the private key secret. If you ever change the keys, everyone has to switch
 
 - **Sign in with Google:** in Google Cloud Console → your OAuth client → **Authorized JavaScript origins**, add your Vercel address. Then on Render add `GOOGLE_CLIENT_ID`.
 - **More jobs:** add `ADZUNA_APP_ID`/`ADZUNA_APP_KEY`, `USAJOBS_API_KEY`/`USAJOBS_EMAIL`, `JSEARCH_API_KEY`, or `YOUTUBE_API_KEY` on Render (same keys as in `TODO.md`).
+- **Machine learning** needs nothing extra: smart matching and search use the same `GEMINI_API_KEY`, and the memory and quit-risk models train themselves on the server. Optional settings are in [ml/README.md](ml/README.md). After a few weeks of real use, open **Admin → Machine learning → Rebuild & train**.
 - **Your own domain** (for example `learnvoy.app`): buy it, add it in Vercel → **Domains**, then update `APP_URL` on Render (and the Google origin).
 
 ---

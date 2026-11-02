@@ -65,6 +65,12 @@ const COLUMNS = [
   ['user_settings', 'study_minutes', 'INT DEFAULT 60'],
   ['user_settings', 'study_remind', 'TINYINT DEFAULT 1'],
   ['user_settings', 'last_study_ping', 'VARCHAR(10) NULL'],
+  // ML: FSRS memory model per card, and each member's personal model + retention target
+  ['flashcards', 'stability', 'DOUBLE NULL'],
+  ['flashcards', 'difficulty', 'DOUBLE NULL'],
+  ['user_settings', 'fsrs_w', 'TEXT NULL'],
+  ['user_settings', 'fsrs_meta', 'TEXT NULL'],
+  ['user_settings', 'review_retention', 'DOUBLE DEFAULT 0.9'],
 ];
 
 const TABLES = [
@@ -365,6 +371,52 @@ const TABLES = [
     roadmap_id INT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (user_id, job_id)
+  )`,
+  // ML: every flashcard review (trains each member's personal memory model)
+  `CREATE TABLE IF NOT EXISTS flashcard_reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    card_id INT NOT NULL,
+    grade TINYINT NOT NULL,
+    reviewed_at DATETIME NOT NULL,
+    elapsed_days DOUBLE NULL,
+    predicted_r DOUBLE NULL,
+    KEY user_time (user_id, reviewed_at),
+    KEY card (card_id)
+  )`,
+  // ML: text embeddings (meaning as numbers) for jobs, profiles and roadmaps
+  `CREATE TABLE IF NOT EXISTS embeddings (
+    kind VARCHAR(20) NOT NULL,
+    ref_id INT NOT NULL,
+    model VARCHAR(60) NOT NULL,
+    text_hash CHAR(40) NOT NULL,
+    dims INT NOT NULL,
+    vec MEDIUMTEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (kind, ref_id)
+  )`,
+  // ML: a daily snapshot of each active learner (features → quit-risk; the label is filled in 14 days later)
+  `CREATE TABLE IF NOT EXISTS ml_snapshots (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    day DATE NOT NULL,
+    features TEXT NOT NULL,
+    risk DOUBLE NULL,
+    model VARCHAR(60) NULL,
+    nudged TINYINT DEFAULT 0,
+    holdout TINYINT DEFAULT 0,
+    label TINYINT NULL,
+    UNIQUE (user_id, day)
+  )`,
+  // ML: trained models (the newest active one is used)
+  `CREATE TABLE IF NOT EXISTS ml_models (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(40) NOT NULL,
+    version VARCHAR(60) NOT NULL,
+    params MEDIUMTEXT NOT NULL,
+    metrics TEXT NULL,
+    active TINYINT DEFAULT 1,
+    trained_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,
 ];
 

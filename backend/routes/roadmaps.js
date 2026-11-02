@@ -20,6 +20,20 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// GET /roadmaps/:id/similar — roadmaps on Explore closest in meaning to one of yours (embeddings)
+router.get('/:id/similar', auth, async (req, res) => {
+  try {
+    const [[own]] = await db.promise().query('SELECT id, copied_from FROM roadmaps WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    if (!own) return res.status(404).json({ message: 'Roadmap not found' });
+    const ranked = (await require('../lib/roadmapSearch').similar(own.id, 4)).filter((x) => x.id !== own.copied_from);
+    const cards = await require('./public').similarCards(ranked.slice(0, 3));
+    res.json({ roadmaps: cards });
+  } catch (err) {
+    console.error('[roadmaps] similar', err.message);
+    res.json({ roadmaps: [] });
+  }
+});
+
 // GET single roadmap
 router.get('/:id', auth, async (req, res) => {
   try {

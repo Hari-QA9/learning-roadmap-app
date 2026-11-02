@@ -52,41 +52,55 @@ Return JSON: { "questions": [ { "concept": "short concept name (2-4 words)", "le
 });
 
 /* =====================================================================
-   Flashcards with spaced repetition (a simplified SM-2, like Anki)
+   Flashcards with spaced repetition — the FSRS memory model (lib/fsrs.js),
+   personalised to each member once they have enough reviews (lib/memoryModel.js)
    ===================================================================== */
-const GRADES = { again: 0, hard: 1, good: 2, easy: 3 };
+const FSRS = require('../lib/fsrs');
+const GRADES = { again: 0, hard: 1, good: 2, easy: 3 }; // FSRS grade = this + 1
+const RETENTIONS = [0.8, 0.85, 0.9, 0.95];
 
-/** Next schedule for a card after a review. Returns { ease, interval_days, reps, lapses, dueMs }. */
-function schedule(card, grade, now = Date.now()) {
-  let ease = Number(card.ease) || 2.5;
-  let interval = Number(card.interval_days) || 0;
-  let reps = Number(card.reps) || 0;
-  let lapses = Number(card.lapses) || 0;
-  if (grade === 0) {
-    reps = 0; lapses += 1; ease -= 0.2; interval = 0;
-    return { ease: Math.max(1.3, ease), interval_days: 0, reps, lapses, dueMs: now + 10 * 60000 }; // again in 10 minutes
-  }
-  if (grade === 1) { interval = reps === 0 ? 1 : Math.max(1, interval * 1.2); ease -= 0.15; }
-  if (grade === 2) interval = reps === 0 ? 1 : reps === 1 ? 3 : Math.round(interval * ease);
-  if (grade === 3) { interval = reps === 0 ? 4 : Math.round(Math.max(interval, 1) * ease * 1.3); ease += 0.15; }
-  reps += 1;
-  ease = Math.min(3.0, Math.max(1.3, ease));
-  interval = Math.min(365, Math.max(1, interval));
-  return { ease, interval_days: interval, reps, lapses, dueMs: now + interval * 86400000 };
+/** The member's memory model: personal weights (or the defaults) and their retention target. */
+async function memoryFor(userId) {
+  const s = await getSettings(userId).catch(() => ({}));
+  const r = Number(s.review_retention);
+  return { w: FSRS.weightsFrom(s.fsrs_w), retention: RETENTIONS.includes(r) ? r : 0.9, personal: !!s.fsrs_w, meta: parse(s.fsrs_meta, null) };
+}
+
+/** Next schedule for a card after a review. Returns { stability, difficulty, interval_days, reps, lapses, dueMs, R }. */
+function schedule(card, grade, mem, now = Date.now()) {
+  const state = FSRS.cardState(card);
+  const o = FSRS.outcomes(mem.w, state, now, mem.retention)[grade + 1];
+  const R = state ? FSRS.retrievability((now - state.last) / FSRS.DAY, state.S) : null;
+  return {
+    stability: o.S, difficulty: o.D, interval_days: o.days,
+    reps: grade === 0 ? 0 : (Number(card.reps) || 0) + 1,
+    lapses: (Number(card.lapses) || 0) + (grade === 0 && state ? 1 : 0),
+    dueMs: o.dueMs, R, elapsed: state ? (now - state.last) / FSRS.DAY : null,
+  };
 }
 
 /** What each button would schedule next — shown under the buttons ("10 min", "3 d"). */
-function previews(card) {
+function previews(card, mem) {
   const fmt = (ms) => {
     const m = Math.round((ms - Date.now()) / 60000);
     if (m < 60) return `${m} min`;
     const d = Math.round(m / 1440);
     return d < 30 ? `${d} d` : d < 365 ? `${Math.round(d / 30)} mo` : `${Math.round(d / 365)} y`;
   };
-  return Object.fromEntries(Object.entries(GRADES).map(([k, g]) => [k, fmt(schedule(card, g).dueMs)]));
+  return Object.fromEntries(Object.entries(GRADES).map(([k, g]) => [k, fmt(schedule(card, g, mem).dueMs)]));
 }
 
-const cardOut = (c) => ({ id: c.id, front: c.front, back: c.back, roadmap_id: c.roadmap_id, task_id: c.task_id, reps: c.reps, interval_days: Number(c.interval_days) || 0, due_at: c.due_at, next: previews(c) });
+/** Chance (0–1) the member still remembers this card right now, or null for new cards. */
+function recallNow(card) {
+  const st = FSRS.cardState(card);
+  return st ? FSRS.retrievability((Date.now() - st.last) / FSRS.DAY, st.S) : null;
+}
+
+const cardOut = (c, mem) => ({
+  id: c.id, front: c.front, back: c.back, roadmap_id: c.roadmap_id, task_id: c.task_id, reps: c.reps,
+  interval_days: Number(c.interval_days) || 0, due_at: c.due_at, next: previews(c, mem),
+  recall: recallNow(c) === null ? null : Math.round(recallNow(c) * 100),
+});
 
 async function insertCards(userId, cards, { roadmapId = null, taskId = null } = {}) {
   const now = sqlTime(new Date());
@@ -140,7 +154,8 @@ router.get('/flashcards/due', auth, async (req, res) => {
     else if (req.query.roadmap_id) { where += ' AND roadmap_id = ?'; params.push(parseInt(req.query.roadmap_id, 10) || 0); }
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 30));
     const [rows] = await q().query(`SELECT * FROM flashcards WHERE ${where} ORDER BY due_at, id LIMIT ${limit}`, params);
-    res.json({ cards: rows.map(cardOut) });
+    const mem = await memoryFor(req.user.id);
+    res.json({ cards: rows.map((c) => cardOut(c, mem)) });
   } catch (err) {
     console.error('[learning] due', err.message);
     res.status(500).json({ message: 'Could not load cards to review.' });
@@ -155,7 +170,8 @@ router.get('/flashcards', auth, async (req, res) => {
     if (req.query.roadmap_id === 'none') where += ' AND roadmap_id IS NULL';
     else if (req.query.roadmap_id) { where += ' AND roadmap_id = ?'; params.push(parseInt(req.query.roadmap_id, 10) || 0); }
     const [rows] = await q().query(`SELECT * FROM flashcards WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT 500`, params);
-    res.json({ cards: rows.map(cardOut) });
+    const mem = await memoryFor(req.user.id);
+    res.json({ cards: rows.map((c) => cardOut(c, mem)) });
   } catch (err) {
     res.status(500).json({ message: 'Could not load cards.' });
   }
@@ -225,10 +241,15 @@ router.post('/flashcards/:id/review', auth, async (req, res) => {
   try {
     const [[card]] = await q().query('SELECT * FROM flashcards WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
     if (!card) return res.status(404).json({ message: 'Card not found.' });
-    const next = schedule(card, grade);
-    const now = new Date();
-    await q().query('UPDATE flashcards SET ease = ?, interval_days = ?, reps = ?, lapses = ?, due_at = ?, last_reviewed_at = ? WHERE id = ?',
-      [next.ease, next.interval_days, next.reps, next.lapses, sqlTime(new Date(next.dueMs)), sqlTime(now), card.id]);
+    // Reviewed offline and synced later → schedule from when it really happened.
+    const now = require('../lib/offline').queuedAt(req) || new Date();
+    const mem = await memoryFor(req.user.id);
+    const next = schedule(card, grade, mem, now.getTime());
+    await q().query('UPDATE flashcards SET stability = ?, difficulty = ?, interval_days = ?, reps = ?, lapses = ?, due_at = ?, last_reviewed_at = ? WHERE id = ?',
+      [next.stability, next.difficulty, next.interval_days, next.reps, next.lapses, sqlTime(new Date(next.dueMs)), sqlTime(now), card.id]);
+    // Every review is kept: it's the training data for this member's personal memory model.
+    await q().query('INSERT INTO flashcard_reviews (user_id, card_id, grade, reviewed_at, elapsed_days, predicted_r) VALUES (?, ?, ?, ?, ?, ?)',
+      [req.user.id, card.id, grade + 1, sqlTime(now), next.elapsed, next.R]).catch((e) => console.warn('[learning] review log', e.message));
     const day = await userDay(req.user.id);
     const [upd] = await q().query('UPDATE review_days SET reviews = reviews + 1 WHERE user_id = ? AND day = ?', [req.user.id, day]);
     if (!upd.affectedRows) await q().query('INSERT INTO review_days (user_id, day, reviews) VALUES (?, ?, 1)', [req.user.id, day]).catch(() => {});
@@ -237,6 +258,62 @@ router.post('/flashcards/:id/review', auth, async (req, res) => {
   } catch (err) {
     console.error('[learning] review', err.message);
     res.status(500).json({ message: 'Could not save the review.' });
+  }
+});
+
+/* ---------- Your memory model (personal FSRS) ---------- */
+const MM = require('../lib/memoryModel');
+const fitLimit = rateLimit({ max: 3, windowMs: 3600000, name: 'memory model updates' });
+
+async function reviewHistory(userId) {
+  const [rows] = await q().query('SELECT card_id, grade, reviewed_at FROM flashcard_reviews WHERE user_id = ? ORDER BY reviewed_at DESC LIMIT 6000', [userId]);
+  return rows.map((r) => ({ card_id: r.card_id, grade: Number(r.grade), at: new Date(r.reviewed_at).getTime() }));
+}
+
+/** Fit and save a member's personal memory model. Used by the button below and the weekly scheduler job. */
+async function personalise(userId) {
+  const result = MM.fit(await reviewHistory(userId));
+  const meta = { n: result.n, fitted_at: new Date().toISOString(), loss_default: result.loss_default ?? null, loss_fitted: result.loss_fitted ?? null, accepted: !!result.ok, reason: result.reason || null };
+  await require('../lib/engagement').saveSettings(userId, { fsrs_meta: JSON.stringify(meta), ...(result.ok ? { fsrs_w: JSON.stringify(result.w.map((x) => +x.toFixed(5))) } : {}) });
+  return { ...meta, personal: result.ok };
+}
+
+router.get('/memory-model', auth, async (req, res) => {
+  try {
+    const mem = await memoryFor(req.user.id);
+    const [cards] = await q().query('SELECT stability, difficulty, reps, interval_days, ease, last_reviewed_at FROM flashcards WHERE user_id = ?', [req.user.id]);
+    const rs = cards.map(recallNow).filter((x) => x !== null);
+    const longTerm = MM.countLongTerm(await reviewHistory(req.user.id));
+    const m = mem.meta;
+    res.json({
+      personal: mem.personal, retention: mem.retention, options: RETENTIONS,
+      reviews: longTerm, needed: MM.MIN_REVIEWS,
+      fitted_at: m?.fitted_at || null, last_result: m ? { accepted: m.accepted, reason: m.reason } : null,
+      improvement: mem.personal && m?.loss_default ? Math.max(0, Math.round((1 - m.loss_fitted / m.loss_default) * 100)) : null,
+      avg_recall: rs.length ? Math.round((rs.reduce((a, b) => a + b, 0) / rs.length) * 100) : null,
+      fading: rs.filter((r) => r < mem.retention).length,
+    });
+  } catch (err) {
+    console.error('[learning] memory model', err.message);
+    res.status(500).json({ message: 'Could not load your memory model.' });
+  }
+});
+
+router.put('/memory-model', auth, async (req, res) => {
+  const r = Number(req.body?.retention);
+  if (!RETENTIONS.includes(r)) return res.status(400).json({ message: 'Pick 80%, 85%, 90% or 95%.' });
+  await require('../lib/engagement').saveSettings(req.user.id, { review_retention: r });
+  res.json({ retention: r, message: `Cards will come back when your recall drops to ${Math.round(r * 100)}%` });
+});
+
+router.post('/memory-model/fit', auth, fitLimit, async (req, res) => {
+  try {
+    const out = await personalise(req.user.id);
+    if (out.n < MM.MIN_REVIEWS) return res.status(400).json({ message: `Your memory model needs ${MM.MIN_REVIEWS} reviews spaced a day or more apart — you have ${out.n} so far.` });
+    res.json({ ...out, message: out.personal ? 'Your memory model is now personalised to you.' : 'Checked — the standard model already predicts your memory well, so we kept it.' });
+  } catch (err) {
+    console.error('[learning] fit', err.message);
+    res.status(500).json({ message: 'Could not update your memory model.' });
   }
 });
 
@@ -321,4 +398,5 @@ router.get('/focus/summary', auth, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.personalise = personalise;
 module.exports.schedule = schedule;

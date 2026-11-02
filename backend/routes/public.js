@@ -116,16 +116,32 @@ router.get('/explore', async (req, res) => {
       params.push(`%${term}%`, `%${term}%`);
     }
     const page = Math.max(0, parseInt(req.query.page, 10) || 0);
-    const [rows] = await q().query(
-      `SELECT r.id, r.title, r.description, r.duration, r.copies, r.share_slug, r.created_at, u.name AS author, p.username
-       FROM roadmaps r JOIN users u ON u.id = r.user_id LEFT JOIN public_profiles p ON p.user_id = u.id AND p.is_public = 1
-       WHERE ${where} ORDER BY ${sort} LIMIT 25 OFFSET ${page * 24}`, params);
+    const cols = `r.id, r.title, r.description, r.duration, r.copies, r.share_slug, r.created_at, u.name AS author, p.username
+       FROM roadmaps r JOIN users u ON u.id = r.user_id LEFT JOIN public_profiles p ON p.user_id = u.id AND p.is_public = 1`;
+    let rows;
+    let smart = false;
+    // Search by meaning (embeddings); falls back to matching words when that isn't available.
+    const ranked = term && req.query.sort !== 'new' ? await require('../lib/roadmapSearch').search(term, req.ip).catch(() => null) : null;
+    if (ranked) {
+      smart = true;
+      const [kw] = await q().query(`SELECT r.id FROM roadmaps r WHERE ${where} LIMIT 200`, params); // exact word hits get a boost
+      const hit = new Set(kw.map((x) => x.id));
+      const score = new Map(ranked.map((x) => [x.id, x.score + (hit.has(x.id) ? 0.08 : 0)]));
+      for (const id of hit) if (!score.has(id)) score.set(id, 0.6);
+      const order = [...score].sort((a, b) => b[1] - a[1]).map(([id]) => id).slice(page * 24, page * 24 + 25);
+      const [found] = order.length ? await q().query(`SELECT ${cols} WHERE r.id IN (?) AND r.share_slug IS NOT NULL AND r.listed = 1`, [order]) : [[]];
+      const byId = new Map(found.map((r) => [r.id, r]));
+      rows = order.map((id) => byId.get(id)).filter(Boolean);
+    } else {
+      [rows] = await q().query(`SELECT ${cols} WHERE ${where} ORDER BY ${sort} LIMIT 25 OFFSET ${page * 24}`, params);
+    }
     const ids = rows.map((r) => r.id);
     const [counts] = ids.length ? await q().query(
       'SELECT m.roadmap_id, COUNT(DISTINCT m.id) AS modules, COUNT(t.id) AS tasks FROM modules m LEFT JOIN tasks t ON t.module_id = m.id WHERE m.roadmap_id IN (?) GROUP BY m.roadmap_id', [ids]) : [[]];
     const c = new Map(counts.map((x) => [x.roadmap_id, x]));
     res.json({
       more: rows.length > 24,
+      smart,
       roadmaps: rows.slice(0, 24).map((r) => ({
         slug: r.share_slug, title: r.title, description: String(r.description || '').slice(0, 220), duration: r.duration || '',
         copies: Number(r.copies) || 0, modules: Number(c.get(r.id)?.modules) || 0, tasks: Number(c.get(r.id)?.tasks) || 0,
@@ -176,6 +192,29 @@ router.get('/roadmaps/:slug', async (req, res) => {
     res.status(500).json({ message: 'Could not load this roadmap.' });
   }
 });
+
+// GET /api/public/roadmaps/:slug/similar — up to 3 listed roadmaps closest in meaning (embeddings)
+router.get('/roadmaps/:slug/similar', async (req, res) => {
+  const slug = String(req.params.slug || '');
+  if (!/^[a-z0-9]{6,24}$/.test(slug)) return res.json({ roadmaps: [] });
+  try {
+    const [[r]] = await q().query('SELECT id FROM roadmaps WHERE share_slug = ?', [slug]);
+    if (!r) return res.json({ roadmaps: [] });
+    res.json({ roadmaps: await similarCards(await require('../lib/roadmapSearch').similar(r.id, 3)) });
+  } catch (err) {
+    console.error('[public] similar', err.message);
+    res.json({ roadmaps: [] });
+  }
+});
+
+/** [{ id, score }] → small public cards (listed roadmaps only). */
+async function similarCards(ranked) {
+  if (!ranked.length) return [];
+  const [rows] = await q().query('SELECT id, title, description, copies, share_slug FROM roadmaps WHERE id IN (?) AND share_slug IS NOT NULL AND listed = 1', [ranked.map((x) => x.id)]);
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return ranked.map((x) => byId.get(x.id)).filter(Boolean).map((r) => ({ slug: r.share_slug, title: r.title, description: String(r.description || '').slice(0, 160), copies: Number(r.copies) || 0 }));
+}
+router.similarCards = similarCards;
 
 // GET /api/public/groups/:code — what a group invite link shows before joining
 router.get('/groups/:code', async (req, res) => {

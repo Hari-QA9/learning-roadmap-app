@@ -11,3 +11,6 @@ Thumbs.db
 # Database dumps contain member data (emails, password hashes) — never commit them
 *.sql
 !backend/database/schema.sql
+
+# ML training exports (numbers only, but keep them out of git)
+ml/data/
