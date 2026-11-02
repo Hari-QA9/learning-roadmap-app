@@ -15,6 +15,22 @@ const aiLimit = rateLimit({ max: 30, name: 'job requests' });
 const parse = (v, d) => { if (!v) return d; if (typeof v === 'object') return v; try { return JSON.parse(v); } catch { return d; } };
 
 const { loadProfile } = require('../lib/careerProfile');
+const smart = require('../lib/jobMatch');
+
+/** Blend in meaning-based (embedding) scores where available. Mutates and returns `jobs`. */
+async function applySmart(jobs, profile) {
+  let sem = new Map();
+  try { sem = await smart.semanticScores(profile, jobs.map((j) => j.id)); } catch (e) { console.warn('[ml] smart match', e.message); }
+  smart.kickEmbedding(); // embed new job posts in the background
+  for (const j of jobs) {
+    const s = sem.get(Number(j.id));
+    j.keyword_match = j.match;
+    j.semantic_match = s ?? null;
+    j.match = smart.blend(j.match, s);
+    j.smart = s !== undefined;
+  }
+  return jobs;
+}
 
 function shapeJob(row, profile, extra = {}) {
   let skills = parse(row.skills, []);
@@ -96,8 +112,8 @@ router.get('/', auth, async (req, res) => {
       params
     );
 
-    let jobs = rows.map((r) => shapeJob(r, profile));
-    const sort = req.query.sort === 'recent' || !profile.skills.length ? 'recent' : 'match';
+    let jobs = await applySmart(rows.map((r) => shapeJob(r, profile)), profile);
+    const sort = req.query.sort === 'recent' || (!profile.skills.length && !jobs.some((j) => j.smart)) ? 'recent' : 'match';
     if (sort === 'match') jobs.sort((a, b) => (b.match || 0) - (a.match || 0));
 
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
@@ -131,7 +147,7 @@ router.get('/recommended', auth, async (req, res) => {
       [req.user.id, req.user.id, new Date(Date.now() - 30 * 86400000)]
     );
     // Only real matches — a recommendation with no overlap isn't useful.
-    let jobs = rows.map((r) => shapeJob(r, profile)).filter((j) => !j.status && (j.match || 0) >= 25);
+    let jobs = (await applySmart(rows.map((r) => shapeJob(r, profile)), profile)).filter((j) => !j.status && (j.match || 0) >= 25);
     if (profile.remote_only) jobs = jobs.filter((j) => j.remote);
     if (profile.locations.length && !profile.remote_only) {
       const locs = profile.locations.map((l) => l.toLowerCase());
@@ -211,8 +227,11 @@ router.get('/:id', auth, async (req, res) => {
     if (!row) return res.status(404).json({ message: 'Job not found.' });
     const profile = await loadProfile(req.user.id);
     const insight = await loadInsight(req.user.id, row.id);
+    // Make sure this job has its meaning vector (one quick call if it's new).
+    await require('../lib/embeddings').vectorsFor('job', [{ id: row.id, text: smart.jobText(row) }]).catch(() => {});
+    const [job] = await applySmart([shapeJob(row, profile, { description: row.description })], profile);
     res.json({
-      job: shapeJob(row, profile, { description: row.description }),
+      job,
       analysis: insight ? parse(insight.analysis, null) : null,
       kit: insight ? parse(insight.kit, null) : null,
       roadmap_id: insight ? insight.roadmap_id : null,

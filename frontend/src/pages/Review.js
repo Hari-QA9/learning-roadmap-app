@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import api, { errorMessage } from '../lib/api';
 import { useToast } from '../components/Toast';
 import {
-  PageHeader, Card, Button, Stat, Icon, EmptyState, SkeletonRows, Modal, Field, Input, Textarea, Select, Segmented, Badge,
+  PageHeader, Card, Button, Stat, Icon, EmptyState, SkeletonRows, Modal, Field, Input, Textarea, Select, Segmented, Badge, Progress, formatDate,
 } from '../components/ui';
 
 const GRADES = [
@@ -12,6 +12,66 @@ const GRADES = [
   { key: 'good', label: 'Good', tone: 'success', hotkey: '3' },
   { key: 'easy', label: 'Easy', tone: 'accent', hotkey: '4' },
 ];
+
+/** The member's memory model (FSRS): how well they remember now, their retention target, and personalisation. */
+function MemoryCard({ refreshKey }) {
+  const toast = useToast();
+  const [m, setM] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(() => api.get('/learning/memory-model', { noCache: true }).then((r) => setM(r.data)).catch(() => setM(null)), []);
+  useEffect(() => { load(); }, [load, refreshKey]);
+  if (!m) return null;
+  const setRetention = async (v) => {
+    try { const r = await api.put('/learning/memory-model', { retention: Number(v) }); setM({ ...m, retention: r.data.retention }); toast.success(r.data.message); }
+    catch (e) { toast.error(errorMessage(e, 'Could not save')); }
+  };
+  const personalise = async () => {
+    setBusy(true);
+    try { const r = await api.post('/learning/memory-model/fit', {}, { timeout: 120000 }); toast.success(r.data.message); load(); }
+    catch (e) { toast.error(errorMessage(e, 'Could not update your memory model')); }
+    finally { setBusy(false); }
+  };
+  const ready = m.reviews >= m.needed;
+  return (
+    <Card title="Your memory model" className="memory-card"
+      actions={<Badge tone={m.personal ? 'accent' : undefined}>{m.personal ? 'Personalised' : 'Standard'}</Badge>}>
+      <div className="stack-sm">
+        {m.avg_recall !== null && (
+          <div className="row" style={{ gap: 18, flexWrap: 'wrap' }}>
+            <div><div className="memory-big">{m.avg_recall}%</div><div className="tiny subtle">of your cards you’d remember right now</div></div>
+            <div><div className="memory-big">{m.fading}</div><div className="tiny subtle">fading below your target</div></div>
+          </div>
+        )}
+        <label className="row small" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <span className="muted">Bring cards back when recall drops to</span>
+          <Select value={m.retention} onChange={(e) => setRetention(e.target.value)} aria-label="Target recall" style={{ width: 90, height: 32 }}>
+            {m.options.map((o) => <option key={o} value={o}>{Math.round(o * 100)}%</option>)}
+          </Select>
+        </label>
+        <p className="tiny subtle" style={{ margin: 0 }}>Higher means stronger memory but more reviews. 90% suits most people.</p>
+        {m.personal ? (
+          <div className="small">
+            Trained on <strong>{m.reviews}</strong> of your reviews{m.improvement ? <> — predicts your memory <strong>{m.improvement}% better</strong> than the standard model</> : null}.
+            {m.fitted_at && <span className="subtle"> Updated {formatDate(m.fitted_at, { month: 'short', day: 'numeric' })}.</span>}
+            <div className="mt-2"><Button size="sm" loading={busy} onClick={personalise}>Update now</Button></div>
+          </div>
+        ) : ready ? (
+          <div className="small">
+            You have enough reviews for a model that learns how <em>you</em> remember.
+            {m.last_result && !m.last_result.accepted && <div className="tiny subtle mt-1">Last check: {m.last_result.reason}.</div>}
+            <div className="mt-2"><Button size="sm" variant="primary" icon="sparkles" loading={busy} onClick={personalise}>Personalise my model</Button></div>
+          </div>
+        ) : (
+          <div className="small">
+            <div className="muted mb-1">Learns how <em>you</em> remember after {m.needed} reviews spaced a day or more apart.</div>
+            <Progress value={Math.round((m.reviews / m.needed) * 100)} label={`${m.reviews} of ${m.needed} reviews`} />
+            <div className="tiny subtle mt-1">{m.reviews} of {m.needed} reviews</div>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
 
 /** One review session: show a card, reveal, grade — keyboard: Space to reveal, 1–4 to grade. */
 function Session({ deck, onDone }) {
@@ -141,7 +201,7 @@ export default function Review() {
 
   return (
     <>
-      <PageHeader title="Review" description="Flashcards that come back just before you’d forget them (spaced repetition). A few minutes a day locks in what you learn."
+      <PageHeader title="Review" description="Flashcards that come back just before you’d forget them. A memory model (FSRS) predicts when — and learns how you remember. A few minutes a day locks in what you learn."
         actions={<>
           <Button icon="plus" onClick={() => setModal('add')}>Add card</Button>
           <Button variant="primary" icon="sparkles" onClick={() => setModal('generate')}>Make cards with AI</Button>
@@ -171,6 +231,7 @@ export default function Review() {
               </div>
             </Card>
           )}
+          <MemoryCard refreshKey={s.reviewed_today} />
           <Card pad={false} title="Decks">
             <div className="list">
               {s.decks.map((d) => (
@@ -197,7 +258,7 @@ export default function Review() {
                   <div className="grow" style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 500, color: 'var(--text)' }}>{c.front}</div>
                     <div className="small muted">{c.back}</div>
-                    <div className="tiny subtle mt-1">{c.reps ? `Next in ${Math.max(1, Math.round(c.interval_days))} day${Math.round(c.interval_days) === 1 ? '' : 's'}` : 'New'}</div>
+                    <div className="tiny subtle mt-1">{c.reps ? `Next in ${Math.max(1, Math.round(c.interval_days))} day${Math.round(c.interval_days) === 1 ? '' : 's'}${c.recall !== null && c.recall !== undefined ? ` · ${c.recall}% recall now` : ''}` : 'New'}</div>
                   </div>
                   <Button variant="ghost" size="sm" icon="edit" aria-label="Edit card" onClick={() => { setForm({ ...form, front: c.front, back: c.back }); setModal({ edit: c }); }} />
                   <Button variant="ghost" size="sm" icon="trash" aria-label="Delete card" onClick={() => remove(c)} />

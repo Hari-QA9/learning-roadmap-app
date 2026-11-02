@@ -6,7 +6,7 @@ import { PageHeader, Card, Input, Segmented, Icon, EmptyState, SkeletonRows, But
 
 const IDEAS = ['Python', 'Data', 'Nursing', 'AWS', 'Design', 'Biology', 'Excel', 'Testing'];
 
-function Grid({ term, setTerm, sort, setSort, list, more, loadMore }) {
+function Grid({ term, setTerm, sort, setSort, list, more, loadMore, smart }) {
   return (
     <>
       <div className="row row-wrap mb-3" style={{ gap: 10 }}>
@@ -18,6 +18,7 @@ function Grid({ term, setTerm, sort, setSort, list, more, loadMore }) {
         <Card><EmptyState icon="map" title={term ? `No roadmaps match “${term}” yet` : 'No roadmaps listed yet'} description="Share one of your roadmaps and switch on “List on Explore” to be the first." /></Card>
       ) : (
         <>
+          {smart && term && <div className="tiny subtle mb-2 row" style={{ gap: 6 }}><Icon name="sparkles" size={12} /> Best matches for what you mean, not just the words you typed</div>}
           <div className="explore-grid">
             {list.map((r) => (
               <Link key={r.slug} to={`/r/${r.slug}`} className="card explore-card">
@@ -49,13 +50,14 @@ export default function Explore({ inApp = false }) {
   const [list, setList] = useState(null);
   const [more, setMore] = useState(false);
   const [page, setPage] = useState(0);
+  const [smart, setSmart] = useState(false);
   const timer = useRef();
 
   useEffect(() => {
     clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       setList(null); setPage(0);
-      api.get('/public/explore', { params: { q: term, sort }, noCache: true }).then((r) => { setList(r.data.roadmaps); setMore(r.data.more); }).catch(() => setList([]));
+      api.get('/public/explore', { params: { q: term, sort }, noCache: true }).then((r) => { setList(r.data.roadmaps); setMore(r.data.more); setSmart(!!r.data.smart); }).catch(() => setList([]));
     }, 250);
   }, [term, sort]);
   const loadMore = () => {
@@ -63,7 +65,7 @@ export default function Explore({ inApp = false }) {
     api.get('/public/explore', { params: { q: term, sort, page: next }, noCache: true }).then((r) => { setList((l) => [...l, ...r.data.roadmaps]); setMore(r.data.more); setPage(next); }).catch(() => {});
   };
 
-  const body = <Grid {...{ term, setTerm, sort, setSort, list, more, loadMore }} />;
+  const body = <Grid {...{ term, setTerm, sort, setSort, list, more, loadMore, smart }} />;
   if (inApp) return (<><PageHeader title="Explore roadmaps" description="Roadmaps other learners made and shared. Open one to see every step, then copy it to your account in one click." />{body}</>);
   return (
     <PublicLayout cta="Join free">

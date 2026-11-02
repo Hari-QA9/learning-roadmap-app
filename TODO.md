@@ -158,6 +158,15 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Machine learning (see ml/README.md)
+- [ ] 🟠 After launch, once people use the app for ~3 weeks: Admin → Machine learning → **Rebuild & train** (or it retrains itself weekly). Check the test AUC and the "Do nudges help?" numbers a month later.
+- [ ] 🟠 Tune `ML_SIM_LOW` / `ML_SIM_HIGH` after looking at real job matches (they map meaning-similarity to 0–100%).
+- [ ] 🟢 Try gradient-boosted trees for quit-risk in `ml/quit_risk/train.py` once there's lots of data (the backend would need a tree scorer).
+- [ ] 🟢 Learn from what members do: jobs they save/apply to could train a personal re-ranker on top of the embeddings.
+- [ ] 🟢 Task time estimates from focus-timer data, so "Plan a roadmap" fits realistic amounts per day.
+
+---
+
 ## Offline
 - [ ] 🟠 Test offline mode on a real phone after going live (installed app, airplane mode, then back online).
 - [ ] 🟢 More changes that work offline: adding/deleting tasks, flashcard edits, resume edits (today: task status and due dates, notes, review cards, focus sessions).
@@ -208,6 +217,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Retention pack: welcome setup, learning streak & daily goal, live notifications, reminders, weekly summary, job alerts, follow-ups, email settings & unsubscribe (PR #12)
 - [x] Mock interviews with feedback, calendar feed & add-to-calendar, interview dates/contacts/next steps in the tracker, editable due dates (PR #13)
 - [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)
+- [x] Machine learning: smart job matching (embeddings), meaning-based Explore search + similar roadmaps, personal memory model for review cards (FSRS fitted per member), quit-risk prediction with nudges and a holdout experiment, admin ML panel, Python training script (PR #27)
 - [x] Calendar & offline: Calendar page (month + day agenda), weekly study schedule with a reminder before each session, auto-plan a roadmap over your study days (with undo), study sessions in the calendar feed; offline copies of pages you open, offline task/notes/review/focus changes that sync later with the time they happened, offline banner, every page's code saved for offline (PR #25)
 - [x] More languages: Español, हिन्दी, తెలుగు, Français, 中文 — app shell, landing, sign-up/login, Profile; the AI writes roadmaps, explanations, flashcards, quizzes, letters and interviews in the chosen language (PR #24)
 - [x] Classrooms & mentoring: classes with join code/link, assign roadmaps (each student gets a copy, late joiners too), teacher progress table + CSV, announcements, roadmap banner (PR #23)

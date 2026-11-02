@@ -231,6 +231,15 @@ Create or use a personal feature branch (for example, feature/mission, feature/u
 Edit the README.md to contribute content, formatting, or references.
 
 Use clear commit messages such as Added target users section or Refined EPIC features.
+## Machine learning
+
+Four ML features, explained in [ml/README.md](ml/README.md):
+
+- **Smart job matching:** text embeddings understand meaning, so a React developer also sees Vue and "UI engineer" jobs. Blended with keyword skill matching.
+- **Smart search & similar roadmaps:** Explore search by meaning, plus "Similar roadmaps" suggestions.
+- **Personal memory model:** review cards use the FSRS memory model, fitted to each member's own review history.
+- **Quit-risk prediction:** a logistic-regression model trained on daily activity snapshots predicts who is about to stop. Those learners get a nudge, and a 10% holdout group measures whether nudges work. There's an admin panel and a Python/scikit-learn training script.
+
 ## Job board
 
 Learnvoy pulls real job postings every few hours from free public APIs (Remotive, Arbeitnow, The Muse) and about 55 company career boards on Greenhouse, Lever and Ashby. No API keys are needed. Adding free keys turns on Adzuna and USAJobs, and an optional paid JSearch key adds LinkedIn, Indeed and Glassdoor listings through Google for Jobs.

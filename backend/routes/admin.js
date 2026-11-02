@@ -79,4 +79,60 @@ router.get('/users', admin, async (req, res) => {
   res.json(rows.map((r) => ({ ...r, email_verified: r.email_verified === undefined ? true : !!Number(r.email_verified), roadmaps: Number(r.roadmaps) })));
 });
 
+/* ---------- Machine learning: models, at-risk learners, experiment, embeddings ---------- */
+router.get('/ml', admin, async (req, res) => {
+  const QR = require('../lib/quitRisk');
+  const E = require('../lib/embeddings');
+  try {
+    const model = await QR.activeModel();
+    const [[latest]] = await q().query('SELECT MAX(day) AS day FROM ml_snapshots');
+    const day = latest && latest.day ? String(latest.day instanceof Date ? latest.day.toISOString() : latest.day).slice(0, 10) : null;
+    const atRisk = day ? await many(
+      `SELECT s.user_id, s.risk, s.features, s.nudged, s.holdout, u.name, u.email FROM ml_snapshots s JOIN users u ON u.id = s.user_id
+       WHERE s.day = ? ORDER BY s.risk DESC LIMIT 12`, [day]) : [];
+    // Did the nudges help? Compare high-risk learners who got one with the holdout group.
+    const exp = await many(
+      `SELECT nudged, holdout, COUNT(*) AS n, SUM(label) AS quit FROM ml_snapshots
+       WHERE label IS NOT NULL AND risk >= ? GROUP BY nudged, holdout`, [Number(process.env.QUIT_RISK_NUDGE) || 0.6]);
+    const group = (pred) => { const rows = exp.filter(pred); const n = rows.reduce((a, r) => a + Number(r.n), 0); return { n, quit_rate: n ? rows.reduce((a, r) => a + Number(r.quit), 0) / n : null }; };
+    const [embedCounts, personalised, reviewsLogged, labelled, snapshots] = await Promise.all([
+      many('SELECT kind, COUNT(*) AS n FROM embeddings GROUP BY kind'),
+      one('SELECT COUNT(*) FROM user_settings WHERE fsrs_w IS NOT NULL'),
+      one('SELECT COUNT(*) FROM flashcard_reviews'),
+      one('SELECT COUNT(*) FROM ml_snapshots WHERE label IS NOT NULL'),
+      one('SELECT COUNT(*) FROM ml_snapshots'),
+    ]);
+    res.json({
+      quit_risk: {
+        model: { kind: model.kind, version: model.version, trained_at: model.trained_at || null, metrics: model.metrics || null },
+        snapshots, labelled, day,
+        at_risk: atRisk.map((r) => {
+          const f = JSON.parse(r.features);
+          return { name: r.name, email: r.email, risk: Math.round(Number(r.risk) * 100), reasons: QR.reasons(model, f), days_since_active: f.days_since_active, nudged: !!Number(r.nudged), holdout: !!Number(r.holdout) };
+        }),
+        experiment: { nudged: group((r) => Number(r.nudged) === 1), holdout: group((r) => Number(r.holdout) === 1) },
+      },
+      embeddings: { enabled: E.enabled(), model: E.MODEL(), counts: Object.fromEntries(embedCounts.map((r) => [r.kind, Number(r.n)])) },
+      memory: { personalised, reviews_logged: reviewsLogged },
+    });
+  } catch (err) {
+    console.error('[admin] ml', err.message);
+    res.status(500).json({ message: 'Could not load ML status.' });
+  }
+});
+
+// Rebuild past snapshots from activity history, then try to train.
+router.post('/ml/quit-risk/train', admin, async (req, res) => {
+  const QR = require('../lib/quitRisk');
+  try {
+    const back = await QR.backfill(Math.min(365, Math.max(14, parseInt(req.body?.days, 10) || 120)));
+    const result = await QR.trainFromDb();
+    res.json({ ...back, accepted: result.accepted, metrics: result.metrics || null, reason: result.reason || null,
+      message: result.accepted ? `New model trained — test AUC ${result.metrics.auc.toFixed(2)}` : `Kept the current model: ${result.reason}` });
+  } catch (err) {
+    console.error('[admin] train', err.message);
+    res.status(500).json({ message: 'Training failed.' });
+  }
+});
+
 module.exports = router;

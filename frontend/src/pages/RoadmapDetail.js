@@ -121,6 +121,9 @@ function RoadmapDetail() {
   const [sharing, setSharing] = useState(false);
   const [assignment, setAssignment] = useState(null);
   useEffect(() => { api.get(`/classes/for-roadmap/${id}`, { noCache: true }).then((r) => setAssignment(r.data)).catch(() => {}); }, [id]);
+  // Roadmaps on Explore closest in meaning to this one (AI) — ideas for what to learn next.
+  const [similar, setSimilar] = useState([]);
+  useEffect(() => { api.get(`/roadmaps/${id}/similar`).then((r) => setSimilar(r.data.roadmaps || [])).catch(() => setSimilar([])); }, [id]);
   const focus = useFocus();
   const makeDeck = async () => {
     toast.info('Making flashcards…');
@@ -629,6 +632,23 @@ function RoadmapDetail() {
                     } catch (e) { toast.error(errorMessage(e, 'Could not add')); }
                   }}>Add</Button>
                 </div>
+              ))}
+            </div>
+          </Card>
+        )}
+        {similar.length > 0 && (
+          <Card title="Similar roadmaps on Explore" description="Others are learning these — ideas for what to learn next" pad={false}>
+            <div className="list">
+              {similar.map((x) => (
+                <button key={x.slug} type="button" className="list-row clickable" onClick={() => navigate(`/r/${x.slug}`)}>
+                  <div className="list-icon"><Icon name="map" size={15} /></div>
+                  <div className="grow" style={{ minWidth: 0, textAlign: 'left' }}>
+                    <div style={{ fontWeight: 500, color: 'var(--text)' }} className="truncate">{x.title}</div>
+                    {x.description && <div className="tiny subtle truncate">{x.description}</div>}
+                  </div>
+                  {x.copies > 0 && <span className="tiny subtle nowrap">{x.copies} using it</span>}
+                  <Icon name="chevronRight" size={15} style={{ color: 'var(--text-3)' }} />
+                </button>
               ))}
             </div>
           </Card>

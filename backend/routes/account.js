@@ -14,6 +14,7 @@ const USER_TABLES = [
   'notes', 'comments', 'bookmarks', 'resource_ratings', 'quiz_attempts', 'quiz_results',
   'module_evaluations', 'roadmap_evaluations', 'certificates', 'feedback', 'ai_usage',
   'flashcards', 'study_sessions', 'review_days', 'challenge_claims', 'career_docs', 'push_subscriptions',
+  'flashcard_reviews', 'ml_snapshots',
 ];
 const SECRET_TABLES = ['password_resets', 'email_verifications'];
 const HIDE = new Set(['password', 'calendar_token', 'token_hash', 'endpoint', 'endpoint_hash', 'p256dh', 'auth']);
@@ -100,6 +101,7 @@ router.delete('/', auth, async (req, res) => {
       await run('DELETE FROM classroom_members WHERE user_id = ? OR classroom_id IN (SELECT id FROM (SELECT id FROM classrooms WHERE owner_id = ?) x)', [id, id]);
       await run('DELETE FROM classrooms WHERE owner_id = ?', [id]);
       await run('DELETE FROM shared_roadmaps WHERE shared_by = ? OR shared_with = ?', [id, id]);
+      await run("DELETE FROM embeddings WHERE kind = 'job' AND ref_id IN (SELECT id FROM jobs WHERE user_id = ?)", [id]);
       await run('DELETE FROM jobs WHERE user_id = ?', [id]);
       // Roadmaps and everything inside them
       await run(`DELETE FROM resources WHERE roadmap_id IN (${myRoadmaps}) OR task_id IN (SELECT id FROM (${myTasks}) x)`, [id, id]);
@@ -110,6 +112,7 @@ router.delete('/', auth, async (req, res) => {
       await run(`DELETE FROM quizzes WHERE roadmap_id IN (${myRoadmaps})`, [id]);
       await run(`DELETE FROM roadmap_tags WHERE roadmap_id IN (${myRoadmaps})`, [id]);
       await run(`DELETE FROM modules WHERE roadmap_id IN (SELECT id FROM (${myRoadmaps}) x)`, [id]);
+      await run(`DELETE FROM embeddings WHERE kind = 'roadmap' AND ref_id IN (SELECT id FROM (${myRoadmaps}) x)`, [id]);
       await run('DELETE FROM roadmaps WHERE user_id = ?', [id]);
       await conn.query('DELETE FROM users WHERE id = ?', [id]);
     } finally {

@@ -1121,3 +1121,18 @@ label.setting-row { cursor: pointer; }
   .cal-wd { text-align: center; padding: 6px 0; }
   .cal-title { min-width: 0; font-size: 15px; }
 }
+
+/* ---------- Memory model (Review) ---------- */
+.memory-big { font-size: 26px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--text); }
+.match-split { display: flex; gap: 14px; flex-wrap: wrap; }
+.match-split strong { color: var(--text); font-weight: 600; }
+
+/* ---------- Admin: machine learning ---------- */
+.ml-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.ml-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ml-grid strong { font-size: 20px; font-weight: 650; color: var(--text); font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) { .ml-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.risk-dot { flex: none; min-width: 44px; height: 26px; padding: 0 8px; border-radius: 13px; display: grid; place-items: center; font-size: 12px; font-weight: 600; background: var(--surface-3); color: var(--text); font-variant-numeric: tabular-nums; }
+.risk-dot.mid { background: var(--warning-soft); color: var(--warning); }
+.risk-dot.high { background: var(--danger-soft); color: var(--danger); }
+.admin-h2 { margin: 32px 0 0; font-size: 22px; font-weight: 650; letter-spacing: -.02em; color: var(--text); }

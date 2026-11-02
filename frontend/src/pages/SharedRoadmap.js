@@ -16,11 +16,13 @@ export default function SharedRoadmap() {
   const [error, setError] = useState('');
   const [copying, setCopying] = useState(false);
   const [open, setOpen] = useState(0);
+  const [similar, setSimilar] = useState([]);
 
   useEffect(() => {
     api.get(`/public/roadmaps/${encodeURIComponent(slug)}`, { noCache: true })
       .then((res) => { setR(res.data); document.title = `${res.data.title} · Learnvoy roadmap`; })
       .catch((e) => setError(errorMessage(e, 'This roadmap is no longer shared.')));
+    api.get(`/public/roadmaps/${encodeURIComponent(slug)}/similar`, { noCache: true }).then((res) => setSimilar(res.data.roadmaps || [])).catch(() => setSimilar([]));
     return () => { document.title = 'Learnvoy'; };
   }, [slug]);
 
@@ -119,6 +121,21 @@ export default function SharedRoadmap() {
                 <div className="grow truncate">{x.title}</div>
                 {x.is_free ? <Badge tone="success">Free</Badge> : null}
               </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {similar.length > 0 && (
+        <section className="pub-section">
+          <h2>Similar roadmaps</h2>
+          <div className="explore-grid">
+            {similar.map((x) => (
+              <Link key={x.slug} to={`/r/${x.slug}`} className="card explore-card">
+                <strong className="explore-title">{x.title}</strong>
+                {x.description && <p className="small muted clamp-2" style={{ margin: '6px 0 0' }}>{x.description}</p>}
+                {x.copies > 0 && <div className="tiny text-accent mt-2"><Icon name="copy" size={12} /> {x.copies} using it</div>}
+              </Link>
             ))}
           </div>
         </section>

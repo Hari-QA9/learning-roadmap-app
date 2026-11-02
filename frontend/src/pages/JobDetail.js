@@ -227,13 +227,19 @@ function JobDetail() {
 
       <div className="split">
         <div className="stack-lg">
-          <Card title="Your match" description="Based on the skills this posting mentions" actions={<Button size="sm" variant="ghost" icon="settings" onClick={() => setPrefsOpen(true)}>Edit skills</Button>}>
+          <Card title="Your match" description={job.smart ? 'Skills this posting mentions, plus how closely the whole job fits what you’re looking for (AI)' : 'Based on the skills this posting mentions'} actions={<Button size="sm" variant="ghost" icon="settings" onClick={() => setPrefsOpen(true)}>Edit skills</Button>}>
             {noProfile ? (
               <EmptyState icon="target" title="Add your skills to see your match" action={<Button variant="primary" onClick={() => setPrefsOpen(true)}>Set preferences</Button>} />
             ) : (
               <div className="row match-summary" style={{ gap: 20, alignItems: 'flex-start' }}>
                 <Ring value={job.match || 0} size={88} tone={matchTone(job.match) === 'warning' ? 'warning' : matchTone(job.match) === 'success' ? 'success' : 'accent'} />
                 <div className="grow stack-sm">
+                  {job.smart && (
+                    <div className="match-split tiny subtle">
+                      <span>Skills <strong>{job.keyword_match ?? '—'}%</strong></span>
+                      <span>Overall fit <strong>{job.semantic_match}%</strong></span>
+                    </div>
+                  )}
                   {job.have.length > 0 && (
                     <div>
                       <div className="section-label" style={{ marginTop: 0 }}>You have</div>

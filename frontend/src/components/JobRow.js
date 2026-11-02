@@ -25,9 +25,9 @@ export function matchTone(score) {
   return 'warning';
 }
 
-export function MatchPill({ score }) {
+export function MatchPill({ score, smart }) {
   if (score == null) return null;
-  return <span className={`match-pill ${matchTone(score) || ''}`} title="How well your skills match this job">{score}%<span> match</span></span>;
+  return <span className={`match-pill ${matchTone(score) || ''}`} title={smart ? 'Your skills plus how closely the whole job fits what you’re looking for (AI)' : 'How well your skills match this job'}>{score}%<span> match</span></span>;
 }
 
 /** One job in a list. */
@@ -45,7 +45,7 @@ export default function JobRow({ job }) {
               {[job.company, job.location, job.remote && !/remote/i.test(job.location || '') ? 'Remote' : null].filter(Boolean).join(' · ')}
             </div>
           </div>
-          <MatchPill score={job.match} />
+          <MatchPill score={job.match} smart={job.smart} />
         </div>
         <div className="row row-wrap mt-1" style={{ gap: 6 }}>
           {job.status && <Badge tone={STATUS[job.status]?.tone} dot>{STATUS[job.status]?.label}</Badge>}
