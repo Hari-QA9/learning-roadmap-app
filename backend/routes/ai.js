@@ -172,7 +172,7 @@ router.post('/chat', auth, aiLimit, async (req, res) => {
 
   try {
     const model = getModel({
-      system: 'You are LearnMap’s learning assistant. Explain clearly and concisely for a student. Use short paragraphs, bullet lists and small code examples when useful. Use **bold** sparingly.',
+      system: 'You are Learnvoy’s learning assistant. Explain clearly and concisely for a student. Use short paragraphs, bullet lists and small code examples when useful. Use **bold** sparingly.',
     });
     const past = (Array.isArray(history) ? history : [])
       .filter((m) => m && m.content)

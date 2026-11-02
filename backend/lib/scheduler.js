@@ -63,7 +63,7 @@ async function dueTaskReminders(users) {
         heading: tasks.length === 1 ? 'A task is due soon' : `${tasks.length} tasks are due soon`,
         intro: `Hi ${u.name.split(' ')[0]}, here’s what’s coming up on your roadmaps.`,
         items: tasks.slice(0, 8).map((t) => ({ title: t.title, meta: `${t.roadmap_title} · ${label(t.due_date)}`, url: `${E.APP_URL()}/roadmaps/${t.roadmap_id}` })),
-        cta: { label: 'Open LearnMap', url: `${E.APP_URL()}/dashboard` },
+        cta: { label: 'Open Learnvoy', url: `${E.APP_URL()}/dashboard` },
       });
     }
     sent += tasks.length;

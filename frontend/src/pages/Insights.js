@@ -25,7 +25,7 @@ export default function Insights() {
 
   return (
     <>
-      <PageHeader eyebrow="Career" title="Skill insights" description="What employers are asking for right now, from the jobs on LearnMap’s board — and how your skills compare." />
+      <PageHeader eyebrow="Career" title="Skill insights" description="What employers are asking for right now, from the jobs on Learnvoy’s board — and how your skills compare." />
       <Card className="mb-3">
         <form className="row row-wrap" style={{ gap: 8 }} onSubmit={(e) => { e.preventDefault(); load(role.trim()); }}>
           <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Target role, e.g. Data Analyst, Registered Nurse" aria-label="Target role" style={{ flex: 1, minWidth: 220 }} />

@@ -23,9 +23,9 @@ function fold(line) {
  * events: [{ uid, title, description, url, location, rrule, alarmMinutes,
  *            allDay: 'YYYY-MM-DD' | start: Date, end: Date | local: { start: 'YYYYMMDDTHHMMSS', end, tz } }]
  */
-function buildICS(events, name = 'LearnMap') {
+function buildICS(events, name = 'Learnvoy') {
   const now = utc(new Date());
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//LearnMap//Calendar//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', `X-WR-CALNAME:${esc(name)}`];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Learnvoy//Calendar//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', `X-WR-CALNAME:${esc(name)}`];
   for (const e of events) {
     lines.push('BEGIN:VEVENT', `UID:${e.uid}`, `DTSTAMP:${now}`);
     if (e.allDay) lines.push(`DTSTART;VALUE=DATE:${dateOnly(e.allDay)}`, `DTEND;VALUE=DATE:${nextDay(e.allDay)}`);

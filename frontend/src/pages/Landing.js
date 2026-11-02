@@ -34,7 +34,7 @@ function ProductPreview() {
       <div className="lp-device-bar"><span /><span /><span /></div>
       <div className="lp-device-body">
         <div className="lp-mock-side">
-          <div className="lp-mock-brand"><span className="brand-mark" style={{ width: 20, height: 20, borderRadius: 6 }}><Icon name="compass" size={11} stroke={2.2} /></span> LearnMap</div>
+          <div className="lp-mock-brand"><span className="brand-mark" style={{ width: 20, height: 20, borderRadius: 6 }}><Icon name="compass" size={11} stroke={2.2} /></span> Learnvoy</div>
           {['Overview', 'Roadmaps', 'Templates', 'Study planner', 'Practice quiz', 'Career advisor'].map((x, i) => (
             <div key={x} className={`lp-mock-nav ${i === 1 ? 'on' : ''}`}>{x}</div>
           ))}
@@ -87,7 +87,7 @@ function Landing() {
         <div className="lp-nav-inner">
           <Link to="/" className="row" style={{ color: 'var(--text)', textDecoration: 'none', gap: 9 }}>
             <span className="brand-mark" style={{ width: 24, height: 24, borderRadius: 7 }}><Icon name="compass" size={13} stroke={2.2} /></span>
-            <span className="brand-name" style={{ fontSize: 16 }}>LearnMap</span>
+            <span className="brand-name" style={{ fontSize: 16 }}>Learnvoy</span>
           </Link>
           <nav className="lp-links">
             <a href="#features">{t('lp.features')}</a>
@@ -109,7 +109,7 @@ function Landing() {
       </header>
 
       <section className="lp-hero">
-        <p className="lp-eyebrow page-enter">LearnMap</p>
+        <p className="lp-eyebrow page-enter">Learnvoy</p>
         <h1 className="lp-title page-enter" style={{ animationDelay: '60ms' }}>
           {t('lp.title1')}<br /><span className="lp-gradient">{t('lp.title2')}</span>
         </h1>
@@ -176,7 +176,7 @@ function Landing() {
 
       <footer className="lp-footer">
         <div className="row row-wrap" style={{ justifyContent: 'space-between', gap: 12 }}>
-          <span>© {new Date().getFullYear()} LearnMap · {t('footer.tagline')}</span>
+          <span>© {new Date().getFullYear()} Learnvoy · {t('footer.tagline')}</span>
           <span className="row" style={{ gap: 16, alignItems: 'center' }}><Link to="/privacy">{t('footer.privacy')}</Link><Link to="/terms">{t('footer.terms')}</Link><LanguageSelect compact /></span>
         </div>
       </footer>

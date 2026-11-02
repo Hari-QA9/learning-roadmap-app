@@ -14,9 +14,9 @@ export function googleCalendarUrl(e) {
 }
 
 /** events: [{ uid, title, details, location, start, end, rrule, alarmMinutes }] */
-export function buildICS(events, name = 'LearnMap') {
+export function buildICS(events, name = 'Learnvoy') {
   const now = utc(new Date());
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//LearnMap//EN', 'CALSCALE:GREGORIAN', `X-WR-CALNAME:${esc(name)}`];
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Learnvoy//EN', 'CALSCALE:GREGORIAN', `X-WR-CALNAME:${esc(name)}`];
   events.forEach((e, i) => {
     lines.push('BEGIN:VEVENT', `UID:${e.uid || `${Date.now()}-${i}@learnmap`}`, `DTSTAMP:${now}`, `DTSTART:${utc(e.start)}`, `DTEND:${utc(e.end || new Date(e.start.getTime() + 3600000))}`, `SUMMARY:${esc(e.title)}`);
     if (e.details) lines.push(`DESCRIPTION:${esc(e.details)}`);

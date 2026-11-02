@@ -16,7 +16,7 @@ export default function Buddies() {
   };
   const link = d?.code ? siteUrl(`/buddy/${d.code}`) : '';
   const share = async () => {
-    const r = await shareLink({ title: 'Be my study buddy on LearnMap', text: 'Let’s keep each other on track — be my study buddy on LearnMap:', url: link });
+    const r = await shareLink({ title: 'Be my study buddy on Learnvoy', text: 'Let’s keep each other on track — be my study buddy on Learnvoy:', url: link });
     if (r === 'copied') toast.success('Buddy link copied');
   };
 

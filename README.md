@@ -233,7 +233,7 @@ Edit the README.md to contribute content, formatting, or references.
 Use clear commit messages such as Added target users section or Refined EPIC features.
 ## Job board
 
-LearnMap pulls real job postings every few hours from free public APIs (Remotive, Arbeitnow, The Muse) and about 55 company career boards on Greenhouse, Lever and Ashby. No API keys are needed. Adding free keys turns on Adzuna and USAJobs, and an optional paid JSearch key adds LinkedIn, Indeed and Glassdoor listings through Google for Jobs.
+Learnvoy pulls real job postings every few hours from free public APIs (Remotive, Arbeitnow, The Muse) and about 55 company career boards on Greenhouse, Lever and Ashby. No API keys are needed. Adding free keys turns on Adzuna and USAJobs, and an optional paid JSearch key adds LinkedIn, Indeed and Glassdoor listings through Google for Jobs.
 
 Postponed work is tracked in [TODO.md](TODO.md).
 

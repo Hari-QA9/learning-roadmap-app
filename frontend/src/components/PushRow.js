@@ -29,12 +29,12 @@ export default function PushRow() {
   const label = (
     <div className="grow">
       <div className="small" style={{ fontWeight: 500, color: 'var(--text)' }}>Phone & desktop notifications</div>
-      <div className="tiny subtle">Reminders, buddy nudges, group and challenge updates — even when LearnMap is closed.</div>
+      <div className="tiny subtle">Reminders, buddy nudges, group and challenge updates — even when Learnvoy is closed.</div>
     </div>
   );
   if (!st) return <div className="setting-row">{label}<span className="tiny subtle">Checking…</span></div>;
   if (isIOS() && !isStandalone()) {
-    return <div className="setting-row">{label}<span className="tiny subtle" style={{ maxWidth: 200, textAlign: 'right' }}>On iPhone/iPad: Share → Add to Home Screen, open LearnMap from there, then turn this on.</span></div>;
+    return <div className="setting-row">{label}<span className="tiny subtle" style={{ maxWidth: 200, textAlign: 'right' }}>On iPhone/iPad: Share → Add to Home Screen, open Learnvoy from there, then turn this on.</span></div>;
   }
   if (!st.supported) return <div className="setting-row">{label}<span className="tiny subtle">Not supported in this browser</span></div>;
   if (!st.serverReady) return <div className="setting-row">{label}<span className="tiny subtle" style={{ maxWidth: 180, textAlign: 'right' }}>Coming soon — not set up on the server yet</span></div>;

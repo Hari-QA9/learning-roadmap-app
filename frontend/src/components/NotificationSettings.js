@@ -35,7 +35,7 @@ export default function NotificationSettings() {
   if (!s) return <Card title="Notifications & reminders"><div className="small muted">Loading…</div></Card>;
 
   return (
-    <Card title="Notifications & reminders" description="Choose what LearnMap sends you. Every email has a one-click unsubscribe link.">
+    <Card title="Notifications & reminders" description="Choose what Learnvoy sends you. Every email has a one-click unsubscribe link.">
       <div className="stack">
         {!s.emailEnabled && (
           <div className="tiny subtle" style={{ display: 'flex', gap: 6 }}>

@@ -11,9 +11,9 @@ export default function VerifyCertificate() {
 
   useEffect(() => {
     api.get(`/public/certificates/${encodeURIComponent(id)}`, { noCache: true })
-      .then((r) => { setC(r.data); document.title = `Certificate ${r.data.certificate_id} · LearnMap`; })
+      .then((r) => { setC(r.data); document.title = `Certificate ${r.data.certificate_id} · Learnvoy`; })
       .catch(() => setMissing(true));
-    return () => { document.title = 'LearnMap'; };
+    return () => { document.title = 'Learnvoy'; };
   }, [id]);
 
   return (
@@ -24,7 +24,7 @@ export default function VerifyCertificate() {
           <>
             <div className="verify-icon bad"><Icon name="xCircle" size={28} /></div>
             <h1>Certificate not found</h1>
-            <p className="muted">No LearnMap certificate has the ID <code>{id}</code>. Check the ID was typed exactly as printed.</p>
+            <p className="muted">No Learnvoy certificate has the ID <code>{id}</code>. Check the ID was typed exactly as printed.</p>
           </>
         )}
         {c && (
@@ -39,7 +39,7 @@ export default function VerifyCertificate() {
               <div><span>Certificate ID</span><strong className="mono">{c.certificate_id}</strong></div>
             </div>
             {c.username && <Link className="btn btn-secondary mt-2" to={`/u/${c.username}`}>View {c.name.split(' ')[0]}’s profile</Link>}
-            <p className="tiny subtle mt-2">LearnMap certificates show completion of a learning roadmap on LearnMap. They are not accredited qualifications.</p>
+            <p className="tiny subtle mt-2">Learnvoy certificates show completion of a learning roadmap on Learnvoy. They are not accredited qualifications.</p>
           </>
         )}
       </div>

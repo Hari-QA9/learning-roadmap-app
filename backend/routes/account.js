@@ -46,7 +46,7 @@ router.get('/export', auth, async (req, res) => {
       people_you_invited: await rowsOf('SELECT u.name, r.created_at FROM referrals r JOIN users u ON u.id = r.invitee_id WHERE r.inviter_id = ?', [id]),
     };
     for (const t of USER_TABLES) data[t] = await rowsOf(`SELECT * FROM ${t} WHERE user_id = ?`, [id]);
-    res.setHeader('Content-Disposition', 'attachment; filename="learnmap-data.json"');
+    res.setHeader('Content-Disposition', 'attachment; filename="learnvoy-data.json"');
     res.json(data);
   } catch (err) {
     console.error('Export error:', err.message);

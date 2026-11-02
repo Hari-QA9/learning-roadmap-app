@@ -18,7 +18,7 @@ function securityHeaders(req, res, next) {
 
 /**
  * CORS: which websites may call the API from a browser.
- * CORS_ORIGINS=https://learnmap.app,https://www.learnmap.app  (comma-separated)
+ * CORS_ORIGINS=https://learnvoy.app,https://www.learnvoy.app  (comma-separated)
  * If it's not set, APP_URL is allowed; with neither (local development) every origin is allowed.
  */
 function corsMiddleware() {
@@ -55,7 +55,7 @@ function checkProductionConfig() {
   }
   const problems = [];
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) problems.push('JWT_SECRET must be set to a random string of at least 32 characters.');
-  if (!process.env.APP_URL || /localhost/.test(process.env.APP_URL)) problems.push('APP_URL must be the real website address (e.g. https://learnmap.vercel.app).');
+  if (!process.env.APP_URL || /localhost/.test(process.env.APP_URL)) problems.push('APP_URL must be the real website address (e.g. https://learnvoy.vercel.app).');
   if (!process.env.DATABASE_URL && !process.env.MYSQL_URL && !process.env.DB_HOST) problems.push('Set DATABASE_URL (or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) for the production database.');
   if (problems.length) {
     console.error(`\n[config] The backend can't start in production yet:\n - ${problems.join('\n - ')}\n`);

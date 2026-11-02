@@ -33,7 +33,7 @@ const BADGE_INFO = [
   { name: 'Resource Hunter', how: 'Bookmark 5 resources from your roadmaps.' },
   { name: 'Social Learner', how: 'Share a roadmap with someone.' },
   { name: 'Feedback Hero', how: 'Submit feedback through the Feedback page.' },
-  { name: 'Ambassador', how: 'A friend joins LearnMap with your invite link (Profile → Invite friends).' },
+  { name: 'Ambassador', how: 'A friend joins Learnvoy with your invite link (Profile → Invite friends).' },
   { name: 'Trailblazer', how: 'Share a roadmap and have someone copy it.' },
 ];
 

@@ -1,4 +1,4 @@
-/* LearnMap service worker — makes the app installable, loads instantly on repeat visits and
+/* Learnvoy service worker — makes the app installable, loads instantly on repeat visits and
    opens without internet. It caches the app's own files only (code, styles, icons) — every
    page's code up front, so any page opens offline. It never caches /api responses: the data
    pages show offline is kept by the app itself (IndexedDB) and removed when you log out. */
@@ -64,7 +64,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   let msg = {};
   try { msg = event.data ? event.data.json() : {}; } catch (e) { msg = { body: event.data ? event.data.text() : '' }; }
-  event.waitUntil(self.registration.showNotification(msg.title || 'LearnMap', {
+  event.waitUntil(self.registration.showNotification(msg.title || 'Learnvoy', {
     body: msg.body || 'You have a new update.',
     icon: '/logo192.png',
     badge: '/logo192.png',

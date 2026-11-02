@@ -52,7 +52,7 @@ export const EMPTY_RESUME = () => ({
   hidden: [],
   template: 'classic',
   paper: 'letter',
-  includeLearnMapCerts: true,
+  includeLearnvoyCerts: true,
 });
 
 /* ---------- Upgrade the old free-text resume (v1) ---------- */
@@ -101,7 +101,7 @@ export function upgradeResume(saved) {
     return { ...emptyEntry('education'), degree, school: school.join(', '), start: d.end ? d.start : '', end: d.end || d.start, details: b.bullets.join('\n') };
   });
   if (saved.template) r.template = saved.template === 'minimal' ? 'compact' : saved.template;
-  if (typeof saved.includeCerts === 'boolean') r.includeLearnMapCerts = saved.includeCerts;
+  if (typeof saved.includeCerts === 'boolean') r.includeLearnvoyCerts = saved.includeCerts;
   return r;
 }
 
@@ -170,7 +170,7 @@ export function toPlainText(r, learnMapCerts = []) {
     if (s === 'certifications' && (r.certifications.length || learnMapCerts.length)) {
       H('Certifications');
       r.certifications.forEach((x) => out.push([x.name, x.issuer, x.date].filter(Boolean).join(' | ')));
-      learnMapCerts.forEach((x) => out.push(`${x.roadmap_title} | LearnMap | ${new Date(x.issued_at).getFullYear()}`));
+      learnMapCerts.forEach((x) => out.push(`${x.roadmap_title} | Learnvoy | ${new Date(x.issued_at).getFullYear()}`));
       out.push('');
     }
   }
@@ -290,7 +290,7 @@ export function analyzeResume(r, { pages = 1, jobSkills = null, learnMapCerts = 
   }
 
   // Certifications (light nudge only)
-  if (!r.certifications.length && !learnMapCerts) add('certs', 0.5, false, 'Certifications (optional)', 'A relevant certificate can help you pass filters — e.g. BLS, CITI/GCP, Google Analytics, AWS, or a finished LearnMap roadmap.', 'certifications', 'info');
+  if (!r.certifications.length && !learnMapCerts) add('certs', 0.5, false, 'Certifications (optional)', 'A relevant certificate can help you pass filters — e.g. BLS, CITI/GCP, Google Analytics, AWS, or a finished Learnvoy roadmap.', 'certifications', 'info');
 
   // Job keywords
   if (jobSkills && jobSkills.length) {

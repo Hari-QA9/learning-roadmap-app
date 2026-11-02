@@ -177,7 +177,7 @@ function StudyPlanner() {
         description="Each study day repeats weekly, with a reminder 15 minutes before."
         footer={<><Button variant="ghost" onClick={() => setCalOpen(false)}>Cancel</Button><Button variant="primary" icon="download" onClick={() => {
           const ev = studyPlanEvents(plan, { time: calTime, weeks: parseInt(form.weeks, 10) || parseInt(plan?.totalDuration, 10) || 8, hours: form.hoursPerDay });
-          downloadICS('learnmap-study-plan', ev, plan?.title || 'Study plan');
+          downloadICS('learnvoy-study-plan', ev, plan?.title || 'Study plan');
           setCalOpen(false);
         }}>Download calendar file</Button></>}>
         <div className="stack">

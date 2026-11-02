@@ -273,7 +273,7 @@ function ResumeBuilder() {
     }
   };
 
-  const shownCerts = r && r.includeLearnMapCerts ? certs : [];
+  const shownCerts = r && r.includeLearnvoyCerts ? certs : [];
 
   const copyText = () => {
     navigator.clipboard?.writeText(toPlainText(r, shownCerts))
@@ -345,8 +345,8 @@ function ResumeBuilder() {
         <EntriesEditor kind="certifications" value={r.certifications} onChange={(v) => update({ certifications: v })} />
         {certs.length > 0 && (
           <label className="checkbox mt-2">
-            <input type="checkbox" checked={r.includeLearnMapCerts} onChange={(e) => update({ includeLearnMapCerts: e.target.checked })} />
-            Include my {certs.length} LearnMap certificate{certs.length > 1 ? 's' : ''}
+            <input type="checkbox" checked={r.includeLearnvoyCerts} onChange={(e) => update({ includeLearnvoyCerts: e.target.checked })} />
+            Include my {certs.length} Learnvoy certificate{certs.length > 1 ? 's' : ''}
           </label>
         )}
       </>
