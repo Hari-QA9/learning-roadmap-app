@@ -14,7 +14,7 @@ const USER_TABLES = [
   'notes', 'comments', 'bookmarks', 'resource_ratings', 'quiz_attempts', 'quiz_results',
   'module_evaluations', 'roadmap_evaluations', 'certificates', 'feedback', 'ai_usage',
   'flashcards', 'study_sessions', 'review_days', 'challenge_claims', 'career_docs', 'push_subscriptions',
-  'flashcard_reviews', 'ml_snapshots',
+  'flashcard_reviews', 'ml_snapshots', 'cartoon_views',
 ];
 const SECRET_TABLES = ['password_resets', 'email_verifications'];
 const HIDE = new Set(['password', 'calendar_token', 'token_hash', 'endpoint', 'endpoint_hash', 'p256dh', 'auth']);
@@ -91,6 +91,7 @@ router.delete('/', auth, async (req, res) => {
           }
         }
       } catch (e) { if (!/doesn't exist|no such table/i.test(e.message)) throw e; }
+      await run('UPDATE cartoon_reports SET user_id = NULL WHERE user_id = ?', [id]); // keep the report text (about the lesson), drop who sent it
       await run('DELETE FROM group_members WHERE user_id = ?', [id]);
       await run('DELETE FROM group_messages WHERE user_id = ?', [id]);
       await run('DELETE FROM buddies WHERE requester_id = ? OR addressee_id = ?', [id, id]);

@@ -83,6 +83,7 @@ app.use('/api/career', careerRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/classes', classRoutes);
+app.use('/api/cartoons', require('./routes/cartoons'));
 
 app.get('/', (req, res) => res.send('Learning Roadmap API Running'));
 // Health check for the hosting provider (also confirms the database answers).
