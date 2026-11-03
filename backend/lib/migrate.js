@@ -408,6 +408,34 @@ const TABLES = [
     label TINYINT NULL,
     UNIQUE (user_id, day)
   )`,
+  // Cartoon lessons: one shared comic per topic + language
+  `CREATE TABLE IF NOT EXISTS cartoon_lessons (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cache_key CHAR(40) NOT NULL,
+    lang VARCHAR(5) NOT NULL,
+    topic VARCHAR(300) NOT NULL,
+    context VARCHAR(300) NULL,
+    content MEDIUMTEXT NOT NULL,
+    version INT DEFAULT 1,
+    uses INT DEFAULT 0,
+    reports INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (cache_key)
+  )`,
+  `CREATE TABLE IF NOT EXISTS cartoon_views (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    lesson_id INT NOT NULL,
+    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY user_time (user_id, viewed_at)
+  )`,
+  `CREATE TABLE IF NOT EXISTS cartoon_reports (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lesson_id INT NOT NULL,
+    user_id INT NULL,
+    reason VARCHAR(500) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
   // ML: trained models (the newest active one is used)
   `CREATE TABLE IF NOT EXISTS ml_models (
     id INT AUTO_INCREMENT PRIMARY KEY,

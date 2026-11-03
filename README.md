@@ -231,6 +231,10 @@ Create or use a personal feature branch (for example, feature/mission, feature/u
 Edit the README.md to contribute content, formatting, or references.
 
 Use clear commit messages such as Added target users section or Refined EPIC features.
+## Cartoon lessons
+
+Any task or topic can be explained as a short comic. Vo, the Learnvoy guide, explains it to Pip, a curious learner, using an everyday comparison. You can read it at your own pace or press Play to watch it acted out and read aloud, then answer a quick check question at the end. The AI writes the story and the app draws the panels, so each lesson costs one ordinary text request. Lessons are saved per topic and language, so the next person gets them instantly.
+
 ## Machine learning
 
 Four ML features, explained in [ml/README.md](ml/README.md):

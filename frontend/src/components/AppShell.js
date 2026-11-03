@@ -55,6 +55,7 @@ export const NAV = [
     items: [
       { to: '/ai-generator', label: 'Roadmap generator', icon: 'wand' },
       { to: '/chat', label: 'Ask AI', icon: 'message' },
+      { to: '/cartoons', label: 'Cartoon lessons', icon: 'play' },
     ],
   },
 ];

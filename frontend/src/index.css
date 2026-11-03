@@ -1136,3 +1136,62 @@ label.setting-row { cursor: pointer; }
 .risk-dot.mid { background: var(--warning-soft); color: var(--warning); }
 .risk-dot.high { background: var(--danger-soft); color: var(--danger); }
 .admin-h2 { margin: 32px 0 0; font-size: 22px; font-weight: 650; letter-spacing: -.02em; color: var(--text); }
+
+/* ---------- Cartoon lessons ---------- */
+.comic-wrap { max-width: 820px; }
+.comic-strip { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) { .comic-strip { grid-template-columns: minmax(0, 1fr); } }
+.comic-panel { position: relative; margin: 0; display: flex; flex-direction: column; gap: 10px; min-height: 320px; padding: 14px; border: 3px solid #1d1d1f; border-radius: 18px; overflow: hidden; color: #1d1d1f; box-shadow: 4px 4px 0 rgba(0, 0, 0, .14); isolation: isolate; }
+.comic-player .comic-panel { min-height: 400px; }
+.comic-panel::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 30%; z-index: -1; background: var(--floor, rgba(0, 0, 0, .06)); border-top: 2px solid rgba(0, 0, 0, .12); }
+.scene-classroom { background: linear-gradient(#e7f5e9, #d3f0d8); --floor: #c8a27a; }
+.scene-kitchen { background: repeating-linear-gradient(90deg, #fff7e6 0 22px, #ffefd1 22px 44px); --floor: #e9c8a0; }
+.scene-street { background: linear-gradient(#bfe3ff, #e3f2ff); --floor: #9aa0a6; }
+.scene-park { background: linear-gradient(#bde7ff, #e8f8ff); --floor: #8fd18f; }
+.scene-office { background: linear-gradient(#eef1f6, #e2e7ef); --floor: #b9c2cf; }
+.scene-space { background: radial-gradient(circle at 20% 20%, #4c3f91 0, #1b1640 60%); --floor: #3a335f; }
+.scene-space .comic-caption { background: #ffe066; }
+.scene-library { background: repeating-linear-gradient(90deg, #f6e7d8 0 30px, #efd9c3 30px 34px); --floor: #b98b62; }
+.scene-shop { background: linear-gradient(#ffe3ec, #fff0f5); --floor: #d9b3c1; }
+.scene-home { background: linear-gradient(#fff4d6, #fff9e8); --floor: #d8b48a; }
+.scene-lab { background: linear-gradient(#e3fafc, #f1fdff); --floor: #a5c9cc; }
+.scene-stage { background: radial-gradient(ellipse at 50% 0, #ffe8a3 0, #b5179e 70%); --floor: #6a1b4d; }
+.scene-beach { background: linear-gradient(#a5d8ff 0 55%, #74c0fc 55% 70%); --floor: #ffe8a3; }
+.comic-caption { align-self: flex-start; max-width: 85%; padding: 6px 10px; background: #fff3bf; border: 2px solid #1d1d1f; border-radius: 6px; font-size: 13px; font-weight: 600; }
+.comic-bubbles { display: flex; flex-direction: column; gap: 8px; }
+.bubble { position: relative; max-width: 82%; padding: 8px 12px 9px; background: #fff; border: 2px solid #1d1d1f; border-radius: 16px; font-size: 15px; line-height: 1.4; transition: transform .25s var(--ease), opacity .25s var(--ease), box-shadow .25s var(--ease); }
+.bubble::after { content: ''; position: absolute; bottom: -9px; width: 14px; height: 14px; background: #fff; border-right: 2px solid #1d1d1f; border-bottom: 2px solid #1d1d1f; }
+.bubble.from-vo { align-self: flex-start; }
+.bubble.from-vo::after { left: 22px; transform: rotate(45deg) skew(10deg, 10deg); }
+.bubble.from-pip { align-self: flex-end; background: #fff8f0; }
+.bubble.from-pip::after { right: 22px; background: #fff8f0; transform: rotate(45deg) skew(-10deg, -10deg); }
+.bubble-name { display: block; font-size: 12px; font-weight: 800; letter-spacing: .02em; }
+.from-vo .bubble-name { color: #0a6fe0; }
+.from-pip .bubble-name { color: #d9480f; }
+.bubble.active { transform: scale(1.03); box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+.bubble.later { opacity: .2; }
+.comic-stage { position: relative; margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; min-height: 120px; padding: 0 6%; }
+@media (max-width: 640px) { .comic-player .toon-vo { width: 104px; height: auto; } .comic-player .toon-pip { width: 82px; height: auto; } }
+.comic-props { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); display: flex; gap: 10px; font-size: 34px; line-height: 1; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .12)); }
+.actor-pip { transform: scaleX(-1); }
+.toon { display: block; overflow: visible; }
+.toon.talking { animation: toon-bob .45s ease-in-out infinite alternate; }
+.toon.talking .toon-mouth { animation: toon-talk .18s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes toon-bob { from { transform: translateY(0); } to { transform: translateY(-6px); } }
+@keyframes toon-talk { from { transform: scaleY(1); } to { transform: scaleY(.45); } }
+@media (prefers-reduced-motion: reduce) { .toon.talking, .toon.talking .toon-mouth { animation: none; } .bubble { transition: none; } }
+.player-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.player-dots { display: flex; gap: 6px; margin-left: 4px; }
+.player-dots button { width: 9px; height: 9px; padding: 0; border-radius: 50%; border: 0; background: var(--surface-3); cursor: pointer; }
+.player-dots button.on { background: var(--accent); width: 22px; border-radius: 5px; }
+.comic-summary { margin: 0 0 14px; font-size: 15px; color: var(--text); }
+.cartoon-hero > div:first-child { display: flex; gap: 20px; align-items: center; }
+.cartoon-hero .card-body, .cartoon-hero { overflow: hidden; }
+.cartoon-hero-cast { display: flex; align-items: flex-end; gap: 4px; flex: none; }
+.cartoon-hero-cast .toon-pip { transform: scaleX(-1); }
+@media (max-width: 640px) {
+  .cartoon-hero-cast { display: none; }
+  .comic-panel { min-height: 280px; padding: 10px; }
+  .comic-player .comic-panel { min-height: 360px; }
+  .bubble { font-size: 14px; max-width: 90%; }
+}

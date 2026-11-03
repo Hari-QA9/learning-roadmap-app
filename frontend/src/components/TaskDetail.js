@@ -55,6 +55,14 @@ export default function TaskDetail({ task, onExplained, onDueChange }) {
     try { localStorage.setItem(stepKey, JSON.stringify(next)); } catch {}
   };
 
+  // A short comic that explains this task (shared with everyone learning the same thing).
+  const [cartooning, setCartooning] = useState(false);
+  const cartoon = async () => {
+    setCartooning(true);
+    try { const r = await api.post('/cartoons', { task_id: task.id }, { timeout: 120000 }); navigate(`/cartoons/${r.data.id}`); }
+    catch (err) { toast.error(errorMessage(err, 'Could not draw a cartoon for this task')); setCartooning(false); }
+  };
+
   const explain = async (refresh) => {
     setExplainOpen(true);
     if (explanation && !refresh) return;
@@ -98,6 +106,7 @@ export default function TaskDetail({ task, onExplained, onDueChange }) {
       <div className="row row-wrap mt-2" style={{ gap: 8 }}>
         <Button size="sm" variant="primary" icon="sparkles" onClick={() => explain(false)}>Explain this</Button>
         <Button size="sm" icon="message" onClick={() => navigate(`/chat?q=${encodeURIComponent(`Help me with this task from my roadmap: ${task.title}. ${task.description || ''}`)}`)}>Ask AI</Button>
+        <Button size="sm" icon="play" loading={cartooning} onClick={cartoon}>Cartoon</Button>
         <Button size="sm" icon="layers" loading={carding} onClick={makeCards}>Flashcards</Button>
         <Button size="sm" icon="clock" onClick={startFocus}>Focus</Button>
         {onDueChange && (
