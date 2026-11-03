@@ -60,6 +60,7 @@ export const Import = lazyPage(() => import('../pages/Import'));
 export const Classes = lazyPage(() => import('../pages/Classes'));
 export const ClassDetail = lazyPage(() => import('../pages/ClassDetail'));
 export const CalendarPage = lazyPage(() => import('../pages/Calendar'));
+export const Practice = lazyPage(() => import('../pages/Practice'));
 export const Cartoons = lazyPage(() => import('../pages/Cartoons'));
 export const Cartoon = lazyPage(() => import('../pages/Cartoon'));
 

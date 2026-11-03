@@ -105,6 +105,7 @@ export default function TaskDetail({ task, onExplained, onDueChange }) {
 
       <div className="row row-wrap mt-2" style={{ gap: 8 }}>
         <Button size="sm" variant="primary" icon="sparkles" onClick={() => explain(false)}>Explain this</Button>
+        <Button size="sm" icon="target" onClick={() => navigate(`/practice/${task.id}`)}>Practice</Button>
         <Button size="sm" icon="message" onClick={() => navigate(`/chat?q=${encodeURIComponent(`Help me with this task from my roadmap: ${task.title}. ${task.description || ''}`)}`)}>Ask AI</Button>
         <Button size="sm" icon="play" loading={cartooning} onClick={cartoon}>Cartoon</Button>
         <Button size="sm" icon="layers" loading={carding} onClick={makeCards}>Flashcards</Button>

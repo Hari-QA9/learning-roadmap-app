@@ -74,6 +74,7 @@ function useTitle(pathname) {
   if (pathname.startsWith('/module-evaluation') || pathname.startsWith('/roadmap-evaluation')) return 'Assessment';
   if (pathname.startsWith('/certificate')) return 'Certificates';
   if (pathname.startsWith('/quiz')) return 'Practice quiz';
+  if (pathname.startsWith('/practice')) return 'Practice';
   return '';
 }
 

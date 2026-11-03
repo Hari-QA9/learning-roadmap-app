@@ -74,6 +74,33 @@ const COLUMNS = [
 ];
 
 const TABLES = [
+  // Practice exercises (code runs in the learner's browser; this stores the exercise and progress)
+  `CREATE TABLE IF NOT EXISTS exercises (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    task_id INT NOT NULL,
+    kind VARCHAR(12) NOT NULL,
+    wanted_kind VARCHAR(12) NULL,
+    title VARCHAR(160) NULL,
+    prompt TEXT NULL,
+    starter MEDIUMTEXT NULL,
+    solution MEDIUMTEXT NULL,
+    tests MEDIUMTEXT NULL,
+    setup MEDIUMTEXT NULL,
+    hints TEXT NULL,
+    hints_used INT DEFAULT 0,
+    extra TEXT NULL,
+    status VARCHAR(12) DEFAULT 'pending',
+    rewrites INT DEFAULT 0,
+    attempts INT DEFAULT 0,
+    best INT DEFAULT 0,
+    code MEDIUMTEXT NULL,
+    last_result TEXT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    passed_at TIMESTAMP NULL,
+    KEY idx_exercises_user (user_id),
+    KEY idx_exercises_task (task_id)
+  )`,
   // Classrooms & mentoring
   `CREATE TABLE IF NOT EXISTS classrooms (
     id INT AUTO_INCREMENT PRIMARY KEY,
