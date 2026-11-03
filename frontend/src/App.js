@@ -12,7 +12,7 @@ import { I18nProvider } from './lib/i18n';
 import {
   Landing, Login, Signup, ForgotPassword, ResetPassword, Dashboard, Roadmaps, RoadmapDetail, AIGenerator,
   Profile, Notifications, Quiz, QuizPerformance, Feedback, Chat, ResumeBuilder, Templates, CareerAdvisor,
-  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, Interview, InterviewSession, VerifyEmail, Admin, Legal, PublicProfile, SharedRoadmap, VerifyCertificate, Join, Review, Focus, Groups, GroupDetail, Buddies, Challenges, JoinCommunity, CoverLetters, LinkedInHelper, PrepSheet, Insights, Explore, Import, Classes, ClassDetail, CalendarPage, Cartoons, Cartoon, preloadAllWhenIdle,
+  StudyPlanner, ModuleEvaluation, RoadmapEvaluation, Certificate, Jobs, JobDetail, Applications, Welcome, Interview, InterviewSession, VerifyEmail, Admin, Legal, PublicProfile, SharedRoadmap, VerifyCertificate, Join, Review, Focus, Groups, GroupDetail, Buddies, Challenges, JoinCommunity, CoverLetters, LinkedInHelper, PrepSheet, Insights, Explore, Import, Classes, ClassDetail, CalendarPage, Practice, Cartoons, Cartoon, preloadAllWhenIdle,
 } from './lib/pages';
 
 // Remember a friend's ?invite= code from whatever page the visitor lands on.
@@ -99,6 +99,7 @@ function App() {
               <Route path="/import" element={<Import />} />
               <Route path="/classes" element={<Classes />} />
               <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/practice/:taskId" element={<Practice />} />
               <Route path="/cartoons" element={<Cartoons />} />
               <Route path="/cartoons/:id" element={<Cartoon />} />
               <Route path="/classes/:id" element={<ClassDetail />} />

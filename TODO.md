@@ -182,6 +182,16 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 
 ---
 
+## Practice exercises
+- [ ] 🟠 **Phase 2:** Java, C, C++, C#, Go… through a code-running service (Judge0 — free tier is small, paid later). Code must never run on our own server.
+- [ ] 🟠 Test Python and SQL practice on a real computer after going live (they download Pyodide / sql.js from a public CDN the first time; this test machine can't reach those CDNs, so they were tested with stand-ins that run real CPython and SQLite).
+- [ ] 🟢 Multi-file web exercises (separate HTML, CSS and JS tabs) and small React exercises.
+- [ ] 🟢 "Open in StackBlitz / Replit" button for bigger projects (can't be checked automatically).
+- [ ] 🟢 Teachers can assign a practice exercise to a class and see who passed.
+- [ ] 🟢 Self-host Pyodide and sql.js files if the CDN is ever slow or blocked for members.
+
+---
+
 ## Classes
 - [ ] 🟠 Co-teachers (more than one teacher per class).
 - [ ] 🟢 Reminder the day before an assignment is due (today: the due date is put on the student's last task, so normal due-date reminders apply).
@@ -227,6 +237,7 @@ Keys go only in `backend/.env`, which is never uploaded to GitHub. Never paste k
 - [x] Email verification, Sign in with Google, installable app (icons, offline page, service worker), admin dashboard (PR #14)
 - [x] Cartoon lessons: any task or topic explained as a short comic with Vo & Pip (original characters), watch mode with read-aloud, quick check, report/new version, shared per topic+language (PR #28)
 - [x] Machine learning: smart job matching (embeddings), meaning-based Explore search + similar roadmaps, personal memory model for review cards (FSRS fitted per member), quit-risk prediction with nudges and a holdout experiment, admin ML panel, Python training script (PR #27)
+- [x] Practice exercises (phase 1): a Practice button on every task; AI exercises in JavaScript, Python, SQL and HTML & CSS that run and are checked in a locked-down sandbox in the browser, with hints, solution after 3 tries and XP; written answers graded against a checklist and number answers for other subjects; every new exercise is checked against its own solution first (PR #29)
 - [x] Calendar & offline: Calendar page (month + day agenda), weekly study schedule with a reminder before each session, auto-plan a roadmap over your study days (with undo), study sessions in the calendar feed; offline copies of pages you open, offline task/notes/review/focus changes that sync later with the time they happened, offline banner, every page's code saved for offline (PR #25)
 - [x] More languages: Español, हिन्दी, తెలుగు, Français, 中文 — app shell, landing, sign-up/login, Profile; the AI writes roadmaps, explanations, flashcards, quizzes, letters and interviews in the chosen language (PR #24)
 - [x] Classrooms & mentoring: classes with join code/link, assign roadmaps (each student gets a copy, late joiners too), teacher progress table + CSV, announcements, roadmap banner (PR #23)
